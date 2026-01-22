@@ -1,0 +1,70 @@
+---
+title: 'API Keys'
+description: 'Create, manage, and secure API keys for authenticating requests to the Narrative API'
+icon: 'key'
+---
+
+API keys authenticate requests to the Narrative API. You can use them when calling APIs directly or when configuring other systems to make requests on your behalf.
+
+## Viewing your API keys
+
+Navigate to **Settings > API Keys** to view your existing API keys. You'll see a list of your keys along with their expiration dates and assigned permissions.
+
+## API key permissions
+
+API keys can have different permissions depending on what you need them to do. Most Narrative API endpoints have their own permission boundaries in addition to the access level (Read or Write) granted to the API key.
+
+For example, all API endpoints under `/data-planes` require the `data-planes` permission. A key can have Read access, Write access, or both.
+
+<Tip>
+**Use minimum permissions**
+
+When creating an API key, grant only the permissions necessary for its intended function. This security best practice helps protect your data and account from unauthorized access.
+</Tip>
+
+## API key expiration
+
+API keys can have an expiration date, after which they're no longer valid.
+
+<Tip>
+**Set expiration dates and rotate keys regularly**
+
+We highly recommend setting an expiration date for all API keys and rotating them on a regular schedule.
+</Tip>
+
+## Creating a new API key
+
+<Steps>
+  <Step title="Open the API Keys page">
+    Navigate to **Settings > API Keys**.
+  </Step>
+  <Step title="Create the key">
+    Click **New API Key**.
+  </Step>
+  <Step title="Configure the key">
+    Enter a name for the key, select the permissions you want to grant, and set an expiration date.
+  </Step>
+  <Step title="Save your key">
+    Copy and securely store the API key. You won't be able to view the full key again after this step.
+  </Step>
+</Steps>
+
+## Revoking an API key
+
+To revoke an API key:
+
+1. Navigate to **Settings > API Keys**.
+2. Click the **...** menu next to the key you want to revoke.
+3. Select **Delete**.
+
+The key is immediately revoked and can no longer be used to make requests to the Narrative API.
+
+## Responding to a security incident
+
+<Warning>
+If you suspect your API keys have been compromised:
+
+1. **Revoke all affected API keys immediately** using the steps above.
+2. **Create new API keys** with appropriate permissions.
+3. **Report the incident** to Narrative security so we can help you investigate and take appropriate action.
+</Warning>
