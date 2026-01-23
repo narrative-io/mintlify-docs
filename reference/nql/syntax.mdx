@@ -1,0 +1,539 @@
+---
+title: 'NQL Syntax'
+description: 'Complete reference for NQL query structure and grammar'
+icon: 'code'
+---
+
+NQL (Narrative Query Language) uses SQL-like syntax with extensions for data collaboration. This reference covers statement types, clause ordering, and query structure.
+
+## Statement types
+
+NQL supports three main statement types:
+
+| Statement | Purpose |
+|-----------|---------|
+| `SELECT` | Execute a query and return results |
+| `EXPLAIN` | Forecast data availability and cost without executing |
+| `CREATE MATERIALIZED VIEW` | Create a stored dataset from a query |
+
+---
+
+## SELECT statement
+
+The `SELECT` statement retrieves data from one or more datasets.
+
+### Syntax
+
+```sql
+SELECT [DISTINCT]
+  column1 [AS alias1],
+  column2 [AS alias2],
+  ...
+FROM table_reference [AS alias]
+[JOIN table_reference ON condition]
+[WHERE condition]
+[GROUP BY column1, column2, ...]
+[HAVING condition]
+[QUALIFY condition]
+[ORDER BY column1 [ASC|DESC], ...]
+[LIMIT n [OFFSET m] ROWS]
+```
+
+### Clause order
+
+Clauses must appear in this order:
+
+1. `SELECT` — columns to return
+2. `FROM` — data source(s)
+3. `JOIN` — additional data sources with join conditions
+4. `WHERE` — row-level filters applied before aggregation
+5. `GROUP BY` — grouping for aggregations
+6. `HAVING` — filters applied after aggregation
+7. `QUALIFY` — filters based on window function results
+8. `ORDER BY` — result ordering
+9. `LIMIT` — result count restriction
+
+### Examples
+
+**Basic query:**
+```sql
+SELECT
+  user_id,
+  email,
+  created_at
+FROM company_data."123"
+WHERE created_at > '2024-01-01'
+```
+
+**Query with aggregation:**
+```sql
+SELECT
+  region,
+  COUNT(*) AS user_count,
+  AVG(lifetime_value) AS avg_ltv
+FROM company_data."456"
+GROUP BY region
+HAVING COUNT(*) > 100
+ORDER BY avg_ltv DESC
+```
+
+**Query with window function and QUALIFY:**
+```sql
+SELECT
+  user_id,
+  email,
+  last_seen
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY user_id
+  ORDER BY last_seen DESC
+) = 1
+```
+
+---
+
+## EXPLAIN statement
+
+The `EXPLAIN` statement forecasts query results without purchasing or executing. Use it to preview data availability and estimated costs.
+
+### Syntax
+
+```sql
+EXPLAIN
+SELECT ...
+```
+
+### What EXPLAIN returns
+
+- Estimated row count matching your criteria
+- Estimated cost based on data pricing
+- Data freshness information
+- Result schema
+
+### Example
+
+```sql
+EXPLAIN
+SELECT
+  company_data."123".user_id,
+  company_data."123".email
+FROM company_data."123"
+WHERE
+  company_data."123".created_at > CURRENT_DATE - INTERVAL '30' DAY
+  AND company_data."123"._price_cpm_usd <= 1.00
+```
+
+<Tip>
+Always run EXPLAIN before creating a materialized view to understand data availability and cost.
+</Tip>
+
+---
+
+## CREATE MATERIALIZED VIEW
+
+Creates a persistent dataset from a query. For complete syntax including all options, see [Materialized View Syntax](/reference/nql/materialized-view-syntax).
+
+### Basic syntax
+
+```sql
+CREATE MATERIALIZED VIEW "view_name"
+AS (
+  SELECT ...
+)
+BUDGET n USD
+```
+
+### Example
+
+```sql
+CREATE MATERIALIZED VIEW "active_users"
+AS (
+  SELECT
+    user_id,
+    email,
+    last_login
+  FROM company_data."123"
+  WHERE last_login > CURRENT_DATE - INTERVAL '30' DAY
+)
+BUDGET 50 USD
+```
+
+---
+
+## Table references
+
+### Dataset references
+
+Reference your datasets using the `company_data` schema with the dataset ID:
+
+```sql
+FROM company_data."123"
+FROM "company_data"."123"
+```
+
+Dataset IDs must be quoted because they are numeric.
+
+### Table aliases
+
+Assign aliases to simplify column references:
+
+```sql
+FROM company_data."123" AS users
+SELECT users.email, users.created_at
+```
+
+### Rosetta Stone
+
+Query the identity resolution layer using the `narrative` schema:
+
+```sql
+FROM narrative.rosetta_stone
+
+SELECT
+  narrative.rosetta_stone.unique_id,
+  narrative.rosetta_stone.event_timestamp
+FROM narrative.rosetta_stone
+```
+
+### Access rules
+
+Query through pre-configured access rules using the provider's company slug:
+
+```sql
+FROM provider_company."access_rule_name"
+
+SELECT
+  provider_company."ar_fitness".Total_Output
+FROM provider_company."ar_fitness"
+```
+
+---
+
+## Column references
+
+### Fully qualified names
+
+Use fully qualified column names to avoid ambiguity, especially in joins:
+
+```sql
+SELECT
+  company_data."123".user_id,
+  company_data."123".email,
+  company_data."456".order_id
+FROM company_data."123"
+JOIN company_data."456" ON company_data."123".user_id = company_data."456".customer_id
+```
+
+### Column aliases
+
+Assign aliases to rename columns in results:
+
+```sql
+SELECT
+  user_id AS id,
+  email AS contact_email,
+  UPPER(name) AS display_name
+FROM company_data."123"
+```
+
+### Accessing nested fields
+
+Access struct fields using dot notation:
+
+```sql
+SELECT
+  company_data."1".nested_field.deep_field.value
+FROM company_data."1"
+```
+
+Access array elements using bracket notation:
+
+```sql
+SELECT
+  identifiers[0] AS first_id,
+  identifiers[0].type AS first_id_type
+FROM company_data."1"
+```
+
+---
+
+## Special columns
+
+### Price column
+
+Every dataset includes `_price_cpm_usd` (price per 1,000 rows). Use it to filter by cost:
+
+```sql
+WHERE company_data."123"._price_cpm_usd <= 1.00
+```
+
+### Rosetta Stone access
+
+Access identity resolution data through the `._rosetta_stone` special field:
+
+```sql
+SELECT
+  company_data."1"._rosetta_stone.unique_id
+FROM company_data."1"
+```
+
+Access specific identifier types:
+
+```sql
+SELECT
+  unique_id.b."type",
+  unique_id.b."value"
+FROM narrative.rosetta_stone
+WHERE unique_id.b."type" NOT IN ('tdid', 'cookie')
+```
+
+---
+
+## DELTA tables
+
+The `DELTA` function returns only records that have changed since the last query execution. Use it for incremental data processing.
+
+### Syntax
+
+```sql
+FROM DELTA(TABLE table_reference)
+FROM DELTA((subquery))
+```
+
+### Examples
+
+**Delta on a dataset:**
+```sql
+SELECT column1
+FROM DELTA(TABLE company_data."1") AS t
+```
+
+**Delta on Rosetta Stone:**
+```sql
+SELECT long_value
+FROM DELTA(TABLE narrative.rosetta_stone)
+```
+
+**Delta with filtering:**
+```sql
+SELECT long_value
+FROM DELTA((
+  SELECT *
+  FROM company_data.rosetta_stone
+  WHERE long_value > 42
+))
+```
+
+---
+
+## Subqueries
+
+### Subquery in WHERE
+
+```sql
+SELECT column1
+FROM company_data."1"
+WHERE value > (
+  SELECT AVG(value)
+  FROM company_data."1"
+)
+```
+
+### Subquery in FROM
+
+```sql
+SELECT sub.total
+FROM (
+  SELECT SUM(amount) AS total
+  FROM company_data."1"
+  GROUP BY category
+) AS sub
+WHERE sub.total > 1000
+```
+
+### EXISTS and NOT EXISTS
+
+```sql
+SELECT t1.column1
+FROM company_data."1" t1
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."2" t2
+  WHERE t1.id = t2.id
+)
+```
+
+---
+
+## Common Table Expressions (WITH)
+
+CTEs let you define named subqueries for reuse within a statement.
+
+### Syntax
+
+```sql
+WITH cte_name AS (
+  SELECT ...
+),
+another_cte AS (
+  SELECT ...
+)
+SELECT ...
+FROM cte_name
+```
+
+### Example
+
+```sql
+CREATE MATERIALIZED VIEW "high_value_users"
+AS (
+  WITH daily_totals AS (
+    SELECT
+      user_id,
+      DATE_TRUNC('day', event_timestamp) AS event_date,
+      SUM(amount) AS daily_spend
+    FROM company_data."1"
+    GROUP BY user_id, DATE_TRUNC('day', event_timestamp)
+  ),
+  user_averages AS (
+    SELECT
+      user_id,
+      AVG(daily_spend) AS avg_daily_spend
+    FROM daily_totals
+    GROUP BY user_id
+  )
+  SELECT
+    user_id,
+    avg_daily_spend
+  FROM user_averages
+  WHERE avg_daily_spend > 100
+)
+BUDGET 25 USD
+```
+
+---
+
+## QUALIFY clause
+
+The `QUALIFY` clause filters results based on window function values. It's evaluated after window functions, making it useful for deduplication and ranking.
+
+### Syntax
+
+```sql
+SELECT columns
+FROM table
+QUALIFY window_function_condition
+```
+
+### Deduplication example
+
+Keep only the most recent record per user:
+
+```sql
+SELECT
+  user_id,
+  email,
+  last_seen
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY user_id
+  ORDER BY last_seen DESC
+) = 1
+```
+
+### Multiple window conditions
+
+```sql
+SELECT column1
+FROM company_data."1"
+QUALIFY
+  ROW_NUMBER() OVER (PARTITION BY group_col ORDER BY sort_col) = 1
+  AND SUM(1) OVER (PARTITION BY other_col) < 10
+```
+
+---
+
+## Budget clauses
+
+Budget clauses control spending on data queries. They are required for `CREATE MATERIALIZED VIEW` statements.
+
+### BUDGET
+
+Set a maximum total spend:
+
+```sql
+BUDGET 50 USD
+```
+
+### LIMIT with USD
+
+Alternative syntax for budget limits:
+
+```sql
+LIMIT 100 USD
+```
+
+### Recurring limits
+
+Set budget limits per time period:
+
+```sql
+LIMIT 500 USD PER CALENDAR_MONTH
+LIMIT 50 USD PER CALENDAR_DAY
+```
+
+### Row limits
+
+Limit by row count instead of cost:
+
+```sql
+LIMIT 1000 ROWS
+LIMIT 100 OFFSET 10 ROWS
+```
+
+---
+
+## SELECT DISTINCT
+
+Remove duplicate rows from results:
+
+```sql
+SELECT DISTINCT category
+FROM company_data."123"
+```
+
+---
+
+## CASE expressions
+
+Conditional logic within queries:
+
+```sql
+SELECT
+  user_id,
+  CASE
+    WHEN lifetime_value > 1000 THEN 'high'
+    WHEN lifetime_value > 100 THEN 'medium'
+    ELSE 'low'
+  END AS value_tier
+FROM company_data."123"
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Types" icon="shapes" href="/reference/nql/data-types">
+    Primitive and complex types supported in NQL
+  </Card>
+  <Card title="Operators" icon="calculator" href="/reference/nql/operators">
+    Comparison, logical, and arithmetic operators
+  </Card>
+  <Card title="Functions" icon="function" href="/reference/nql/functions">
+    Built-in and Narrative-specific functions
+  </Card>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete CREATE MATERIALIZED VIEW reference
+  </Card>
+</CardGroup>

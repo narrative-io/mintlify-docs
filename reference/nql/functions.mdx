@@ -1,0 +1,986 @@
+---
+title: 'Functions'
+description: 'Complete reference for built-in and Narrative-specific functions'
+icon: 'function'
+---
+
+NQL includes standard SQL functions plus Narrative-specific functions for data collaboration. This reference covers all supported functions organized by category.
+
+## String functions
+
+### UPPER
+
+Converts a string to uppercase.
+
+```sql
+SELECT UPPER('hello world') -- 'HELLO WORLD'
+SELECT UPPER(name) AS uppercase_name FROM company_data."123"
+```
+
+### LOWER
+
+Converts a string to lowercase.
+
+```sql
+SELECT LOWER('HELLO WORLD') -- 'hello world'
+SELECT LOWER(email) AS lowercase_email FROM company_data."123"
+```
+
+### TRIM
+
+Removes leading and trailing whitespace.
+
+```sql
+SELECT TRIM('  hello  ') -- 'hello'
+SELECT TRIM(user_input) AS cleaned_input FROM company_data."123"
+```
+
+### LTRIM / RTRIM
+
+Removes leading (LTRIM) or trailing (RTRIM) whitespace.
+
+```sql
+SELECT LTRIM('  hello') -- 'hello'
+SELECT RTRIM('hello  ') -- 'hello'
+```
+
+### LENGTH
+
+Returns the number of characters in a string.
+
+```sql
+SELECT LENGTH('hello') -- 5
+SELECT LENGTH(description) AS desc_length FROM company_data."123"
+```
+
+### CONCAT
+
+Concatenates multiple strings.
+
+```sql
+SELECT CONCAT('Hello', ' ', 'World') -- 'Hello World'
+SELECT CONCAT(first_name, ' ', last_name) AS full_name FROM company_data."123"
+```
+
+### CONCAT_WS
+
+Concatenates strings with a separator.
+
+```sql
+SELECT CONCAT_WS('-', 'a', 'b', 'c') -- 'a-b-c'
+SELECT CONCAT_WS(', ', city, state, country) AS location FROM company_data."123"
+```
+
+### SUBSTRING
+
+Extracts a portion of a string.
+
+```sql
+-- SUBSTRING(string, start_position, length)
+SELECT SUBSTRING('hello world', 1, 5) -- 'hello'
+SELECT SUBSTRING('hello world', 7, 5) -- 'world'
+```
+
+<Note>
+String positions are 1-based, not 0-based.
+</Note>
+
+### LEFT / RIGHT
+
+Returns leftmost or rightmost characters.
+
+```sql
+SELECT LEFT('hello', 2)  -- 'he'
+SELECT RIGHT('hello', 2) -- 'lo'
+```
+
+### REPLACE
+
+Replaces occurrences of a substring.
+
+```sql
+SELECT REPLACE('hello', 'l', 'x') -- 'hexxo'
+SELECT REPLACE(phone, '-', '') AS clean_phone FROM company_data."123"
+```
+
+### SPLIT
+
+Splits a string into an array.
+
+```sql
+SELECT SPLIT('a,b,c', ',') -- ['a', 'b', 'c']
+SELECT SPLIT(tags, '|') AS tag_array FROM company_data."123"
+```
+
+### LPAD / RPAD
+
+Pads a string to a specified length.
+
+```sql
+SELECT LPAD('5', 3, '0')    -- '005'
+SELECT RPAD('hello', 10, '.') -- 'hello.....'
+```
+
+### REGEXP_EXTRACT
+
+Extracts a substring matching a regular expression.
+
+```sql
+SELECT REGEXP_EXTRACT('abc123def', '[0-9]+') -- '123'
+SELECT REGEXP_EXTRACT(email, '@(.+)$') AS domain FROM company_data."123"
+```
+
+### LEVENSHTEIN
+
+Calculates the edit distance between two strings.
+
+```sql
+SELECT LEVENSHTEIN('hello', 'hallo') -- 1
+SELECT LEVENSHTEIN(input_name, canonical_name) AS distance FROM company_data."123"
+```
+
+---
+
+## Date and time functions
+
+### CURRENT_DATE
+
+Returns the current date.
+
+```sql
+SELECT CURRENT_DATE -- '2024-01-15'
+SELECT * FROM company_data."123" WHERE event_date = CURRENT_DATE
+```
+
+### CURRENT_TIMESTAMP
+
+Returns the current timestamp.
+
+```sql
+SELECT CURRENT_TIMESTAMP -- '2024-01-15 14:30:00'
+```
+
+### DATE_ADD
+
+Adds days to a date.
+
+```sql
+SELECT DATE_ADD('2024-01-01', 7) -- '2024-01-08'
+SELECT DATE_ADD(start_date, 30) AS end_date FROM company_data."123"
+```
+
+### DATE_SUB
+
+Subtracts days from a date.
+
+```sql
+SELECT DATE_SUB(CURRENT_DATE, 7) -- 7 days ago
+```
+
+### DATEDIFF
+
+Returns the number of days between two dates.
+
+```sql
+SELECT DATEDIFF('2024-01-10', '2024-01-01') -- 9
+SELECT DATEDIFF(end_date, start_date) AS duration FROM company_data."123"
+```
+
+### DATE_TRUNC
+
+Truncates a timestamp to a specified precision.
+
+```sql
+SELECT DATE_TRUNC('day', '2024-01-15 14:30:00')   -- '2024-01-15 00:00:00'
+SELECT DATE_TRUNC('month', '2024-01-15 14:30:00') -- '2024-01-01 00:00:00'
+SELECT DATE_TRUNC('year', '2024-01-15 14:30:00')  -- '2024-01-01 00:00:00'
+```
+
+**Supported units:** `year`, `month`, `day`, `hour`, `minute`, `second`
+
+### EXTRACT
+
+Extracts a component from a date or timestamp.
+
+```sql
+SELECT EXTRACT(YEAR FROM '2024-01-15')  -- 2024
+SELECT EXTRACT(MONTH FROM '2024-01-15') -- 1
+SELECT EXTRACT(DAY FROM '2024-01-15')   -- 15
+SELECT EXTRACT(HOUR FROM '2024-01-15 14:30:00') -- 14
+```
+
+**Supported parts:** `YEAR`, `MONTH`, `DAY`, `HOUR`, `MINUTE`, `SECOND`, `DAYOFWEEK`, `DAYOFYEAR`
+
+### TO_DATE
+
+Converts a string to a date.
+
+```sql
+SELECT TO_DATE('2024-01-15') -- DATE '2024-01-15'
+SELECT TO_DATE(date_string) FROM company_data."123"
+```
+
+### TO_TIMESTAMP
+
+Converts a string to a timestamp.
+
+```sql
+SELECT TO_TIMESTAMP('2024-01-15 10:30:00')
+```
+
+### FROM_UNIXTIME
+
+Converts Unix epoch seconds to timestamp.
+
+```sql
+SELECT FROM_UNIXTIME(1705312200) -- '2024-01-15 10:30:00'
+SELECT FROM_UNIXTIME(epoch_seconds) AS event_time FROM company_data."123"
+```
+
+### UNIX_TIMESTAMP
+
+Converts a timestamp to Unix epoch seconds.
+
+```sql
+SELECT UNIX_TIMESTAMP('2024-01-15 10:30:00') -- 1705312200
+SELECT UNIX_TIMESTAMP(event_timestamp) AS epoch FROM company_data."123"
+```
+
+---
+
+## Numeric functions
+
+### ABS
+
+Returns the absolute value.
+
+```sql
+SELECT ABS(-5) -- 5
+SELECT ABS(balance) AS absolute_balance FROM company_data."123"
+```
+
+### CEIL / CEILING
+
+Rounds up to the nearest integer.
+
+```sql
+SELECT CEIL(4.2)  -- 5
+SELECT CEIL(-4.2) -- -4
+```
+
+### FLOOR
+
+Rounds down to the nearest integer.
+
+```sql
+SELECT FLOOR(4.8)  -- 4
+SELECT FLOOR(-4.2) -- -5
+```
+
+### ROUND
+
+Rounds to a specified number of decimal places.
+
+```sql
+SELECT ROUND(4.567)     -- 5
+SELECT ROUND(4.567, 2)  -- 4.57
+SELECT ROUND(4.567, 0)  -- 5
+```
+
+### POWER / POW
+
+Raises a number to a power.
+
+```sql
+SELECT POWER(2, 3) -- 8
+SELECT POW(10, 2)  -- 100
+```
+
+### SQRT
+
+Returns the square root.
+
+```sql
+SELECT SQRT(16) -- 4
+SELECT SQRT(2)  -- 1.414...
+```
+
+### LN
+
+Returns the natural logarithm.
+
+```sql
+SELECT LN(2.718281828) -- ~1
+```
+
+### LOG10
+
+Returns the base-10 logarithm.
+
+```sql
+SELECT LOG10(100) -- 2
+```
+
+### EXP
+
+Returns e raised to a power.
+
+```sql
+SELECT EXP(1) -- 2.718...
+```
+
+### MOD
+
+Returns the remainder after division.
+
+```sql
+SELECT MOD(10, 3) -- 1
+SELECT MOD(user_id, 100) AS bucket FROM company_data."123"
+```
+
+### GREATEST
+
+Returns the largest value from a list.
+
+```sql
+SELECT GREATEST(1, 5, 3) -- 5
+SELECT GREATEST(score1, score2, score3) AS max_score FROM company_data."123"
+```
+
+### LEAST
+
+Returns the smallest value from a list.
+
+```sql
+SELECT LEAST(1, 5, 3) -- 1
+SELECT LEAST(price1, price2) AS min_price FROM company_data."123"
+```
+
+---
+
+## Aggregate functions
+
+Aggregate functions compute a single result from a set of rows.
+
+### COUNT
+
+Counts rows or non-null values.
+
+```sql
+SELECT COUNT(*) AS total_rows FROM company_data."123"
+SELECT COUNT(email) AS emails_present FROM company_data."123"
+SELECT COUNT(DISTINCT user_id) AS unique_users FROM company_data."123"
+```
+
+### SUM
+
+Returns the sum of values.
+
+```sql
+SELECT SUM(amount) AS total_amount FROM company_data."123"
+```
+
+### AVG
+
+Returns the average of values.
+
+```sql
+SELECT AVG(score) AS average_score FROM company_data."123"
+```
+
+### MIN / MAX
+
+Returns the minimum or maximum value.
+
+```sql
+SELECT MIN(created_at) AS earliest FROM company_data."123"
+SELECT MAX(score) AS highest_score FROM company_data."123"
+```
+
+### STDDEV_POP / STDDEV_SAMP
+
+Returns population or sample standard deviation.
+
+```sql
+SELECT STDDEV_POP(value) AS std_dev FROM company_data."123"
+SELECT STDDEV_SAMP(value) AS sample_std_dev FROM company_data."123"
+```
+
+### VAR_POP / VAR_SAMP
+
+Returns population or sample variance.
+
+```sql
+SELECT VAR_POP(value) AS variance FROM company_data."123"
+SELECT VAR_SAMP(value) AS sample_variance FROM company_data."123"
+```
+
+### ARRAY_AGG
+
+Aggregates values into an array.
+
+```sql
+SELECT user_id, ARRAY_AGG(tag) AS all_tags
+FROM company_data."123"
+GROUP BY user_id
+```
+
+### STRING_AGG
+
+Concatenates values into a delimited string.
+
+```sql
+SELECT user_id, STRING_AGG(category, ', ') AS categories
+FROM company_data."123"
+GROUP BY user_id
+```
+
+### PERCENTILE_CONT
+
+Returns a percentile value using continuous distribution.
+
+```sql
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) AS median
+FROM company_data."123"
+
+SELECT PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time) AS p95
+FROM company_data."123"
+```
+
+---
+
+## Array and map functions
+
+### ARRAY
+
+Creates an array from values.
+
+```sql
+SELECT ARRAY('a', 'b', 'c') -- ['a', 'b', 'c']
+SELECT ARRAY(1, 2, 3) AS numbers
+```
+
+### SIZE
+
+Returns the number of elements in an array.
+
+```sql
+SELECT SIZE(tags) AS tag_count FROM company_data."123"
+```
+
+### ELEMENT_AT
+
+Returns an element at a specific index (1-based) or map key.
+
+```sql
+-- Array (1-based index)
+SELECT ELEMENT_AT(ARRAY('a', 'b', 'c'), 2) -- 'b'
+
+-- Map
+SELECT ELEMENT_AT(properties, 'color') AS color FROM company_data."123"
+```
+
+### ARRAY_FLATTEN
+
+Flattens nested arrays into a single array.
+
+```sql
+SELECT ARRAY_FLATTEN(ARRAY(ARRAY(1, 2), ARRAY(3, 4))) -- [1, 2, 3, 4]
+```
+
+### ARRAY_SORT
+
+Sorts array elements.
+
+```sql
+SELECT ARRAY_SORT(ARRAY(3, 1, 2)) -- [1, 2, 3]
+```
+
+### EXPLODE
+
+Converts an array into multiple rows (use with LATERAL JOIN).
+
+```sql
+SELECT t.user_id, tag
+FROM company_data."123" t
+LATERAL JOIN EXPLODE(t.tags) AS tag
+```
+
+### UNNEST
+
+Expands an array into rows (alternative to EXPLODE).
+
+```sql
+SELECT t.user_id, element
+FROM company_data."123" t, UNNEST(t.tags) AS element
+```
+
+---
+
+## Window functions
+
+Window functions perform calculations across a set of rows related to the current row.
+
+### ROW_NUMBER
+
+Assigns a unique sequential number to each row within a partition.
+
+```sql
+SELECT
+  user_id,
+  event_timestamp,
+  ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY event_timestamp) AS event_seq
+FROM company_data."123"
+```
+
+### RANK
+
+Assigns a rank with gaps for ties.
+
+```sql
+SELECT
+  user_id,
+  score,
+  RANK() OVER (ORDER BY score DESC) AS rank
+FROM company_data."123"
+```
+
+### DENSE_RANK
+
+Assigns a rank without gaps for ties.
+
+```sql
+SELECT
+  user_id,
+  score,
+  DENSE_RANK() OVER (ORDER BY score DESC) AS dense_rank
+FROM company_data."123"
+```
+
+### PERCENT_RANK
+
+Returns the relative rank as a percentage (0 to 1).
+
+```sql
+SELECT
+  user_id,
+  score,
+  PERCENT_RANK() OVER (ORDER BY score) AS percentile
+FROM company_data."123"
+```
+
+### LAG
+
+Returns the value from a previous row.
+
+```sql
+SELECT
+  event_date,
+  value,
+  LAG(value, 1) OVER (ORDER BY event_date) AS previous_value,
+  value - LAG(value, 1) OVER (ORDER BY event_date) AS change
+FROM company_data."123"
+```
+
+### LEAD
+
+Returns the value from a following row.
+
+```sql
+SELECT
+  event_date,
+  value,
+  LEAD(value, 1) OVER (ORDER BY event_date) AS next_value
+FROM company_data."123"
+```
+
+### SUM / AVG / COUNT (windowed)
+
+Aggregate functions can be used as window functions.
+
+```sql
+SELECT
+  event_date,
+  amount,
+  SUM(amount) OVER (ORDER BY event_date) AS running_total,
+  AVG(amount) OVER (PARTITION BY category) AS category_avg
+FROM company_data."123"
+```
+
+---
+
+## Geospatial functions
+
+NQL includes Sedona-based geospatial functions for location data.
+
+### ST_SafePoint
+
+Creates a point geometry from longitude and latitude.
+
+```sql
+SELECT ST_SafePoint(longitude, latitude) AS location
+FROM company_data."123"
+```
+
+### ST_Circle
+
+Creates a circular geometry around a point.
+
+```sql
+SELECT ST_Circle(ST_SafePoint(longitude, latitude), radius_meters) AS area
+FROM company_data."123"
+```
+
+### ST_DistanceSphere
+
+Calculates the distance between two points on a sphere (in meters).
+
+```sql
+SELECT ST_DistanceSphere(point1, point2) AS distance_meters
+FROM company_data."123"
+```
+
+### ST_GeoHash
+
+Converts a point to a geohash string.
+
+```sql
+SELECT ST_GeoHash(ST_SafePoint(longitude, latitude), 6) AS geohash
+FROM company_data."123"
+```
+
+### ST_H3CellIDs
+
+Returns H3 hexagon cell IDs covering a geometry.
+
+```sql
+SELECT ST_H3CellIDs(geometry, resolution) AS h3_cells
+FROM company_data."123"
+```
+
+### ST_H3KRing
+
+Returns neighboring H3 cells within k rings.
+
+```sql
+SELECT ST_H3KRing(h3_cell, k) AS neighbors
+FROM company_data."123"
+```
+
+---
+
+## Narrative-specific functions
+
+These functions are specific to the Narrative platform.
+
+### NORMALIZE_EMAIL
+
+Normalizes an email address for consistent matching.
+
+```sql
+SELECT NORMALIZE_EMAIL('John.Doe+test@Gmail.COM') -- 'johndoe@gmail.com'
+SELECT NORMALIZE_EMAIL(email) AS normalized_email FROM company_data."123"
+```
+
+Normalization includes:
+- Lowercase conversion
+- Removal of plus-addressing
+- Provider-specific handling (Gmail dot removal, etc.)
+
+### NORMALIZE_PHONE
+
+Normalizes a phone number to a standard format.
+
+```sql
+SELECT NORMALIZE_PHONE('NATIONAL', '+15145555555', null) AS normalized
+SELECT NORMALIZE_PHONE('E164', phone, 'US') AS e164_phone FROM company_data."123"
+```
+
+### HASH
+
+Generates a hash from one or more values.
+
+```sql
+SELECT HASH('value1', 'value2') AS combined_hash
+SELECT HASH(user_id, email) AS user_hash FROM company_data."123"
+```
+
+### MD5 / SHA1 / SHA2
+
+Standard cryptographic hash functions.
+
+```sql
+SELECT MD5('hello')           -- MD5 hash
+SELECT SHA1('hello')          -- SHA-1 hash
+SELECT SHA2('hello', 256)     -- SHA-256 hash
+```
+
+### HMAC_SHA256
+
+HMAC using SHA-256.
+
+```sql
+SELECT HMAC_SHA256('message', 'secret_key') AS hmac
+```
+
+### ADDRESS_HASHES
+
+Generates hash variants for address matching.
+
+```sql
+SELECT ADDRESS_HASHES('123 Main St', 'New York', 'NY', '10001') AS hashes
+```
+
+### NARRATIVE_ID_ENCODE
+
+Encodes a clear text identifier into a Narrative ID within a specific encoding space. Narrative IDs are per-partner pseudonymous identifiers that enable privacy-safe data collaboration.
+
+**Syntax:**
+
+```sql
+NARRATIVE_ID_ENCODE(raw_identifier, key_id)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `raw_identifier` | string | The clear text identifier to encode (email, hashed email, phone, etc.) |
+| `key_id` | string | The encoding key ID specifying the target encoding space |
+
+**Returns:** string - The encoded Narrative ID
+
+**Examples:**
+
+```sql
+-- Encode an email address
+SELECT NARRATIVE_ID_ENCODE(LOWER(TRIM(email)), 'your_org_key_id') AS narrative_id
+FROM company_data."123"
+
+-- Encode an already-hashed email
+SELECT NARRATIVE_ID_ENCODE(email_sha256, 'your_org_key_id') AS narrative_id
+FROM company_data."123"
+
+-- Create a dataset with encoded identifiers
+SELECT
+  NARRATIVE_ID_ENCODE(email_sha256, 'your_org_key_id') AS narrative_id,
+  event_timestamp,
+  event_properties
+FROM company_data."123"
+WHERE event_timestamp >= '2024-01-01'
+```
+
+<Note>
+The same identifier encoded with different `key_id` values produces different Narrative IDs. Always normalize identifiers (lowercase, trim whitespace) before encoding for consistent matching.
+</Note>
+
+**Related:** [Narrative ID Concepts](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
+
+### NARRATIVE_ID_TRANSLATE
+
+Translates a Narrative ID from one partner's encoding space to another. This enables secure data collaboration by converting identifiers without exposing the underlying clear text values.
+
+**Syntax:**
+
+```sql
+NARRATIVE_ID_TRANSLATE(narrative_id, target_key_id)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `narrative_id` | string | An existing Narrative ID to translate |
+| `target_key_id` | string | The encoding key ID for the target partner's encoding space |
+
+**Returns:** string - The translated Narrative ID in the target encoding space
+
+**Examples:**
+
+```sql
+-- Translate Narrative IDs for a partner collaboration
+SELECT
+  NARRATIVE_ID_TRANSLATE(narrative_id, 'partner_b_key_id') AS partner_b_narrative_id,
+  customer_segment,
+  activity_score
+FROM company_data."123"
+
+-- Join across partner datasets using translation
+SELECT
+  a.campaign_name,
+  a.impressions,
+  b.conversions
+FROM partner_a."ad_data" a
+JOIN partner_b."conversion_data" b
+  ON NARRATIVE_ID_TRANSLATE(a.narrative_id, 'partner_b_key_id') = b.narrative_id
+
+-- Prepare data for multiple partners
+SELECT
+  narrative_id AS original_id,
+  NARRATIVE_ID_TRANSLATE(narrative_id, 'partner_a_key_id') AS partner_a_id,
+  NARRATIVE_ID_TRANSLATE(narrative_id, 'partner_b_key_id') AS partner_b_id,
+  audience_segment
+FROM company_data."123"
+```
+
+**Use case:**
+
+When sharing data with a partner, translate your Narrative IDs to their encoding space so they can match against their own Narrative IDs. This enables cross-organization matching without exposing underlying identifiers.
+
+**Related:** [Narrative ID Concepts](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
+
+### UNIVERSE_SAMPLE
+
+Deterministic sampling based on an identifier.
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE UNIVERSE_SAMPLE(user_id, 0.1)  -- 10% sample
+```
+
+### DETERMINISTIC_RAND
+
+Generates a deterministic random number from a seed.
+
+```sql
+SELECT DETERMINISTIC_RAND(user_id) AS random_value
+FROM company_data."123"
+```
+
+### PARSE_JSON / TRY_PARSE_JSON
+
+Parses a JSON string.
+
+```sql
+SELECT PARSE_JSON('{"key": "value"}') AS parsed
+SELECT TRY_PARSE_JSON(maybe_json) AS safe_parsed  -- Returns NULL on error
+FROM company_data."123"
+```
+
+### OBJECT_REMOVE_NULLS
+
+Removes null values from a struct.
+
+```sql
+SELECT OBJECT_REMOVE_NULLS(NAMED_STRUCT('a', 1, 'b', NULL, 'c', 3))
+-- Returns struct with only 'a' and 'c'
+```
+
+### TOKENIZE
+
+Tokenizes text using a specified model.
+
+```sql
+SELECT TOKENIZE(text_column) AS tokens
+FROM company_data."123"
+```
+
+### TOKENIZE_SIZE
+
+Returns the token count for text.
+
+```sql
+SELECT TOKENIZE_SIZE(text_column) AS token_count
+FROM company_data."123"
+```
+
+### EMBED_TEXT_768
+
+Generates a 768-dimensional text embedding.
+
+```sql
+SELECT EMBED_TEXT_768(description) AS embedding
+FROM company_data."123"
+```
+
+### COSINE_SIMILARITY
+
+Calculates cosine similarity between two vectors.
+
+```sql
+SELECT COSINE_SIMILARITY(embedding1, embedding2) AS similarity
+FROM company_data."123"
+```
+
+### TEXT_SEARCH
+
+Scores text relevance against a search query.
+
+```sql
+SELECT TEXT_SEARCH(description, 'machine learning') AS relevance_score
+FROM company_data."123"
+```
+
+### UUID_GENERATE
+
+Generates a random UUID.
+
+```sql
+SELECT UUID_GENERATE() AS new_id
+```
+
+---
+
+## Conditional functions
+
+### COALESCE
+
+Returns the first non-null value.
+
+```sql
+SELECT COALESCE(preferred_email, backup_email, 'unknown') AS email
+FROM company_data."123"
+```
+
+### NULLIF
+
+Returns NULL if two values are equal.
+
+```sql
+SELECT NULLIF(status, 'unknown') AS clean_status
+FROM company_data."123"
+```
+
+### IF
+
+Conditional expression (ternary).
+
+```sql
+SELECT IF(score > 90, 'A', 'B') AS grade
+FROM company_data."123"
+```
+
+### CASE
+
+Multi-branch conditional expression.
+
+```sql
+SELECT
+  CASE
+    WHEN score >= 90 THEN 'A'
+    WHEN score >= 80 THEN 'B'
+    WHEN score >= 70 THEN 'C'
+    ELSE 'F'
+  END AS grade
+FROM company_data."123"
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Query structure and grammar reference
+  </Card>
+  <Card title="Data Types" icon="shapes" href="/reference/nql/data-types">
+    Type system and complex types
+  </Card>
+  <Card title="Operators" icon="calculator" href="/reference/nql/operators">
+    Comparison, logical, and arithmetic operators
+  </Card>
+  <Card title="Common Query Patterns" icon="book" href="/cookbooks/nql/common-queries">
+    Real-world examples using these functions
+  </Card>
+</CardGroup>

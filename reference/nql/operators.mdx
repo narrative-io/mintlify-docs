@@ -1,0 +1,380 @@
+---
+title: 'Operators'
+description: 'Comparison, logical, arithmetic, and special operators in NQL'
+icon: 'calculator'
+---
+
+NQL supports standard SQL operators for comparisons, logic, arithmetic, and pattern matching.
+
+## Comparison operators
+
+Compare two values and return a boolean result.
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `=` | Equal to | `status = 'active'` |
+| `<>` | Not equal to | `status <> 'deleted'` |
+| `<` | Less than | `age < 30` |
+| `>` | Greater than | `score > 90` |
+| `<=` | Less than or equal | `price <= 100` |
+| `>=` | Greater than or equal | `created_at >= '2024-01-01'` |
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  status = 'active'
+  AND age >= 18
+  AND age < 65
+  AND score > 75
+```
+
+<Note>
+Comparisons involving NULL return NULL, not true or false. Use `IS NULL` or `IS NOT NULL` for NULL checks.
+</Note>
+
+---
+
+## Logical operators
+
+Combine boolean expressions.
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `AND` | Both conditions true | `a > 0 AND b > 0` |
+| `OR` | Either condition true | `status = 'a' OR status = 'b'` |
+| `NOT` | Negates condition | `NOT is_deleted` |
+
+### Operator precedence
+
+`NOT` is evaluated before `AND`, which is evaluated before `OR`. Use parentheses for clarity:
+
+```sql
+-- Without parentheses: AND binds tighter than OR
+WHERE a = 1 OR b = 2 AND c = 3
+-- Equivalent to: a = 1 OR (b = 2 AND c = 3)
+
+-- With parentheses for clarity
+WHERE (a = 1 OR b = 2) AND c = 3
+```
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  (status = 'active' OR status = 'pending')
+  AND NOT is_deleted
+  AND (score > 90 OR is_premium = true)
+```
+
+---
+
+## Arithmetic operators
+
+Perform mathematical calculations on numeric values.
+
+| Operator | Description | Example |
+|----------|-------------|---------|
+| `+` | Addition | `price + tax` |
+| `-` | Subtraction | `total - discount` |
+| `*` | Multiplication | `quantity * unit_price` |
+| `/` | Division | `total / count` |
+
+### Examples
+
+```sql
+SELECT
+  quantity * unit_price AS line_total,
+  (quantity * unit_price) * 1.0825 AS total_with_tax,
+  total_amount / num_items AS average_item_price,
+  score - baseline AS improvement
+FROM company_data."123"
+```
+
+<Warning>
+Division by zero returns NULL in NQL. Consider using NULLIF to handle potential zero divisors:
+`total / NULLIF(count, 0)`
+</Warning>
+
+---
+
+## String operators
+
+### Concatenation
+
+The `||` operator concatenates strings:
+
+```sql
+SELECT
+  first_name || ' ' || last_name AS full_name,
+  city || ', ' || state AS location
+FROM company_data."123"
+```
+
+Non-string values are implicitly converted to strings:
+
+```sql
+SELECT
+  'User #' || user_id AS user_label,
+  'Score: ' || score || '%' AS score_display
+FROM company_data."123"
+```
+
+---
+
+## IN and NOT IN
+
+Test membership in a set of values.
+
+### Syntax
+
+```sql
+column IN (value1, value2, value3)
+column NOT IN (value1, value2)
+```
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  status IN ('active', 'pending', 'review')
+  AND category NOT IN ('test', 'demo', 'internal')
+```
+
+### IN with subquery
+
+```sql
+SELECT *
+FROM company_data."1"
+WHERE user_id IN (
+  SELECT user_id
+  FROM company_data."2"
+  WHERE is_premium = true
+)
+```
+
+<Note>
+For large value lists, consider using a JOIN instead of IN for better performance.
+</Note>
+
+---
+
+## BETWEEN
+
+Test if a value falls within a range (inclusive).
+
+### Syntax
+
+```sql
+column BETWEEN lower_bound AND upper_bound
+```
+
+Equivalent to:
+```sql
+column >= lower_bound AND column <= upper_bound
+```
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  age BETWEEN 25 AND 45
+  AND event_date BETWEEN '2024-01-01' AND '2024-12-31'
+  AND score BETWEEN 80 AND 100
+```
+
+---
+
+## NULL operators
+
+### IS NULL / IS NOT NULL
+
+Test for NULL values. Regular comparison operators don't work with NULL.
+
+```sql
+-- Correct
+WHERE email IS NOT NULL
+WHERE phone IS NULL
+
+-- Incorrect (always returns no rows)
+WHERE email = NULL
+WHERE email <> NULL
+```
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  email IS NOT NULL
+  AND phone IS NOT NULL
+  AND secondary_email IS NULL
+```
+
+### IS DISTINCT FROM / IS NOT DISTINCT FROM
+
+NULL-safe equality comparison. Treats NULL as a comparable value.
+
+| Expression | Standard `=` | `IS NOT DISTINCT FROM` |
+|------------|--------------|------------------------|
+| `1 = 1` | true | true |
+| `1 = 2` | false | false |
+| `1 = NULL` | NULL | false |
+| `NULL = NULL` | NULL | true |
+
+```sql
+-- Useful for MERGE ON conditions
+MERGE ON target.id IS NOT DISTINCT FROM source.id
+
+-- In WHERE clauses
+WHERE status IS NOT DISTINCT FROM 'active'
+```
+
+---
+
+## Pattern matching
+
+### LIKE
+
+Match string patterns using wildcards.
+
+| Wildcard | Matches |
+|----------|---------|
+| `%` | Zero or more characters |
+| `_` | Exactly one character |
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  name LIKE 'John%'           -- Starts with "John"
+  AND email LIKE '%@gmail.com' -- Ends with "@gmail.com"
+  AND code LIKE 'A__'          -- "A" followed by exactly 2 characters
+```
+
+### Case sensitivity
+
+LIKE is case-sensitive. Use `UPPER` or `LOWER` for case-insensitive matching:
+
+```sql
+WHERE UPPER(name) LIKE 'JOHN%'
+WHERE LOWER(email) LIKE '%@gmail.com'
+```
+
+### NOT LIKE
+
+```sql
+WHERE email NOT LIKE '%@test.com'
+```
+
+---
+
+## Interval operators
+
+Perform date and time arithmetic using intervals.
+
+### Syntax
+
+```sql
+timestamp_column + INTERVAL 'n' unit
+timestamp_column - INTERVAL 'n' unit
+```
+
+### Supported units
+
+| Unit | Description |
+|------|-------------|
+| `DAY` | Calendar days |
+| `MONTH` | Calendar months |
+| `YEAR` | Calendar years |
+| `HOUR` | Hours |
+| `MINUTE` | Minutes |
+| `SECOND` | Seconds |
+
+### Examples
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  -- Last 30 days
+  event_timestamp > CURRENT_DATE - INTERVAL '30' DAY
+
+  -- Last 3 months
+  AND created_at >= CURRENT_DATE - INTERVAL '3' MONTH
+
+  -- Events in the next 7 days
+  AND scheduled_date <= CURRENT_DATE + INTERVAL '7' DAY
+```
+
+### Combining with date functions
+
+```sql
+SELECT
+  event_timestamp,
+  event_timestamp + INTERVAL '1' HOUR AS one_hour_later,
+  DATE_TRUNC('month', event_timestamp) AS month_start,
+  DATE_TRUNC('month', event_timestamp) + INTERVAL '1' MONTH - INTERVAL '1' DAY AS month_end
+FROM company_data."123"
+```
+
+---
+
+## Operator precedence
+
+From highest to lowest precedence:
+
+| Precedence | Operators |
+|------------|-----------|
+| 1 (highest) | Unary `-`, `+` |
+| 2 | `*`, `/` |
+| 3 | `+`, `-` |
+| 4 | `\|\|` (concatenation) |
+| 5 | `=`, `<>`, `<`, `>`, `<=`, `>=`, `IS`, `LIKE`, `IN`, `BETWEEN` |
+| 6 | `NOT` |
+| 7 | `AND` |
+| 8 (lowest) | `OR` |
+
+### Using parentheses
+
+Use parentheses to override default precedence or improve readability:
+
+```sql
+SELECT
+  -- Arithmetic: multiplication before addition
+  price + quantity * discount,       -- = price + (quantity * discount)
+  (price + quantity) * discount,     -- Override precedence
+
+  -- Logical: AND before OR
+  a OR b AND c,                      -- = a OR (b AND c)
+  (a OR b) AND c                     -- Override precedence
+FROM company_data."123"
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Query structure and grammar reference
+  </Card>
+  <Card title="Data Types" icon="shapes" href="/reference/nql/data-types">
+    Type system and conversions
+  </Card>
+  <Card title="Functions" icon="function" href="/reference/nql/functions">
+    Built-in functions for data manipulation
+  </Card>
+  <Card title="Filtering Data" icon="filter" href="/guides/nql/filtering-transforming">
+    Guide to writing effective WHERE clauses
+  </Card>
+</CardGroup>

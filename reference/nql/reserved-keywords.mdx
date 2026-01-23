@@ -1,0 +1,237 @@
+---
+title: 'Reserved Keywords'
+description: 'Keywords that require quoting when used as identifiers'
+icon: 'lock'
+---
+
+Reserved keywords have special meaning in NQL and cannot be used as unquoted identifiers (table names, column names, aliases). To use a reserved keyword as an identifier, enclose it in double quotes.
+
+## Using reserved keywords as identifiers
+
+```sql
+-- This fails: "type" is a reserved keyword
+SELECT type FROM company_data."123"
+
+-- This works: quoted identifier
+SELECT "type" FROM company_data."123"
+
+-- Column alias using reserved keyword
+SELECT category AS "group" FROM company_data."123"
+```
+
+---
+
+## Reserved keywords list
+
+The following keywords are reserved in NQL:
+
+### A-C
+
+| Keyword | Category |
+|---------|----------|
+| `ALL` | Clause |
+| `AND` | Operator |
+| `ANY` | Clause |
+| `ARRAY` | Type |
+| `AS` | Clause |
+| `ASC` | Clause |
+| `BETWEEN` | Operator |
+| `BIGINT` | Type |
+| `BOOLEAN` | Type |
+| `BUDGET` | Narrative |
+| `BY` | Clause |
+| `CALENDAR_DAY` | Narrative |
+| `CALENDAR_MONTH` | Narrative |
+| `CASE` | Expression |
+| `CAST` | Function |
+| `CREATE` | Statement |
+| `CROSS` | Join |
+| `CURRENT_DATE` | Function |
+| `CURRENT_TIMESTAMP` | Function |
+
+### D-G
+
+| Keyword | Category |
+|---------|----------|
+| `DATE` | Type |
+| `DAY` | Interval |
+| `DECIMAL` | Type |
+| `DELETE` | Statement |
+| `DELTA` | Narrative |
+| `DESC` | Clause |
+| `DESCRIPTION` | Narrative |
+| `DISPLAY_NAME` | Narrative |
+| `DISTINCT` | Clause |
+| `DOUBLE` | Type |
+| `ELSE` | Expression |
+| `END` | Expression |
+| `EXISTS` | Operator |
+| `EXPLAIN` | Statement |
+| `EXPIRE` | Narrative |
+| `EXTENDED_STATS` | Narrative |
+| `FALSE` | Literal |
+| `FROM` | Clause |
+| `FULL` | Join |
+| `GROUP` | Clause |
+
+### H-L
+
+| Keyword | Category |
+|---------|----------|
+| `HAVING` | Clause |
+| `HOUR` | Interval |
+| `IF` | Function |
+| `IN` | Operator |
+| `INNER` | Join |
+| `INSERT` | Statement |
+| `INT` | Type |
+| `INTEGER` | Type |
+| `INTERVAL` | Type |
+| `INTO` | Clause |
+| `IS` | Operator |
+| `JOIN` | Join |
+| `LATERAL` | Join |
+| `LEFT` | Join |
+| `LIKE` | Operator |
+| `LIMIT` | Clause |
+| `LONG` | Type |
+
+### M-O
+
+| Keyword | Category |
+|---------|----------|
+| `MAP` | Type |
+| `MATCHED` | Merge |
+| `MATERIALIZED` | Statement |
+| `MERGE` | Statement |
+| `MINUTE` | Interval |
+| `MONTH` | Interval |
+| `NOT` | Operator |
+| `NULL` | Literal |
+| `OFFSET` | Clause |
+| `ON` | Clause |
+| `OR` | Operator |
+| `ORDER` | Clause |
+| `OUTER` | Join |
+| `OVER` | Window |
+
+### P-R
+
+| Keyword | Category |
+|---------|----------|
+| `PARTITION` | Window |
+| `PARTITIONED_BY` | Narrative |
+| `PER` | Narrative |
+| `QUALIFY` | Clause |
+| `REFRESH_SCHEDULE` | Narrative |
+| `RIGHT` | Join |
+| `ROWS` | Clause |
+
+### S-T
+
+| Keyword | Category |
+|---------|----------|
+| `SECOND` | Interval |
+| `SELECT` | Statement |
+| `SET` | Statement |
+| `SOURCE` | Merge |
+| `STATUS` | Narrative |
+| `STRING` | Type |
+| `STRUCT` | Type |
+| `TABLE` | Statement |
+| `TAGS` | Narrative |
+| `TARGET` | Merge |
+| `THEN` | Expression |
+| `TIMESTAMP` | Type |
+| `TRUE` | Literal |
+
+### U-Z
+
+| Keyword | Category |
+|---------|----------|
+| `UNION` | Clause |
+| `UNNEST` | Function |
+| `UPDATE` | Statement |
+| `USD` | Narrative |
+| `VALUES` | Clause |
+| `VARCHAR` | Type |
+| `VIEW` | Statement |
+| `WHEN` | Expression |
+| `WHERE` | Clause |
+| `WITH` | Clause |
+| `WITHIN` | Clause |
+| `WRITE_MODE` | Narrative |
+| `YEAR` | Interval |
+
+---
+
+## Categories
+
+| Category | Description |
+|----------|-------------|
+| Clause | SQL clause keywords |
+| Expression | CASE/conditional expression keywords |
+| Function | Built-in function names |
+| Interval | Date/time interval units |
+| Join | JOIN clause keywords |
+| Literal | Literal value keywords |
+| Merge | MERGE statement keywords |
+| Narrative | Narrative-specific extensions |
+| Operator | Comparison and logical operators |
+| Statement | Statement type keywords |
+| Type | Data type keywords |
+| Window | Window function keywords |
+
+---
+
+## Best practices
+
+### Always quote dataset IDs
+
+Dataset IDs are numeric and must be quoted:
+
+```sql
+-- Correct
+FROM company_data."123"
+
+-- Incorrect
+FROM company_data.123
+```
+
+### Quote ambiguous column names
+
+When column names might conflict with keywords:
+
+```sql
+SELECT
+  "type",
+  "group",
+  "order",
+  "value"
+FROM company_data."123"
+```
+
+### Use aliases for clarity
+
+Assign clear aliases to avoid quoting in subsequent references:
+
+```sql
+SELECT
+  "type" AS identifier_type,
+  "group" AS category_group
+FROM company_data."123"
+WHERE identifier_type = 'email'
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Query structure and grammar reference
+  </Card>
+  <Card title="Data Types" icon="shapes" href="/reference/nql/data-types">
+    Type keywords and declarations
+  </Card>
+</CardGroup>

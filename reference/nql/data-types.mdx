@@ -1,0 +1,431 @@
+---
+title: 'Data Types'
+description: 'Primitive and complex types supported in NQL'
+icon: 'shapes'
+---
+
+NQL supports primitive types for scalar values and complex types for structured data. This reference covers all supported types and type conversion.
+
+## Primitive types
+
+| Type | Aliases | Description | Example literals |
+|------|---------|-------------|------------------|
+| `STRING` | `VARCHAR` | Variable-length text | `'hello world'` |
+| `BOOLEAN` | — | True or false | `true`, `false` |
+| `LONG` | `BIGINT` | 64-bit signed integer | `12345678901234` |
+| `DOUBLE` | — | 64-bit floating point | `3.14159` |
+| `DECIMAL` | — | Arbitrary precision number | `CAST(10.12345 AS DECIMAL)` |
+| `DATE` | — | Date without time | `'2024-01-15'` |
+| `TIMESTAMP` | — | Date with time | `'2024-01-15 10:30:00'` |
+
+---
+
+## STRING / VARCHAR
+
+Variable-length character data. String literals use single quotes.
+
+```sql
+SELECT
+  'Hello, World!' AS greeting,
+  CONCAT(first_name, ' ', last_name) AS full_name
+FROM company_data."123"
+```
+
+### Escape sequences
+
+| Sequence | Meaning |
+|----------|---------|
+| `''` | Single quote |
+| `\\` | Backslash |
+
+```sql
+SELECT 'It''s a test' AS escaped_quote
+```
+
+---
+
+## BOOLEAN
+
+Logical true/false values.
+
+```sql
+SELECT
+  is_active,
+  CASE WHEN score > 90 THEN true ELSE false END AS is_high_performer
+FROM company_data."123"
+WHERE is_verified = true
+```
+
+---
+
+## LONG / BIGINT
+
+64-bit signed integers. Range: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807.
+
+```sql
+SELECT
+  user_id,
+  CAST(timestamp_value AS LONG) AS epoch_millis
+FROM company_data."123"
+```
+
+---
+
+## DOUBLE
+
+64-bit IEEE 754 floating-point numbers. Use for approximate numeric calculations.
+
+```sql
+SELECT
+  amount * 1.0825 AS amount_with_tax,
+  SQRT(value) AS square_root
+FROM company_data."123"
+```
+
+<Warning>
+Floating-point arithmetic can produce rounding errors. Use DECIMAL for financial calculations requiring exact precision.
+</Warning>
+
+---
+
+## DECIMAL
+
+Arbitrary-precision decimal numbers. Use for exact calculations where precision matters.
+
+```sql
+SELECT
+  CAST(price AS DECIMAL) AS exact_price,
+  CAST(quantity AS DECIMAL) * CAST(unit_price AS DECIMAL) AS line_total
+FROM company_data."123"
+```
+
+---
+
+## DATE
+
+Calendar date without time component. Format: `YYYY-MM-DD`.
+
+```sql
+SELECT
+  event_date,
+  DATE_TRUNC('month', event_date) AS month_start
+FROM company_data."123"
+WHERE event_date >= '2024-01-01'
+```
+
+### Date arithmetic
+
+```sql
+SELECT
+  event_date,
+  DATE_ADD(event_date, 30) AS plus_30_days,
+  event_date - INTERVAL '7' DAY AS minus_7_days
+FROM company_data."123"
+```
+
+---
+
+## TIMESTAMP
+
+Date and time with precision. Format: `YYYY-MM-DD HH:MM:SS`.
+
+```sql
+SELECT
+  event_timestamp,
+  DATE_TRUNC('hour', event_timestamp) AS hour_start
+FROM company_data."123"
+WHERE event_timestamp > CURRENT_TIMESTAMP - INTERVAL '24' HOUR
+```
+
+### Current timestamp functions
+
+| Function | Returns |
+|----------|---------|
+| `CURRENT_DATE` | Current date |
+| `CURRENT_TIMESTAMP` | Current timestamp |
+
+---
+
+## Complex types
+
+NQL supports three complex types for structured data: arrays, structs, and maps.
+
+---
+
+## ARRAY
+
+Ordered collection of elements of the same type.
+
+### Array literal
+
+```sql
+SELECT ARRAY('value1', 'value2', 'value3') AS my_array
+```
+
+### Array type declaration
+
+```sql
+CAST(column AS ARRAY<STRING>)
+CAST(column AS ARRAY<LONG>)
+CAST(column AS ARRAY<STRUCT<name:STRING, age:LONG>>)
+```
+
+### Accessing array elements
+
+Use zero-based indexing with bracket notation:
+
+```sql
+SELECT
+  identifiers[0] AS first_id,
+  identifiers[1] AS second_id,
+  identifiers[0].type AS first_id_type
+FROM company_data."123"
+```
+
+### Array functions
+
+| Function | Description |
+|----------|-------------|
+| `SIZE(array)` | Returns number of elements |
+| `ELEMENT_AT(array, index)` | Returns element at index |
+| `ARRAY_FLATTEN(array)` | Flattens nested arrays |
+
+See [Functions Reference](/reference/nql/functions) for complete array function documentation.
+
+---
+
+## STRUCT
+
+Named collection of fields with potentially different types. Similar to a row or record.
+
+### Struct literal
+
+```sql
+SELECT NAMED_STRUCT(
+  'name', 'John Doe',
+  'age', 30,
+  'active', true
+) AS person
+```
+
+### Struct type declaration
+
+```sql
+CAST(column AS STRUCT<name:STRING, age:LONG>)
+CAST(column AS STRUCT<
+  user:STRUCT<id:LONG, email:STRING>,
+  created_at:TIMESTAMP
+>)
+```
+
+### Accessing struct fields
+
+Use dot notation to access fields:
+
+```sql
+SELECT
+  person.name,
+  person.age,
+  address.city
+FROM company_data."123"
+```
+
+### Nested struct access
+
+```sql
+SELECT
+  company_data."1".nested_field.deep_field.value
+FROM company_data."1"
+```
+
+---
+
+## MAP
+
+Collection of key-value pairs. Keys must be of a single type, as must values.
+
+### Map type declaration
+
+```sql
+CAST(column AS MAP<STRING, STRING>)
+CAST(column AS MAP<STRING, LONG>)
+CAST(column AS MAP<STRING, STRUCT<a:STRING, b:LONG>>)
+```
+
+### Accessing map values
+
+Use `ELEMENT_AT` to retrieve values by key:
+
+```sql
+SELECT
+  ELEMENT_AT(properties, 'color') AS color,
+  ELEMENT_AT(metadata, 'source') AS source
+FROM company_data."123"
+```
+
+---
+
+## Nested types
+
+Complex types can be nested to represent hierarchical data structures.
+
+### Array of structs
+
+```sql
+CAST(column AS ARRAY<STRUCT<
+  type:STRING,
+  value:STRING,
+  timestamp:LONG
+>>)
+```
+
+Access nested struct fields within arrays:
+
+```sql
+SELECT
+  identifiers[0].type AS first_type,
+  identifiers[0].value AS first_value
+FROM company_data."123"
+```
+
+### Map with struct values
+
+```sql
+CAST(column AS MAP<STRING, STRUCT<
+  count:LONG,
+  last_seen:TIMESTAMP
+>>)
+```
+
+### Deeply nested structures
+
+```sql
+CAST(column AS STRUCT<
+  field1:STRING,
+  field2:MAP<STRING, STRUCT<a:LONG>>,
+  field3:ARRAY<MAP<STRING, STRING>>
+>)
+```
+
+---
+
+## Type casting
+
+Use `CAST` to convert between types.
+
+### Syntax
+
+```sql
+CAST(expression AS target_type)
+```
+
+### Common conversions
+
+```sql
+SELECT
+  CAST(numeric_string AS LONG) AS number,
+  CAST(amount AS VARCHAR) AS amount_text,
+  CAST(timestamp_value AS DATE) AS date_only,
+  CAST(epoch_millis AS TIMESTAMP) AS datetime,
+  CAST(value AS DECIMAL) AS precise_value
+FROM company_data."123"
+```
+
+### Casting complex types
+
+```sql
+SELECT
+  CAST(raw_array AS ARRAY<STRING>) AS string_array,
+  CAST(raw_struct AS STRUCT<id:LONG, name:STRING>) AS typed_struct,
+  CAST(NULL AS MAP<STRING, LONG>) AS empty_map
+FROM company_data."123"
+```
+
+<Note>
+When casting to complex types, the source data must have a compatible structure. Invalid casts return NULL or raise an error.
+</Note>
+
+---
+
+## Type coercion
+
+NQL automatically converts types in some contexts:
+
+| Context | Behavior |
+|---------|----------|
+| Comparison | Numeric types promoted to common type |
+| Arithmetic | Integer operations with DOUBLE operand return DOUBLE |
+| Concatenation | Non-strings converted to STRING with `\|\|` operator |
+| Aggregation | Results match input type or use promoted type |
+
+### Explicit vs implicit conversion
+
+Prefer explicit `CAST` for clarity:
+
+```sql
+-- Explicit (preferred)
+WHERE CAST(string_column AS LONG) > 100
+
+-- Implicit (may work but less clear)
+WHERE string_column > '100'
+```
+
+---
+
+## NULL values
+
+NULL represents missing or unknown data. NULL behaves specially in comparisons and operations.
+
+### NULL checks
+
+```sql
+WHERE email IS NOT NULL
+WHERE phone IS NULL
+```
+
+### NULL in expressions
+
+Any operation involving NULL typically returns NULL:
+
+```sql
+SELECT
+  NULL + 1,           -- Returns NULL
+  CONCAT('Hi ', NULL) -- Returns NULL
+```
+
+### COALESCE
+
+Return the first non-NULL value:
+
+```sql
+SELECT COALESCE(preferred_email, backup_email, 'unknown') AS email
+FROM company_data."123"
+```
+
+### NULLIF
+
+Return NULL if two values are equal:
+
+```sql
+SELECT NULLIF(status, 'unknown') AS clean_status
+FROM company_data."123"
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Query structure and grammar reference
+  </Card>
+  <Card title="Operators" icon="calculator" href="/reference/nql/operators">
+    Comparison, logical, and arithmetic operators
+  </Card>
+  <Card title="Functions" icon="function" href="/reference/nql/functions">
+    Type conversion and manipulation functions
+  </Card>
+  <Card title="Type System Concepts" icon="diagram-project" href="/concepts/nql/type-system">
+    Understanding NQL's type design philosophy
+  </Card>
+</CardGroup>
