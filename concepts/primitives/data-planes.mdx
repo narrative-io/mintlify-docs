@@ -1,0 +1,78 @@
+---
+title: 'Data Planes'
+description: 'Understand where your data lives and is processed in the Narrative platform'
+icon: 'database'
+---
+
+A data plane is the infrastructure where your data physically resides and where queries execute. When you run a query or register a dataset in Narrative, the data plane determines where that data lives and where computation happens.
+
+## Why data planes exist
+
+Narrative separates the *control plane* (which manages metadata, permissions, and orchestration) from the *data plane* (which stores and processes actual data). This separation exists for three reasons:
+
+**Data residency requirements.** Organizations often have strict requirements about where data can be stored—whether for regulatory compliance, data sovereignty, or internal policy. By separating the data plane, Narrative enables you to keep data in your own infrastructure while still participating in data collaboration.
+
+**Performance optimization.** Queries execute directly in the data plane, close to where the data lives. This avoids the latency and cost of moving large datasets across networks.
+
+**Security boundaries.** The control plane never sees your raw data. It only manages metadata and coordinates operations, while the actual data remains within the data plane's security perimeter.
+
+## How data planes relate to the control plane
+
+The [control plane](/concepts/primitives/control-plane) is Narrative's centralized service that orchestrates all data collaboration activities. It maintains the catalog of available datasets, enforces access rules, and coordinates queries across data planes.
+
+When you execute a query:
+
+1. The control plane validates your permissions and compiles the query
+2. The control plane dispatches the query to the appropriate data plane(s)
+3. The data plane executes the query against the actual data
+4. Results flow back through the control plane to you
+
+This architecture means you can collaborate with organizations whose data lives in completely different data planes—the control plane handles the coordination.
+
+## Hosting options
+
+Narrative supports two hosting models for data planes:
+
+### Narrative-hosted data planes
+
+Narrative operates a shared data plane that provides a turnkey experience. Your data is stored in Narrative's infrastructure, and you benefit from managed operations without needing to provision or maintain infrastructure.
+
+This option works well when:
+- You want to get started quickly without infrastructure setup
+- You don't have strict data residency requirements
+- You prefer a fully managed experience
+
+### Customer-hosted data planes
+
+You can run a data plane in your own infrastructure—whether that's your AWS account, Snowflake environment, or another supported platform. Narrative's control plane coordinates with your data plane, but your data never leaves your infrastructure.
+
+This option works well when:
+- Regulatory or compliance requirements mandate data residency
+- You want to leverage existing infrastructure investments
+- You need to keep data within your organization's security perimeter
+- You want to process data closer to where it's already stored
+
+<Note>
+Customer-hosted data planes require additional setup and configuration. Contact your Narrative representative to discuss options for your infrastructure.
+</Note>
+
+## What belongs to a data plane
+
+Several objects in Narrative are scoped to a specific data plane:
+
+- **Datasets** — The actual data you've registered lives in a data plane
+- **Queries** — Query execution happens within a data plane
+- **Access rules** — Rules that govern data access are enforced at the data plane level
+
+When working in the Narrative platform, you'll see a data plane selector that filters these objects to show only those belonging to the selected data plane.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    Learn how Narrative orchestrates data collaboration across data planes
+  </Card>
+  <Card title="Data Planes API" icon="code" href="/api-reference/openapi/data-planes/list-data-planes">
+    Manage data planes programmatically
+  </Card>
+</CardGroup>

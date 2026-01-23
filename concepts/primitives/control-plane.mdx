@@ -1,0 +1,61 @@
+---
+title: 'Control Plane'
+description: 'Understand how Narrative orchestrates data collaboration across data planes'
+icon: 'sitemap'
+---
+
+The control plane is Narrative's centralized orchestration layer. It manages metadata, enforces permissions, coordinates queries, and enables collaboration between organizations—without ever touching the raw data itself.
+
+## What the control plane manages
+
+The control plane is responsible for everything *about* data, rather than the data itself:
+
+**Metadata and catalogs.** The control plane maintains the catalog of all datasets, their schemas, and their attributes. When you browse available data or search for datasets, you're querying the control plane.
+
+**Identity and permissions.** User authentication, organization membership, and access controls all live in the control plane. When you grant another organization access to your data, that permission is recorded and enforced by the control plane.
+
+**Query compilation and dispatch.** When you write an NQL query, the control plane parses it, validates your permissions, optimizes the execution plan, and dispatches it to the appropriate [data plane(s)](/concepts/primitives/data-planes) for execution.
+
+**Collaboration coordination.** The control plane enables organizations to discover and transact with each other. It maintains the marketplace, processes access requests, and tracks collaboration activity.
+
+## Why separate control from data?
+
+The separation between control plane and data plane is a deliberate architectural choice:
+
+**Privacy by design.** The control plane orchestrates operations without accessing raw data. This means Narrative's infrastructure never sees your actual data when you host your own data plane—only the metadata needed to coordinate operations.
+
+**Multi-cloud collaboration.** Organizations store data in different environments (AWS, Snowflake, on-premises). A centralized control plane can coordinate across all of these without requiring data to move between them.
+
+**Centralized governance.** While data can be distributed across many data planes, permissions and access policies are managed in one place. This simplifies governance and provides a single audit point for who can access what.
+
+## Single control plane, multiple data planes
+
+Narrative operates a single control plane that coordinates across all data planes in the ecosystem. This architecture enables:
+
+- **Cross-organization collaboration** — Organizations with data in different data planes can still collaborate, with the control plane handling the coordination
+- **Consistent experience** — Regardless of where data lives, the interface for discovering, querying, and governing data remains the same
+- **Unified permissions** — Access controls are managed centrally, even when data spans multiple data planes
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   Control Plane                      │
+│  (Metadata, Permissions, Query Coordination)         │
+└──────────┬──────────────────┬───────────────────────┘
+           │                  │
+           ▼                  ▼
+┌──────────────────┐  ┌──────────────────┐
+│   Data Plane A   │  │   Data Plane B   │
+│  (Your AWS)      │  │  (Narrative)     │
+└──────────────────┘  └──────────────────┘
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Learn about where your data lives and is processed
+  </Card>
+  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
+    Understand how Narrative protects your data
+  </Card>
+</CardGroup>

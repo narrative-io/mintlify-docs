@@ -11,8 +11,81 @@
   "navigation": {
     "tabs": [
       {
+        "tab": "Getting Started",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "getting-started/index"
+            ]
+          },
+          {
+            "group": "Welcome",
+            "pages": [
+              "getting-started/introduction",
+              "getting-started/quick-start",
+              "getting-started/platform-overview"
+            ]
+          },
+          {
+            "group": "First Steps",
+            "pages": [
+              "getting-started/first-nql-query",
+              "getting-started/first-data-collaboration",
+              "getting-started/understanding-rosetta-stone"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Guides",
         "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "guides/index"
+            ]
+          },
+          {
+            "group": "Data Ingestion",
+            "pages": [
+              "guides/ingestion/connecting-data-sources",
+              "guides/ingestion/automated-syncs",
+              "guides/ingestion/schema-changes"
+            ]
+          },
+          {
+            "group": "Querying with NQL",
+            "pages": [
+              "guides/nql/filtering-transforming",
+              "guides/nql/joining-datasets",
+              "guides/nql/query-optimization"
+            ]
+          },
+          {
+            "group": "Data Collaboration",
+            "pages": [
+              "guides/collaboration/sharing-data",
+              "guides/collaboration/access-controls",
+              "guides/collaboration/data-products"
+            ]
+          },
+          {
+            "group": "Rosetta Stone",
+            "pages": [
+              "guides/rosetta-stone/mapping-schemas",
+              "guides/rosetta-stone/validating-mappings",
+              "guides/rosetta-stone/edge-cases"
+            ]
+          },
+          {
+            "group": "Best Practices",
+            "pages": [
+              "guides/best-practices/query-patterns",
+              "guides/best-practices/governance",
+              "guides/best-practices/security"
+            ]
+          },
           {
             "group": "Account Settings",
             "pages": [
@@ -22,47 +95,174 @@
         ]
       },
       {
-      "tab": "API Reference",
-      "openapi": "api-reference/openapi.json"
-    }],
+        "tab": "Concepts",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "concepts/index"
+            ]
+          },
+          {
+            "group": "Core Primitives",
+            "pages": [
+              "concepts/primitives/datasets",
+              "concepts/primitives/attributes",
+              "concepts/primitives/relationships",
+              "concepts/primitives/data-planes",
+              "concepts/primitives/control-plane"
+            ]
+          },
+          {
+            "group": "Rosetta Stone",
+            "pages": [
+              "concepts/rosetta-stone/overview",
+              "concepts/rosetta-stone/how-it-works",
+              "concepts/rosetta-stone/normalization-model"
+            ]
+          },
+          {
+            "group": "NQL",
+            "pages": [
+              "concepts/nql/design-philosophy",
+              "concepts/nql/sql-comparison",
+              "concepts/nql/type-system"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "concepts/architecture/query-processing",
+              "concepts/architecture/data-flow",
+              "concepts/architecture/security-model"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "reference/index"
+            ]
+          },
+          {
+            "group": "NQL Reference",
+            "pages": [
+              "reference/nql/syntax",
+              "reference/nql/data-types",
+              "reference/nql/operators",
+              "reference/nql/functions",
+              "reference/nql/reserved-keywords"
+            ]
+          },
+          {
+            "group": "UI Reference",
+            "pages": [
+              "reference/ui/dashboard",
+              "reference/ui/query-editor",
+              "reference/ui/data-explorer"
+            ]
+          },
+          {
+            "group": "Glossary",
+            "pages": [
+              "reference/glossary"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "openapi": "api-reference/openapi.json"
+      },
+      {
+        "tab": "Cookbooks",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cookbooks/index"
+            ]
+          },
+          {
+            "group": "Integration Recipes",
+            "pages": [
+              "cookbooks/integrations/snowflake-connection",
+              "cookbooks/integrations/customer-360",
+              "cookbooks/integrations/real-time-sharing"
+            ]
+          },
+          {
+            "group": "NQL Patterns",
+            "pages": [
+              "cookbooks/nql/common-queries",
+              "cookbooks/nql/performance-patterns",
+              "cookbooks/nql/complex-joins"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "cookbooks/use-cases/retail-collaboration",
+              "cookbooks/use-cases/marketing-normalization",
+              "cookbooks/use-cases/identity-resolution"
+            ]
+          }
+        ]
+      }
+    ],
     "global": {
-      "anchors": []
+      "anchors": [
+        {
+          "anchor": "Changelog",
+          "href": "/changelog",
+          "icon": "clock-rotate-left"
+        },
+        {
+          "anchor": "Status",
+          "href": "https://status.narrative.io",
+          "icon": "signal-bars"
+        }
+      ]
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/banner.png",
+    "dark": "/logo/banner.png"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@narrative.io"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://app.narrative.io"
     }
   },
   "contextual": {
     "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/narrativeio",
+      "github": "https://github.com/narrative-io",
+      "linkedin": "https://linkedin.com/company/narrative-io"
     }
   }
 }
