@@ -1,0 +1,258 @@
+---
+title: 'Retail Competitive Intelligence'
+description: 'Build audience segments from competitor store visitors using location data, frequency analysis, and purchase history enrichment'
+icon: 'store'
+---
+
+A national retailer is expanding to the West Coast and wants to understand their potential customers before opening new stores. Through Narrative, they can identify shoppers at competitor locations, segment them by loyalty, and enrich their profiles with purchase behavior—all without having any first-party data in those markets.
+
+## What you will build
+
+This cookbook walks through creating a competitive intelligence pipeline that:
+
+1. Identifies mobile device IDs (MAIDs) observed at competitor store locations in California, Nevada, and Oregon
+2. Segments visitors into loyalty tiers based on visit frequency (loyal, casual, one-time)
+3. Enriches loyal competitor shoppers with CPG purchase history (groceries, personal care, household goods)
+
+The result is targetable audience segments for conquest marketing campaigns.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- Access to location data containing `geo_coordinates` and `unique_identifier` (MAID) attributes
+- Access to purchase transaction data with category information
+- Familiarity with [NQL syntax](/reference/nql/syntax)
+- Understanding of [materialized views](/concepts/nql/materialized-views)
+
+## Step 1: Define competitor store locations
+
+First, create a reference dataset of competitor store locations. This dataset contains the latitude/longitude coordinates for each store, which you will use as geofence centers.
+
+```sql
+CREATE MATERIALIZED VIEW "competitor_store_locations"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Competitor Store Locations - West Coast'
+DESCRIPTION = 'Geofenced competitor retail locations in CA, NV, OR'
+TAGS = ('competitive_intelligence', 'location', 'west_coast')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    store_id,
+    brand_name,
+    latitude,
+    longitude,
+    region AS state
+FROM company_data.store_directory
+WHERE
+    brand_name IN ('CompetitorA', 'CompetitorB', 'CompetitorC')
+    AND region IN ('CA', 'NV', 'OR')
+```
+
+<Note>
+Replace `company_data.store_directory` with your actual store location dataset. You can also upload a CSV of competitor locations to create this reference table.
+</Note>
+
+## Step 2: Identify competitor store visitors
+
+Query the Rosetta Stone table to find mobile advertising IDs (IDFA/GAID) observed within proximity of competitor store coordinates over the past 90 days.
+
+```sql
+CREATE MATERIALIZED VIEW "competitor_store_visitors"
+REFRESH_SCHEDULE = '@weekly'
+DISPLAY_NAME = 'Competitor Store Visitors - Raw'
+DESCRIPTION = 'MAIDs observed at competitor retail locations in past 90 days'
+TAGS = ('competitive_intelligence', 'location', 'audience')
+WRITE_MODE = 'overwrite'
+PARTITIONED_BY event_date DAY
+AS
+SELECT
+    rs."unique_identifier"."value" AS maid,
+    rs."unique_identifier"."type" AS maid_type,
+    stores.store_id,
+    stores.brand_name,
+    stores.state,
+    CAST(rs."event_timestamp" AS TIMESTAMP) AS visit_timestamp,
+    DATE(rs."event_timestamp") AS event_date
+FROM narrative.rosetta_stone rs
+JOIN company_data."competitor_store_locations" stores
+    ON ABS(rs."geo_coordinates"."latitude" - stores.latitude) < 0.002
+    AND ABS(rs."geo_coordinates"."longitude" - stores.longitude) < 0.002
+WHERE
+    rs."event_timestamp" > CURRENT_TIMESTAMP - INTERVAL '90' DAY
+    AND rs."unique_identifier"."type" IN ('idfa', 'gaid')
+    AND rs."unique_identifier"."value" IS NOT NULL
+    AND rs."geo_coordinates"."latitude" IS NOT NULL
+    AND rs."region" IN ('CA', 'NV', 'OR')
+```
+
+**Key patterns used:**
+
+| Pattern | Purpose |
+|---------|---------|
+| `unique_identifier.value` | Extracts the MAID value from the identifier object |
+| `unique_identifier.type IN ('idfa', 'gaid')` | Filters to mobile advertising IDs only |
+| `ABS(latitude - stores.latitude) < 0.002` | Proximity match (~150-200 meters geofence) |
+| `INTERVAL '90' DAY` | Rolling 90-day lookback window |
+| `PARTITIONED_BY event_date DAY` | Optimizes queries filtering by date |
+
+<Tip>
+The proximity threshold of 0.002 degrees equals approximately 150-200 meters depending on latitude. Adjust this value based on store size and urban density. Larger stores or rural areas may warrant a larger radius.
+</Tip>
+
+## Step 3: Segment by visit frequency
+
+Aggregate the visitor data to calculate how many times each MAID visited competitor stores, then segment into loyalty tiers.
+
+```sql
+CREATE MATERIALIZED VIEW "competitor_visitors_segmented"
+REFRESH_SCHEDULE = '@weekly'
+DISPLAY_NAME = 'Competitor Visitors - Loyalty Segments'
+DESCRIPTION = 'MAIDs segmented by visit frequency: loyal (4+), casual (2-3), one-time (1)'
+TAGS = ('competitive_intelligence', 'audience', 'segmentation')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    maid,
+    maid_type,
+    COUNT(DISTINCT visit_timestamp) AS total_visits,
+    COUNT(DISTINCT store_id) AS unique_stores_visited,
+    COUNT(DISTINCT brand_name) AS unique_brands_visited,
+    MIN(visit_timestamp) AS first_visit,
+    MAX(visit_timestamp) AS last_visit,
+    CASE
+        WHEN COUNT(DISTINCT visit_timestamp) >= 4 THEN 'loyal'
+        WHEN COUNT(DISTINCT visit_timestamp) BETWEEN 2 AND 3 THEN 'casual'
+        ELSE 'one_time'
+    END AS loyalty_segment
+FROM company_data."competitor_store_visitors"
+GROUP BY maid, maid_type
+```
+
+To create separate audiences for activation, you can also build segment-specific views:
+
+### Loyal shoppers (4+ visits)
+
+```sql
+CREATE MATERIALIZED VIEW "loyal_competitor_shoppers"
+REFRESH_SCHEDULE = '@weekly'
+DISPLAY_NAME = 'Loyal Competitor Shoppers'
+DESCRIPTION = 'MAIDs with 4+ visits to competitor stores'
+TAGS = ('competitive_intelligence', 'audience', 'loyal')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    maid,
+    maid_type,
+    COUNT(DISTINCT visit_timestamp) AS total_visits,
+    MAX(visit_timestamp) AS last_visit
+FROM company_data."competitor_store_visitors"
+GROUP BY maid, maid_type
+HAVING COUNT(DISTINCT visit_timestamp) >= 4
+```
+
+### Non-loyal shoppers (1-2 visits)
+
+```sql
+CREATE MATERIALIZED VIEW "nonloyal_competitor_shoppers"
+REFRESH_SCHEDULE = '@weekly'
+DISPLAY_NAME = 'Non-Loyal Competitor Shoppers'
+DESCRIPTION = 'MAIDs with 1-2 visits to competitor stores'
+TAGS = ('competitive_intelligence', 'audience', 'nonloyal')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    maid,
+    maid_type,
+    COUNT(DISTINCT visit_timestamp) AS total_visits,
+    MAX(visit_timestamp) AS last_visit
+FROM company_data."competitor_store_visitors"
+GROUP BY maid, maid_type
+HAVING COUNT(DISTINCT visit_timestamp) <= 2
+```
+
+## Step 4: Enrich with purchase history
+
+Join the loyal segment with purchase transaction data to understand CPG category affinity. This creates richer profiles for targeting.
+
+```sql
+CREATE MATERIALIZED VIEW "loyal_shoppers_enriched"
+REFRESH_SCHEDULE = '@weekly'
+DISPLAY_NAME = 'Loyal Competitor Shoppers - Purchase Enriched'
+DESCRIPTION = 'Loyal competitor shoppers with CPG purchase category flags'
+TAGS = ('competitive_intelligence', 'audience', 'enriched')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    loyal.maid,
+    loyal.maid_type,
+    loyal.total_visits,
+    loyal.last_visit AS last_store_visit,
+    MAX(CASE WHEN purchases.purchase_category = 'groceries' THEN 1 ELSE 0 END) AS has_groceries,
+    MAX(CASE WHEN purchases.purchase_category = 'personal_care' THEN 1 ELSE 0 END) AS has_personal_care,
+    MAX(CASE WHEN purchases.purchase_category = 'household_goods' THEN 1 ELSE 0 END) AS has_household_goods,
+    COUNT(DISTINCT purchases.transaction_id) AS total_purchases,
+    SUM(purchases.transaction_amount) AS total_spend
+FROM company_data."loyal_competitor_shoppers" loyal
+LEFT JOIN company_data."purchase_transactions" purchases
+    ON loyal.maid = purchases."unique_identifier"."value"
+    AND purchases."event_timestamp" > CURRENT_TIMESTAMP - INTERVAL '180' DAY
+GROUP BY
+    loyal.maid,
+    loyal.maid_type,
+    loyal.total_visits,
+    loyal.last_visit
+```
+
+This query:
+- Joins loyal shoppers with purchase data over a 180-day window
+- Pivots purchase categories into boolean flags for easy filtering
+- Calculates aggregate purchase metrics (count and total spend)
+- Uses `LEFT JOIN` to retain all loyal shoppers even if no purchase data exists
+
+## Summary
+
+You have built a competitive intelligence pipeline with four materialized views:
+
+| View | Purpose |
+|------|---------|
+| `competitor_store_locations` | Reference data for competitor store geofences |
+| `competitor_store_visitors` | Raw visitor log with MAIDs and visit timestamps |
+| `competitor_visitors_segmented` | Visitors segmented by loyalty tier |
+| `loyal_shoppers_enriched` | Loyal shoppers enriched with purchase behavior |
+
+### Use cases
+
+- **Conquest campaigns**: Target loyal competitor shoppers with promotional offers to drive store switching
+- **Lookalike modeling**: Use enriched profiles as seed audiences for prospecting
+- **Store placement analysis**: Understand which competitor locations draw specific shopper profiles
+- **Assortment planning**: Align product mix with purchase category preferences of local shoppers
+
+### Important considerations
+
+<Warning>
+**MAID availability**: iOS App Tracking Transparency and Android privacy changes have reduced MAID availability. Expect smaller audience sizes compared to historical baselines.
+</Warning>
+
+<Note>
+**Privacy compliance**: Location-based audiences may be subject to CCPA (California) and other privacy regulations. Ensure your use case complies with applicable data protection requirements. See [CCPA compliance](/concepts/compliance/ccpa) for details.
+</Note>
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Built-in Attributes" icon="list" href="/reference/rosetta-stone/built-in-attributes">
+    Reference for geo_coordinates, unique_identifier, and event attributes
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to creating and managing materialized views
+  </Card>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete reference for REFRESH_SCHEDULE, PARTITIONED_BY, and other options
+  </Card>
+  <Card title="JOIN Performance" icon="chart-line" href="/concepts/nql/join-performance">
+    Optimize spatial and identity joins for large datasets
+  </Card>
+</CardGroup>
