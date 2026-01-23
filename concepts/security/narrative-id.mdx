@@ -1,0 +1,152 @@
+---
+title: 'Narrative ID'
+description: 'Per-partner pseudonymous identifiers for privacy-safe data collaboration'
+icon: 'fingerprint'
+---
+
+Data collaboration requires matching records across organizations—finding the same customer in both your database and a partner's dataset. But sharing raw identifiers creates privacy risks, and even standard hashing has limitations: if two companies hash the same email with SHA-256, they produce identical hashes that could be correlated across partnerships. Narrative ID solves this by creating partner-specific pseudonymous identifiers that enable matching without exposing underlying data or allowing cross-partner correlation.
+
+## Why Narrative ID matters
+
+### Beyond simple hashing
+
+Traditional pseudonymization through hashing converts identifiers into fixed outputs:
+
+```
+johndoe@gmail.com → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+```
+
+This hash is the same everywhere. If Company A and Company B both hash their customer emails, they can match records—but so could any third party with access to both datasets. The hash becomes a de facto identifier.
+
+Narrative ID takes a different approach: the same identifier produces **different** encoded values for each partner.
+
+```
+johndoe@gmail.com → (encoded for Partner A) → NID_a8f3e2b1c9d4...
+johndoe@gmail.com → (encoded for Partner B) → NID_7c2d9e5f1a8b...
+```
+
+These two Narrative IDs represent the same person but cannot be correlated without going through Narrative's translation system. This provides an additional layer of privacy protection beyond standard pseudonymization.
+
+### Key benefits
+
+| Aspect | Standard Hashing | Narrative ID |
+|--------|------------------|--------------|
+| **Cross-partner correlation** | Possible (same hash everywhere) | Prevented (per-partner encoding) |
+| **Translation between partners** | Not possible | Supported via Narrative platform |
+| **Identifier exposure risk** | Hash could leak to unauthorized parties | Encoded IDs only meaningful within their encoding space |
+| **Matching capability** | Direct hash comparison | Translation-based matching |
+
+---
+
+## How Narrative ID works
+
+### Secure encoding methodology
+
+When a clear text identifier (such as an email address or hashed email) is encoded into a Narrative ID, the encoding process transforms it into a value that:
+
+- **Conceals the original data**: The encoded value reveals nothing about the underlying identifier
+- **Is deterministic within an encoding space**: The same identifier always produces the same Narrative ID for a given partner
+
+```
+Clear text identifier → Secure encoding with partner key → Narrative ID
+```
+
+### Per-partner encoding spaces
+
+Each partner on the Narrative platform has their own **encoding space**—a unique cryptographic context for generating Narrative IDs. When an identifier is encoded for a specific partner, the result is tied to that partner's encoding space.
+
+This means:
+
+- **Partner A's Narrative ID** for `johndoe@gmail.com` differs from **Partner B's Narrative ID** for the same email
+- Neither partner can determine the other's Narrative ID without translation
+- A Narrative ID only has meaning within its encoding space
+
+### Translation between partners
+
+Narrative's software provides the ability to translate Narrative IDs from one partner's encoding space to another. This enables secure collaboration:
+
+1. **Partner A** encodes their customer identifiers into their encoding space
+2. **Partner A** shares data with Narrative IDs (not raw identifiers)
+3. **Narrative** translates the Narrative IDs to **Partner B's** encoding space
+4. **Partner B** can now match against their own Narrative IDs
+
+The translation happens within the Narrative platform—either in the Narrative cloud or in a customer-hosted data plane—ensuring that clear text identifiers are never exposed during the collaboration.
+
+```sql
+-- Translate Narrative IDs from Partner A's space to Partner B's space
+SELECT
+  NARRATIVE_ID_TRANSLATE(partner_a_narrative_id, 'partner_b_key_id') AS partner_b_narrative_id,
+  other_columns
+FROM partner_a_data
+```
+
+---
+
+## Key concepts
+
+### Encoding spaces
+
+An encoding space is the cryptographic namespace associated with a specific partner. Think of it as a private room where identifiers are transformed into Narrative IDs using that partner's unique encoding key.
+
+Key properties:
+
+- **Isolated**: Each partner's encoding space is independent
+- **Consistent**: The same identifier always maps to the same Narrative ID within an encoding space
+- **Non-transferable**: A Narrative ID from one encoding space cannot be directly used in another
+
+### Match tables
+
+A **match table** is a pre-generated lookup table that pairs Narrative IDs with their corresponding clear text identifiers. Match tables enable partners to use Narrative IDs independently of the Narrative platform for certain workflows.
+
+Use cases for match tables:
+
+- Offline matching processes
+- Integration with systems that cannot connect to the Narrative platform directly
+- Performance optimization for high-volume lookups
+
+Match tables are generated within the secure environment and maintain the privacy guarantees of the Narrative ID system.
+
+---
+
+## Security considerations
+
+### What Narrative ID protects against
+
+- **Identifier exposure**: Raw identifiers (emails, phone numbers) are never shared between partners
+- **Cross-partner correlation**: Without translation through Narrative, partners cannot determine if they share common records
+- **Unauthorized access**: Even if Narrative IDs are intercepted, they reveal nothing about the underlying individuals
+
+### Defense in depth
+
+Narrative ID is one layer in a comprehensive security approach:
+
+- **Access controls** govern who can query and translate Narrative IDs
+- **Audit logging** tracks all encoding and translation operations
+- **Data plane isolation** keeps raw data within controlled environments
+
+### Not a substitute for governance
+
+While Narrative ID provides strong privacy protections, organizations should still maintain:
+
+- Data sharing agreements with partners
+- Clear policies on what data can be collaborated on
+- Compliance documentation for regulatory requirements
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Using Narrative ID" icon="code" href="/guides/collaboration/using-narrative-id">
+    Step-by-step guide to encoding and translating identifiers
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How hashing protects privacy in data collaboration
+  </Card>
+  <Card title="NQL Functions" icon="function" href="/reference/nql/functions#narrative-specific-functions">
+    NARRATIVE_ID_ENCODE and NARRATIVE_ID_TRANSLATE reference
+  </Card>
+  <Card title="Security Model" icon="shield-halved" href="/concepts/architecture/security-model">
+    Platform-wide security architecture
+  </Card>
+</CardGroup>

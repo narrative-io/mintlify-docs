@@ -13,6 +13,7 @@ Attributes for identifying individuals across datasets.
 | Attribute | Type | Description |
 |-----------|------|-------------|
 | `unique_identifier` | object | Universal identifier supporting multiple ID types |
+| `narrative_id` | string | Narrative-encoded pseudonymous identifier for privacy-safe collaboration |
 | `email_sha256` | string | SHA-256 hash of lowercase, trimmed email address |
 | `phone_sha256` | string | SHA-256 hash of E.164 formatted phone number |
 | `idfa` | string | Apple Identifier for Advertisers |
@@ -64,6 +65,36 @@ STRUCT(
   'hashed_email' AS context
 )
 ```
+
+### narrative_id
+
+A Narrative-encoded pseudonymous identifier that enables privacy-safe data collaboration. Unlike standard hashes, Narrative IDs are encoded per-partner, meaning the same underlying identifier produces different Narrative IDs for different partners.
+
+**Definition:**
+```json
+{
+  "id": 103,
+  "name": "narrative_id",
+  "type": "string",
+  "is_join_key": true,
+  "description": "Narrative-encoded pseudonymous identifier"
+}
+```
+
+**Mapping example:**
+```sql
+-- Encode a hashed email into a Narrative ID
+NARRATIVE_ID_ENCODE(email_sha256, 'your_encoding_key_id')
+
+-- Encode a raw email (normalize first)
+NARRATIVE_ID_ENCODE(LOWER(TRIM(email)), 'your_encoding_key_id')
+```
+
+<Note>
+Narrative IDs exist within encoding spaces. To match across partners, use `NARRATIVE_ID_TRANSLATE` to convert between encoding spaces.
+</Note>
+
+**Related:** [Narrative ID Concepts](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
 
 ### email_sha256
 

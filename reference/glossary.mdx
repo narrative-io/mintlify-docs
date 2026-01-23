@@ -114,6 +114,12 @@ Under GDPR, an identified or identifiable natural person whose personal data is 
 
 A collection of structured data registered in Narrative that can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
 
+### Encoding space
+
+The per-partner namespace for Narrative IDs. The same clear text identifier encoded for different partners produces different Narrative IDs, ensuring that identifiers cannot be correlated across partners without going through Narrative's translation functionality.
+
+**Related:** [Narrative ID](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
+
 ---
 
 ## G
@@ -196,6 +202,12 @@ A translation rule that associates a Rosetta Stone attribute with a specific col
 
 The Narrative platform's catalog where organizations discover available datasets from other organizations. The marketplace enables data discovery and facilitates data collaboration relationships.
 
+### Match table
+
+A pre-generated table that pairs Narrative IDs with clear text identifiers, allowing partners to use Narrative IDs for matching independently of the Narrative platform. Match tables enable offline workflows while maintaining privacy through the encoding.
+
+**Related:** [Narrative ID](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
+
 ### MD5
 
 Message-Digest Algorithm 5—a widely-used hash function that produces a 128-bit (32-character hexadecimal) hash value. While cryptographically broken for security purposes, MD5 remains acceptable for non-security applications like identifier matching in data collaboration. Narrative supports MD5 alongside SHA-1 and SHA-256 for hashing PII.
@@ -217,6 +229,12 @@ A pre-computed query result stored as a dataset. Unlike executing a query each t
 A join algorithm that iterates through each row of one table and, for each row, scans the other table for matches. Less efficient than hash joins, nested loops are often the fallback when query conditions prevent hash join optimization, such as when OR operators appear in JOIN clauses.
 
 **Related:** [Understanding JOIN Performance](/concepts/nql/join-performance)
+
+### Narrative ID
+
+A secure, pseudonymous identifier derived from a clear text identifier (such as an email or hashed email) through Narrative's secure encoding methodology. Unlike simple hashing, Narrative IDs are encoded per-partner, meaning the same identifier produces different Narrative IDs for different partners. This enables privacy-safe data collaboration without exposing underlying identifiers.
+
+**Related:** [Narrative ID Concepts](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id), [Pseudonymization](#pseudonymization)
 
 ### NQL (Narrative Query Language)
 

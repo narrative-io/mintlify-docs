@@ -1,0 +1,270 @@
+---
+title: 'Using Narrative ID'
+description: 'Encode and translate identifiers for privacy-safe data collaboration'
+icon: 'fingerprint'
+---
+
+This guide walks through the practical steps for working with Narrative IDs—encoding your identifiers and translating them for partner collaboration.
+
+## Prerequisites
+
+Before working with Narrative IDs, ensure you have:
+
+- Access to the Narrative platform with appropriate permissions
+- An encoding key ID for your organization's encoding space
+- Partner encoding key IDs if you need to translate for collaboration
+
+---
+
+## Encoding identifiers
+
+Encoding converts a clear text identifier (such as an email or hashed email) into a Narrative ID within your organization's encoding space.
+
+### When to encode
+
+Encode identifiers when you want to:
+
+- Share data with partners without exposing raw identifiers
+- Create privacy-safe join keys for cross-organization matching
+- Prepare data for collaboration workflows
+
+### Using NARRATIVE_ID_ENCODE
+
+The `NARRATIVE_ID_ENCODE` function creates a Narrative ID from a clear text identifier.
+
+**Syntax:**
+
+```sql
+NARRATIVE_ID_ENCODE(raw_identifier, key_id)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `raw_identifier` | string | The clear text identifier to encode (email, hashed email, phone, etc.) |
+| `key_id` | string | Your organization's encoding key ID |
+
+**Example: Encoding email addresses**
+
+```sql
+SELECT
+  NARRATIVE_ID_ENCODE(LOWER(TRIM(email)), 'your_org_key_id') AS narrative_id,
+  event_timestamp,
+  event_type
+FROM your_company."customer_events"
+```
+
+**Example: Encoding already-hashed identifiers**
+
+If your data already contains hashed emails (SHA-256), you can still encode them:
+
+```sql
+SELECT
+  NARRATIVE_ID_ENCODE(email_sha256, 'your_org_key_id') AS narrative_id,
+  purchase_amount,
+  purchase_date
+FROM your_company."transactions"
+```
+
+<Tip>
+Always normalize identifiers before encoding. For emails, use `LOWER(TRIM(email))` to ensure consistent matching.
+</Tip>
+
+### Creating a dataset with Narrative IDs
+
+To prepare a dataset for sharing, encode the identifiers during a materialized view creation:
+
+```sql
+CREATE MATERIALIZED VIEW your_company."customer_data_encoded" AS
+SELECT
+  NARRATIVE_ID_ENCODE(LOWER(TRIM(email)), 'your_org_key_id') AS narrative_id,
+  age_bracket,
+  region,
+  interest_categories,
+  event_timestamp
+FROM your_company."raw_customer_data"
+```
+
+---
+
+## Translating between partners
+
+Translation converts a Narrative ID from one partner's encoding space to another, enabling cross-organization matching without exposing the underlying identifiers.
+
+### When to translate
+
+Translate Narrative IDs when you need to:
+
+- Share data with a specific partner for matching
+- Query across datasets from different partners
+- Enable a partner to join your data with their own
+
+### Using NARRATIVE_ID_TRANSLATE
+
+The `NARRATIVE_ID_TRANSLATE` function converts a Narrative ID from its current encoding space to a target partner's encoding space.
+
+**Syntax:**
+
+```sql
+NARRATIVE_ID_TRANSLATE(narrative_id, target_key_id)
+```
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `narrative_id` | string | An existing Narrative ID to translate |
+| `target_key_id` | string | The encoding key ID for the target partner's encoding space |
+
+**Example: Translating for a partner**
+
+```sql
+SELECT
+  NARRATIVE_ID_TRANSLATE(narrative_id, 'partner_b_key_id') AS partner_b_narrative_id,
+  demographic_segment,
+  activity_score
+FROM your_company."audience_segments"
+```
+
+### Partner collaboration workflow
+
+Here's a typical workflow for sharing data with a partner:
+
+<Steps>
+  <Step title="Encode your identifiers">
+    Create Narrative IDs in your encoding space:
+    ```sql
+    SELECT
+      NARRATIVE_ID_ENCODE(email_sha256, 'your_org_key_id') AS narrative_id,
+      customer_segment,
+      lifetime_value
+    FROM your_company."customers"
+    ```
+  </Step>
+  <Step title="Translate for your partner">
+    Convert your Narrative IDs to the partner's encoding space:
+    ```sql
+    SELECT
+      NARRATIVE_ID_TRANSLATE(narrative_id, 'partner_key_id') AS partner_narrative_id,
+      customer_segment,
+      lifetime_value
+    FROM your_company."customers_encoded"
+    ```
+  </Step>
+  <Step title="Share the translated data">
+    The partner receives data with Narrative IDs in their encoding space. They can now join against their own data using their Narrative IDs.
+  </Step>
+</Steps>
+
+### Joining across partner datasets
+
+When querying data that spans multiple partners, use translation in the join condition:
+
+```sql
+SELECT
+  a.campaign_name,
+  a.impressions,
+  b.conversion_value
+FROM partner_a."ad_impressions" a
+JOIN partner_b."conversions" b
+  ON NARRATIVE_ID_TRANSLATE(a.narrative_id, 'partner_b_key_id') = b.narrative_id
+WHERE a.event_timestamp >= '2024-01-01'
+```
+
+---
+
+## Working with match tables
+
+Match tables are pre-generated lookup tables that pair Narrative IDs with clear text identifiers, enabling offline workflows.
+
+### What match tables provide
+
+- A static mapping between your clear text identifiers and their Narrative IDs
+- The ability to work with Narrative IDs outside the Narrative platform
+- Faster lookups for high-volume processing
+
+### Generating a match table
+
+Create a match table by selecting both the raw identifier and its encoded Narrative ID:
+
+```sql
+CREATE MATERIALIZED VIEW your_company."identity_match_table" AS
+SELECT DISTINCT
+  email_sha256 AS clear_text_identifier,
+  NARRATIVE_ID_ENCODE(email_sha256, 'your_org_key_id') AS narrative_id
+FROM your_company."customer_identities"
+```
+
+### Using match tables
+
+Once generated, you can export the match table for use in external systems:
+
+```sql
+SELECT
+  clear_text_identifier,
+  narrative_id
+FROM your_company."identity_match_table"
+```
+
+<Warning>
+Match tables contain mappings between clear text identifiers and Narrative IDs. Handle them with the same security precautions as any sensitive data.
+</Warning>
+
+---
+
+## Best practices
+
+### Normalization before encoding
+
+Always normalize identifiers before encoding to ensure consistent matching:
+
+| Identifier Type | Normalization |
+|-----------------|---------------|
+| Email | `LOWER(TRIM(email))` |
+| Phone | E.164 format or `NORMALIZE_PHONE()` |
+| Hashed email | Already normalized (ensure consistent hashing upstream) |
+
+### Performance considerations
+
+- **Encode once, translate as needed**: Encode your raw identifiers once and store the Narrative IDs. Translate only when preparing data for a specific partner
+- **Use materialized views**: For frequently accessed data, encode identifiers in a materialized view rather than at query time
+- **Batch translations**: When sharing with multiple partners, consider creating partner-specific views
+
+### Encoding vs. hashing
+
+| Use Case | Approach |
+|----------|----------|
+| General pseudonymization | Use standard hashing (SHA-256) |
+| Cross-partner collaboration | Use Narrative ID encoding |
+| Internal data processing | Either, depending on downstream use |
+| Regulatory compliance | Narrative ID provides additional isolation |
+
+---
+
+## Troubleshooting
+
+| Issue | Possible Cause | Solution |
+|-------|----------------|----------|
+| No matches after translation | Identifiers not normalized consistently | Ensure both partners normalize the same way before encoding |
+| Invalid key_id error | Incorrect encoding key ID | Verify the key ID with your Narrative administrator |
+| Translation returns NULL | Source Narrative ID is invalid | Check that the source was properly encoded |
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Narrative ID Concepts" icon="lightbulb" href="/concepts/security/narrative-id">
+    Understand how Narrative ID works
+  </Card>
+  <Card title="NQL Functions Reference" icon="function" href="/reference/nql/functions#narrative-specific-functions">
+    Complete function syntax and parameters
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Hashing fundamentals for privacy
+  </Card>
+  <Card title="Sharing Data" icon="share-nodes" href="/guides/collaboration/sharing-data">
+    Configure data sharing with partners
+  </Card>
+</CardGroup>

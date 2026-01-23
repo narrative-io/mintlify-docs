@@ -81,7 +81,8 @@
             "pages": [
               "guides/collaboration/sharing-data",
               "guides/collaboration/access-controls",
-              "guides/collaboration/data-products"
+              "guides/collaboration/data-products",
+              "guides/collaboration/using-narrative-id"
             ]
           },
           {
@@ -178,6 +179,7 @@
             "group": "Security",
             "pages": [
               "concepts/security/data-pseudonymization",
+              "concepts/security/narrative-id",
               "concepts/security/sso"
             ]
           },
