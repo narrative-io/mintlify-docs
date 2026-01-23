@@ -1,0 +1,440 @@
+---
+title: 'Performance Patterns'
+description: 'Optimization recipes for faster, more efficient NQL queries'
+icon: 'bolt'
+---
+
+This cookbook contains patterns for optimizing NQL query performance. Apply these techniques to reduce execution time and costs.
+
+---
+
+## Filter early and aggressively
+
+### Apply filters before joins
+
+Filter data in subqueries or CTEs before joining to reduce the amount of data processed:
+
+```sql
+-- Better: Filter before joining
+WITH active_users AS (
+  SELECT user_id, email
+  FROM company_data."100"
+  WHERE
+    status = 'active'
+    AND created_at >= CURRENT_DATE - INTERVAL '90' DAY
+),
+recent_orders AS (
+  SELECT user_id, order_id, amount
+  FROM company_data."200"
+  WHERE order_date >= CURRENT_DATE - INTERVAL '30' DAY
+)
+SELECT
+  u.user_id,
+  u.email,
+  o.order_id,
+  o.amount
+FROM active_users u
+INNER JOIN recent_orders o ON u.user_id = o.user_id
+```
+
+```sql
+-- Avoid: Filtering after joining
+SELECT
+  u.user_id,
+  u.email,
+  o.order_id,
+  o.amount
+FROM company_data."100" u
+INNER JOIN company_data."200" o ON u.user_id = o.user_id
+WHERE
+  u.status = 'active'
+  AND u.created_at >= CURRENT_DATE - INTERVAL '90' DAY
+  AND o.order_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Use price filtering early
+
+Add `_price_cpm_usd` filters to limit data costs:
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  _price_cpm_usd <= 1.00  -- Apply price filter early
+  AND category = 'target'
+  AND event_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+---
+
+## Use QUALIFY instead of subqueries
+
+### Deduplication with QUALIFY
+
+QUALIFY is more efficient than subquery-based deduplication:
+
+```sql
+-- Better: QUALIFY
+SELECT user_id, email, last_seen
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY user_id
+  ORDER BY last_seen DESC
+) = 1
+```
+
+```sql
+-- Avoid: Subquery approach
+SELECT user_id, email, last_seen
+FROM (
+  SELECT
+    user_id,
+    email,
+    last_seen,
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY last_seen DESC) AS rn
+  FROM company_data."123"
+) sub
+WHERE rn = 1
+```
+
+### Combined filtering with QUALIFY
+
+Apply multiple window conditions efficiently:
+
+```sql
+SELECT
+  user_id,
+  email,
+  category
+FROM company_data."123"
+QUALIFY
+  ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY created_at DESC) = 1
+  AND SUM(1) OVER (PARTITION BY category) >= 100  -- Only categories with 100+ rows
+```
+
+---
+
+## Optimize joins
+
+### Use fully qualified column names
+
+Explicit column references help the query optimizer:
+
+```sql
+SELECT
+  company_data."100".user_id,
+  company_data."100".email,
+  company_data."200".order_id
+FROM company_data."100"
+INNER JOIN company_data."200"
+  ON company_data."100".user_id = company_data."200".customer_id
+```
+
+### Avoid OR in join conditions
+
+OR conditions prevent efficient join algorithms:
+
+```sql
+-- Avoid: OR in join condition
+SELECT *
+FROM company_data."100" t1
+INNER JOIN company_data."200" t2
+  ON t1.id = t2.id OR t1.alt_id = t2.alt_id
+```
+
+```sql
+-- Better: Use COALESCE
+SELECT *
+FROM company_data."100" t1
+INNER JOIN company_data."200" t2
+  ON COALESCE(t1.id, t1.alt_id) = COALESCE(t2.id, t2.alt_id)
+```
+
+```sql
+-- Or: Union separate queries
+SELECT * FROM company_data."100" t1
+INNER JOIN company_data."200" t2 ON t1.id = t2.id
+UNION
+SELECT * FROM company_data."100" t1
+INNER JOIN company_data."200" t2 ON t1.alt_id = t2.alt_id
+WHERE t1.id IS NULL OR t2.id IS NULL
+```
+
+### Aggregate before joining
+
+Pre-aggregate large tables to reduce join complexity:
+
+```sql
+-- Better: Aggregate first
+SELECT
+  c.customer_id,
+  c.name,
+  order_stats.total_orders,
+  order_stats.total_amount
+FROM company_data."100" c
+INNER JOIN (
+  SELECT
+    customer_id,
+    COUNT(*) AS total_orders,
+    SUM(amount) AS total_amount
+  FROM company_data."200"
+  GROUP BY customer_id
+) order_stats ON c.customer_id = order_stats.customer_id
+```
+
+---
+
+## Partitioning strategies
+
+### Partition by date for time-series data
+
+```sql
+CREATE MATERIALIZED VIEW "daily_events"
+PARTITIONED_BY event_date DAY
+AS (
+  SELECT
+    user_id,
+    event_type,
+    DATE_TRUNC('day', event_timestamp) AS event_date
+  FROM company_data."123"
+  WHERE event_timestamp >= CURRENT_DATE - INTERVAL '90' DAY
+)
+BUDGET 100 USD
+```
+
+### Monthly partitions for longer retention
+
+```sql
+CREATE MATERIALIZED VIEW "monthly_summary"
+PARTITIONED_BY report_month MONTH
+AS (
+  SELECT
+    DATE_TRUNC('month', event_date) AS report_month,
+    category,
+    COUNT(*) AS event_count,
+    SUM(amount) AS total_amount
+  FROM company_data."123"
+  GROUP BY DATE_TRUNC('month', event_date), category
+)
+BUDGET 50 USD
+```
+
+---
+
+## Budget management
+
+### Set appropriate budget limits
+
+Match budget to expected data volume:
+
+```sql
+-- Daily budget for daily refreshes
+CREATE MATERIALIZED VIEW "daily_data"
+REFRESH_SCHEDULE = '@daily'
+AS (SELECT * FROM company_data."123" WHERE event_date = CURRENT_DATE - INTERVAL '1' DAY)
+LIMIT 10 USD PER CALENDAR_DAY
+
+-- Monthly budget for larger datasets
+CREATE MATERIALIZED VIEW "monthly_data"
+REFRESH_SCHEDULE = '@monthly'
+AS (SELECT * FROM company_data."123")
+LIMIT 500 USD PER CALENDAR_MONTH
+```
+
+### Combine price and date filters
+
+Maximize value by filtering on both price and recency:
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  _price_cpm_usd <= 0.75
+  AND event_timestamp >= CURRENT_DATE - INTERVAL '14' DAY
+```
+
+---
+
+## Efficient aggregations
+
+### Use COUNT(column) instead of COUNT(DISTINCT column) when possible
+
+```sql
+-- If you only need to count non-null values
+SELECT COUNT(email) AS emails_present
+FROM company_data."123"
+
+-- Only use DISTINCT when necessary
+SELECT COUNT(DISTINCT user_id) AS unique_users
+FROM company_data."123"
+```
+
+### Pre-aggregate for common queries
+
+Create summary views for frequently queried aggregations:
+
+```sql
+CREATE MATERIALIZED VIEW "daily_category_stats"
+REFRESH_SCHEDULE = '@daily'
+AS (
+  SELECT
+    DATE_TRUNC('day', event_timestamp) AS event_date,
+    category,
+    COUNT(*) AS events,
+    COUNT(DISTINCT user_id) AS users,
+    SUM(amount) AS total
+  FROM company_data."123"
+  WHERE event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+  GROUP BY DATE_TRUNC('day', event_timestamp), category
+)
+BUDGET 25 USD PER CALENDAR_DAY
+```
+
+---
+
+## Limit result sets
+
+### Always use LIMIT during exploration
+
+```sql
+-- While exploring data
+SELECT *
+FROM company_data."123"
+WHERE category = 'test'
+LIMIT 100 ROWS
+
+-- Or with offset for pagination
+LIMIT 100 OFFSET 100 ROWS
+```
+
+### Use EXPLAIN before large queries
+
+```sql
+-- Preview before executing
+EXPLAIN
+SELECT *
+FROM company_data."123"
+WHERE event_timestamp >= CURRENT_DATE - INTERVAL '90' DAY
+```
+
+---
+
+## Efficient date handling
+
+### Use DATE_TRUNC for grouping
+
+```sql
+SELECT
+  DATE_TRUNC('day', event_timestamp) AS day,
+  COUNT(*) AS events
+FROM company_data."123"
+GROUP BY DATE_TRUNC('day', event_timestamp)
+```
+
+### Avoid functions on indexed columns in WHERE
+
+```sql
+-- Better: Compare directly
+WHERE event_date >= '2024-01-01'
+
+-- Avoid: Function on column
+WHERE EXTRACT(YEAR FROM event_date) = 2024
+```
+
+---
+
+## CTEs for complex queries
+
+### Use CTEs for readability and potential optimization
+
+```sql
+WITH
+  base_data AS (
+    SELECT *
+    FROM company_data."123"
+    WHERE
+      event_date >= CURRENT_DATE - INTERVAL '30' DAY
+      AND _price_cpm_usd <= 1.00
+  ),
+  user_metrics AS (
+    SELECT
+      user_id,
+      COUNT(*) AS event_count,
+      SUM(amount) AS total_amount
+    FROM base_data
+    GROUP BY user_id
+  ),
+  ranked_users AS (
+    SELECT
+      user_id,
+      event_count,
+      total_amount,
+      RANK() OVER (ORDER BY total_amount DESC) AS rank
+    FROM user_metrics
+  )
+SELECT *
+FROM ranked_users
+WHERE rank <= 100
+```
+
+---
+
+## Anti-patterns to avoid
+
+### Don't SELECT * in production queries
+
+```sql
+-- Avoid
+SELECT * FROM company_data."123"
+
+-- Better: Select only needed columns
+SELECT user_id, email, created_at FROM company_data."123"
+```
+
+### Don't use LIKE with leading wildcards when possible
+
+```sql
+-- Slow: Leading wildcard
+WHERE email LIKE '%@gmail.com'
+
+-- Better: Use REGEXP_EXTRACT or suffix column
+WHERE REGEXP_EXTRACT(email, '@(.+)$') = 'gmail.com'
+```
+
+### Don't nest too many subqueries
+
+```sql
+-- Avoid: Deeply nested subqueries
+SELECT * FROM (
+  SELECT * FROM (
+    SELECT * FROM (
+      SELECT * FROM company_data."123"
+    ) a
+  ) b
+) c
+
+-- Better: Use CTEs
+WITH step1 AS (SELECT * FROM company_data."123"),
+     step2 AS (SELECT * FROM step1),
+     step3 AS (SELECT * FROM step2)
+SELECT * FROM step3
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Query Optimization Guide" icon="gauge-high" href="/guides/nql/query-optimization">
+    Detailed optimization techniques
+  </Card>
+  <Card title="Join Performance" icon="link" href="/concepts/nql/join-performance">
+    Understanding join performance implications
+  </Card>
+  <Card title="Common Queries" icon="copy" href="/cookbooks/nql/common-queries">
+    Copy-paste query patterns
+  </Card>
+  <Card title="Complex Joins" icon="diagram-project" href="/cookbooks/nql/complex-joins">
+    Advanced join recipes
+  </Card>
+</CardGroup>

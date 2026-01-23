@@ -1,0 +1,451 @@
+---
+title: 'Common Query Patterns'
+description: 'Copy-paste NQL patterns for everyday data tasks'
+icon: 'copy'
+---
+
+This cookbook contains ready-to-use NQL query patterns for common data tasks. Copy these patterns and adapt them to your datasets.
+
+---
+
+## Deduplication
+
+### Keep the most recent record per user
+
+```sql
+SELECT
+  user_id,
+  email,
+  last_seen,
+  attributes
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY user_id
+  ORDER BY last_seen DESC
+) = 1
+```
+
+**How it works:** `ROW_NUMBER()` assigns a sequence number within each user partition, ordered by `last_seen` descending. `QUALIFY` filters to keep only the first row (most recent) for each user.
+
+### Keep the first occurrence
+
+```sql
+SELECT
+  user_id,
+  email,
+  created_at
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY email
+  ORDER BY created_at ASC
+) = 1
+```
+
+### Deduplicate by multiple columns
+
+```sql
+SELECT
+  user_id,
+  email,
+  phone,
+  last_updated
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY email, phone
+  ORDER BY last_updated DESC
+) = 1
+```
+
+---
+
+## Date range filtering
+
+### Last N days
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Specific date range
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE event_date BETWEEN '2024-01-01' AND '2024-03-31'
+```
+
+### Current month
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE event_date >= DATE_TRUNC('month', CURRENT_DATE)
+```
+
+### Previous month
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  event_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1' MONTH)
+  AND event_date < DATE_TRUNC('month', CURRENT_DATE)
+```
+
+### Rolling 12 months
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE event_timestamp >= CURRENT_DATE - INTERVAL '12' MONTH
+```
+
+---
+
+## Price-constrained queries
+
+### Maximum price per 1000 rows
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE
+  category = 'premium'
+  AND _price_cpm_usd <= 1.00
+```
+
+### Tiered pricing selection
+
+```sql
+SELECT
+  *,
+  CASE
+    WHEN _price_cpm_usd <= 0.50 THEN 'budget'
+    WHEN _price_cpm_usd <= 1.00 THEN 'standard'
+    ELSE 'premium'
+  END AS price_tier
+FROM company_data."123"
+WHERE _price_cpm_usd <= 2.00
+```
+
+---
+
+## Aggregations
+
+### Count by category
+
+```sql
+SELECT
+  category,
+  COUNT(*) AS count,
+  COUNT(DISTINCT user_id) AS unique_users
+FROM company_data."123"
+GROUP BY category
+ORDER BY count DESC
+```
+
+### Daily aggregation
+
+```sql
+SELECT
+  DATE_TRUNC('day', event_timestamp) AS event_date,
+  COUNT(*) AS events,
+  COUNT(DISTINCT user_id) AS users
+FROM company_data."123"
+WHERE event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+GROUP BY DATE_TRUNC('day', event_timestamp)
+ORDER BY event_date
+```
+
+### Monthly aggregation
+
+```sql
+SELECT
+  DATE_TRUNC('month', event_date) AS month,
+  SUM(amount) AS total_amount,
+  AVG(amount) AS avg_amount,
+  COUNT(*) AS transaction_count
+FROM company_data."123"
+GROUP BY DATE_TRUNC('month', event_date)
+ORDER BY month
+```
+
+### Top N by category
+
+```sql
+SELECT
+  category,
+  product_name,
+  revenue
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY category
+  ORDER BY revenue DESC
+) <= 10
+```
+
+---
+
+## Identity lookups
+
+### Rosetta Stone unique IDs
+
+```sql
+SELECT
+  unique_id,
+  event_timestamp
+FROM narrative.rosetta_stone
+WHERE
+  event_timestamp >= CURRENT_DATE - INTERVAL '90' DAY
+```
+
+### Filter by identifier type
+
+```sql
+SELECT
+  unique_id.b."value" AS identifier_value
+FROM narrative.rosetta_stone
+WHERE
+  unique_id.b."type" = 'email'
+  AND event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Exclude specific identifier types
+
+```sql
+SELECT
+  unique_id.b."type",
+  unique_id.b."value"
+FROM narrative.rosetta_stone
+WHERE
+  unique_id.b."type" NOT IN ('cookie', 'tdid')
+```
+
+### Access Rosetta Stone from dataset
+
+```sql
+SELECT
+  company_data."123"._rosetta_stone.unique_id,
+  company_data."123".user_attribute
+FROM company_data."123"
+```
+
+---
+
+## Data quality checks
+
+### Count nulls per column
+
+```sql
+SELECT
+  COUNT(*) AS total_rows,
+  COUNT(email) AS has_email,
+  COUNT(*) - COUNT(email) AS missing_email,
+  COUNT(phone) AS has_phone,
+  COUNT(*) - COUNT(phone) AS missing_phone
+FROM company_data."123"
+```
+
+### Null percentage
+
+```sql
+SELECT
+  ROUND(100.0 * COUNT(email) / COUNT(*), 2) AS email_fill_rate,
+  ROUND(100.0 * COUNT(phone) / COUNT(*), 2) AS phone_fill_rate,
+  ROUND(100.0 * COUNT(address) / COUNT(*), 2) AS address_fill_rate
+FROM company_data."123"
+```
+
+### Find duplicates
+
+```sql
+SELECT
+  email,
+  COUNT(*) AS occurrence_count
+FROM company_data."123"
+GROUP BY email
+HAVING COUNT(*) > 1
+ORDER BY occurrence_count DESC
+LIMIT 100 ROWS
+```
+
+### Value distribution
+
+```sql
+SELECT
+  status,
+  COUNT(*) AS count,
+  ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 2) AS percentage
+FROM company_data."123"
+GROUP BY status
+ORDER BY count DESC
+```
+
+---
+
+## String operations
+
+### Email domain extraction
+
+```sql
+SELECT
+  email,
+  REGEXP_EXTRACT(email, '@(.+)$') AS domain
+FROM company_data."123"
+WHERE email IS NOT NULL
+```
+
+### Email normalization
+
+```sql
+SELECT
+  email,
+  NORMALIZE_EMAIL(email) AS normalized_email
+FROM company_data."123"
+```
+
+### Phone normalization
+
+```sql
+SELECT
+  phone,
+  NORMALIZE_PHONE('E164', phone, 'US') AS e164_phone
+FROM company_data."123"
+WHERE phone IS NOT NULL
+```
+
+### Name standardization
+
+```sql
+SELECT
+  UPPER(TRIM(first_name)) AS first_name,
+  UPPER(TRIM(last_name)) AS last_name,
+  CONCAT(UPPER(TRIM(first_name)), ' ', UPPER(TRIM(last_name))) AS full_name
+FROM company_data."123"
+```
+
+---
+
+## Array operations
+
+### Expand array to rows
+
+```sql
+SELECT
+  t.user_id,
+  tag
+FROM company_data."123" t, UNNEST(t.tags) AS tag
+```
+
+### Count array elements
+
+```sql
+SELECT
+  user_id,
+  SIZE(tags) AS tag_count,
+  SIZE(identifiers) AS identifier_count
+FROM company_data."123"
+```
+
+### Access first array element
+
+```sql
+SELECT
+  user_id,
+  identifiers[0].type AS primary_id_type,
+  identifiers[0].value AS primary_id_value
+FROM company_data."123"
+```
+
+### Filter by array contents
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE SIZE(tags) > 0
+  AND tags[0] IN ('premium', 'vip')
+```
+
+---
+
+## Sampling
+
+### Deterministic sample
+
+```sql
+SELECT *
+FROM company_data."123"
+WHERE UNIVERSE_SAMPLE(user_id, 0.1)  -- 10% sample
+```
+
+### Random sample with LIMIT
+
+```sql
+SELECT *
+FROM company_data."123"
+ORDER BY DETERMINISTIC_RAND(user_id)
+LIMIT 1000 ROWS
+```
+
+---
+
+## Materialized view patterns
+
+### Basic view with budget
+
+```sql
+CREATE MATERIALIZED VIEW "active_users"
+AS (
+  SELECT
+    user_id,
+    email,
+    last_seen
+  FROM company_data."123"
+  WHERE
+    last_seen >= CURRENT_DATE - INTERVAL '30' DAY
+    AND _price_cpm_usd <= 1.00
+)
+BUDGET 50 USD
+```
+
+### Daily refresh with deduplication
+
+```sql
+CREATE MATERIALIZED VIEW "daily_users"
+REFRESH_SCHEDULE = '@daily'
+PARTITIONED_BY event_date DAY
+AS (
+  SELECT
+    user_id,
+    email,
+    DATE_TRUNC('day', last_seen) AS event_date
+  FROM company_data."123"
+  WHERE last_seen >= CURRENT_DATE - INTERVAL '7' DAY
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY user_id
+    ORDER BY last_seen DESC
+  ) = 1
+)
+BUDGET 25 USD PER CALENDAR_DAY
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Performance Patterns" icon="bolt" href="/cookbooks/nql/performance-patterns">
+    Optimization recipes for faster queries
+  </Card>
+  <Card title="Complex Joins" icon="link" href="/cookbooks/nql/complex-joins">
+    Advanced join patterns
+  </Card>
+  <Card title="Functions Reference" icon="function" href="/reference/nql/functions">
+    All available functions
+  </Card>
+  <Card title="Filtering Guide" icon="filter" href="/guides/nql/filtering-transforming">
+    Complete filtering tutorial
+  </Card>
+</CardGroup>

@@ -1,0 +1,483 @@
+---
+title: 'Complex Join Patterns'
+description: 'Advanced join recipes for multi-dataset scenarios'
+icon: 'diagram-project'
+---
+
+This cookbook contains advanced join patterns for combining data across multiple datasets. These recipes address common data collaboration scenarios.
+
+---
+
+## Multi-dataset joins
+
+### Three-way join
+
+Combine customers, orders, and products:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  o.order_id,
+  o.order_date,
+  p.product_name,
+  p.category,
+  o.quantity * p.unit_price AS line_total
+FROM company_data."100" c
+INNER JOIN company_data."200" o
+  ON c.customer_id = o.customer_id
+INNER JOIN company_data."300" p
+  ON o.product_id = p.product_id
+WHERE
+  o.order_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Chain of related entities
+
+Follow relationships through multiple tables:
+
+```sql
+WITH customer_orders AS (
+  SELECT
+    c.customer_id,
+    c.name AS customer_name,
+    c.segment,
+    o.order_id,
+    o.order_date
+  FROM company_data."100" c
+  INNER JOIN company_data."200" o
+    ON c.customer_id = o.customer_id
+  WHERE o.order_date >= CURRENT_DATE - INTERVAL '90' DAY
+),
+order_products AS (
+  SELECT
+    co.*,
+    p.product_id,
+    p.product_name,
+    p.category
+  FROM customer_orders co
+  INNER JOIN company_data."300" op
+    ON co.order_id = op.order_id
+  INNER JOIN company_data."400" p
+    ON op.product_id = p.product_id
+)
+SELECT
+  customer_id,
+  customer_name,
+  segment,
+  category,
+  COUNT(DISTINCT product_id) AS unique_products,
+  COUNT(*) AS total_purchases
+FROM order_products
+GROUP BY customer_id, customer_name, segment, category
+```
+
+---
+
+## Identity-based joins with Rosetta Stone
+
+### Join datasets via resolved identities
+
+```sql
+SELECT
+  d1.user_attribute AS attribute_from_dataset1,
+  d2.user_attribute AS attribute_from_dataset2
+FROM company_data."123" d1
+INNER JOIN company_data."456" d2
+  ON d1._rosetta_stone.unique_id = d2._rosetta_stone.unique_id
+WHERE
+  d1._price_cpm_usd <= 1.00
+  AND d2._price_cpm_usd <= 1.00
+```
+
+### Enrich with Rosetta Stone data
+
+```sql
+SELECT
+  d.user_id,
+  d.email,
+  rs.unique_id,
+  rs.event_timestamp AS identity_timestamp
+FROM company_data."123" d
+LEFT JOIN narrative.rosetta_stone rs
+  ON d._rosetta_stone.unique_id = rs.unique_id
+WHERE
+  rs.event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Match by identifier type
+
+```sql
+SELECT
+  d1.email,
+  d2.phone,
+  d1.last_seen
+FROM company_data."123" d1
+INNER JOIN company_data."456" d2
+  ON d1._rosetta_stone.unique_id = d2._rosetta_stone.unique_id
+WHERE
+  d1._rosetta_stone.unique_id.b."type" = 'email'
+```
+
+---
+
+## Temporal joins
+
+### Event-session matching
+
+Match events to sessions based on timestamp:
+
+```sql
+SELECT
+  e.event_id,
+  e.event_type,
+  e.event_timestamp,
+  s.session_id,
+  s.session_start,
+  s.session_end
+FROM company_data."100" e
+INNER JOIN company_data."200" s
+  ON e.user_id = s.user_id
+  AND e.event_timestamp BETWEEN s.session_start AND s.session_end
+```
+
+### Point-in-time lookup
+
+Get the state of a record at a specific point in time:
+
+```sql
+SELECT
+  t.transaction_id,
+  t.transaction_date,
+  t.amount,
+  p.price AS price_at_transaction
+FROM company_data."100" t
+INNER JOIN (
+  SELECT
+    product_id,
+    price,
+    effective_date,
+    COALESCE(
+      LEAD(effective_date) OVER (PARTITION BY product_id ORDER BY effective_date),
+      DATE '9999-12-31'
+    ) AS end_date
+  FROM company_data."200"
+) p
+  ON t.product_id = p.product_id
+  AND t.transaction_date >= p.effective_date
+  AND t.transaction_date < p.end_date
+```
+
+### Time-windowed join
+
+Join events that occurred within a time window:
+
+```sql
+SELECT
+  a.event_id AS first_event,
+  b.event_id AS follow_up_event,
+  a.user_id,
+  a.event_timestamp AS first_timestamp,
+  b.event_timestamp AS follow_up_timestamp
+FROM company_data."100" a
+INNER JOIN company_data."100" b
+  ON a.user_id = b.user_id
+  AND b.event_timestamp > a.event_timestamp
+  AND b.event_timestamp <= a.event_timestamp + INTERVAL '24' HOUR
+WHERE
+  a.event_type = 'page_view'
+  AND b.event_type = 'purchase'
+```
+
+---
+
+## Self-joins
+
+### Find related records within same dataset
+
+```sql
+SELECT
+  e1.employee_id,
+  e1.name AS employee_name,
+  e1.department,
+  e2.name AS manager_name
+FROM company_data."123" e1
+LEFT JOIN company_data."123" e2
+  ON e1.manager_id = e2.employee_id
+```
+
+### Compare records over time
+
+```sql
+SELECT
+  curr.user_id,
+  curr.metric_date,
+  curr.value AS current_value,
+  prev.value AS previous_value,
+  curr.value - prev.value AS change
+FROM company_data."123" curr
+LEFT JOIN company_data."123" prev
+  ON curr.user_id = prev.user_id
+  AND prev.metric_date = curr.metric_date - INTERVAL '1' DAY
+WHERE
+  curr.metric_date = CURRENT_DATE
+```
+
+### Find duplicates
+
+```sql
+SELECT
+  a.record_id AS record_1,
+  b.record_id AS record_2,
+  a.email
+FROM company_data."123" a
+INNER JOIN company_data."123" b
+  ON a.email = b.email
+  AND a.record_id < b.record_id
+```
+
+---
+
+## Anti-joins and exclusions
+
+### Find records without matches
+
+Find customers who haven't made purchases:
+
+```sql
+SELECT
+  c.customer_id,
+  c.email,
+  c.signup_date
+FROM company_data."100" c
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."200" o
+  WHERE c.customer_id = o.customer_id
+)
+```
+
+### Find new records not in reference
+
+Find users not in suppression list:
+
+```sql
+SELECT
+  u.user_id,
+  u.email
+FROM company_data."100" u
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."200" suppression
+  WHERE u.email = suppression.email
+)
+```
+
+### Exclude recent interactions
+
+Find users without recent activity:
+
+```sql
+SELECT
+  u.user_id,
+  u.email,
+  u.last_login
+FROM company_data."100" u
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."200" a
+  WHERE u.user_id = a.user_id
+    AND a.activity_date >= CURRENT_DATE - INTERVAL '90' DAY
+)
+```
+
+---
+
+## Enrichment patterns
+
+### Latest record enrichment
+
+Enrich with the most recent related record:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  latest_order.order_id,
+  latest_order.order_date,
+  latest_order.amount
+FROM company_data."100" c
+LEFT JOIN (
+  SELECT
+    customer_id,
+    order_id,
+    order_date,
+    amount
+  FROM company_data."200"
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY customer_id
+    ORDER BY order_date DESC
+  ) = 1
+) latest_order ON c.customer_id = latest_order.customer_id
+```
+
+### Aggregated enrichment
+
+Enrich with summary statistics:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  c.segment,
+  COALESCE(stats.order_count, 0) AS order_count,
+  COALESCE(stats.total_spent, 0) AS total_spent,
+  COALESCE(stats.avg_order, 0) AS avg_order_value
+FROM company_data."100" c
+LEFT JOIN (
+  SELECT
+    customer_id,
+    COUNT(*) AS order_count,
+    SUM(amount) AS total_spent,
+    AVG(amount) AS avg_order
+  FROM company_data."200"
+  GROUP BY customer_id
+) stats ON c.customer_id = stats.customer_id
+```
+
+### Multiple attribute enrichment
+
+Enrich from multiple sources:
+
+```sql
+WITH customer_base AS (
+  SELECT customer_id, name, email
+  FROM company_data."100"
+),
+order_summary AS (
+  SELECT
+    customer_id,
+    COUNT(*) AS orders,
+    SUM(amount) AS total
+  FROM company_data."200"
+  GROUP BY customer_id
+),
+engagement_summary AS (
+  SELECT
+    customer_id,
+    COUNT(*) AS interactions,
+    MAX(interaction_date) AS last_interaction
+  FROM company_data."300"
+  GROUP BY customer_id
+)
+SELECT
+  c.customer_id,
+  c.name,
+  c.email,
+  COALESCE(o.orders, 0) AS order_count,
+  COALESCE(o.total, 0) AS total_spent,
+  COALESCE(e.interactions, 0) AS engagement_count,
+  e.last_interaction
+FROM customer_base c
+LEFT JOIN order_summary o ON c.customer_id = o.customer_id
+LEFT JOIN engagement_summary e ON c.customer_id = e.customer_id
+```
+
+---
+
+## Cross-dataset deduplication
+
+### Deduplicate across datasets
+
+Merge records from multiple datasets, keeping the most complete:
+
+```sql
+WITH all_records AS (
+  SELECT
+    email,
+    name,
+    phone,
+    'dataset_1' AS source,
+    updated_at
+  FROM company_data."100"
+  UNION ALL
+  SELECT
+    email,
+    name,
+    phone,
+    'dataset_2' AS source,
+    updated_at
+  FROM company_data."200"
+),
+ranked AS (
+  SELECT
+    email,
+    name,
+    phone,
+    source,
+    updated_at,
+    ROW_NUMBER() OVER (
+      PARTITION BY email
+      ORDER BY
+        CASE WHEN name IS NOT NULL THEN 1 ELSE 2 END,
+        CASE WHEN phone IS NOT NULL THEN 1 ELSE 2 END,
+        updated_at DESC
+    ) AS rn
+  FROM all_records
+)
+SELECT email, name, phone, source
+FROM ranked
+WHERE rn = 1
+```
+
+---
+
+## Materialized view with joins
+
+### Create enriched view
+
+```sql
+CREATE MATERIALIZED VIEW "enriched_customers"
+REFRESH_SCHEDULE = '@daily'
+AS (
+  SELECT
+    c.customer_id,
+    c.email,
+    c.segment,
+    COALESCE(metrics.order_count, 0) AS lifetime_orders,
+    COALESCE(metrics.total_value, 0) AS lifetime_value,
+    metrics.last_order_date
+  FROM company_data."100" c
+  LEFT JOIN (
+    SELECT
+      customer_id,
+      COUNT(*) AS order_count,
+      SUM(amount) AS total_value,
+      MAX(order_date) AS last_order_date
+    FROM company_data."200"
+    GROUP BY customer_id
+  ) metrics ON c.customer_id = metrics.customer_id
+  WHERE
+    c._price_cpm_usd <= 1.00
+)
+BUDGET 100 USD PER CALENDAR_DAY
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Joining Datasets Guide" icon="link" href="/guides/nql/joining-datasets">
+    Complete guide to join operations
+  </Card>
+  <Card title="Join Performance" icon="gauge-high" href="/concepts/nql/join-performance">
+    Understanding join performance
+  </Card>
+  <Card title="Common Queries" icon="copy" href="/cookbooks/nql/common-queries">
+    Basic query patterns
+  </Card>
+  <Card title="Performance Patterns" icon="bolt" href="/cookbooks/nql/performance-patterns">
+    Query optimization recipes
+  </Card>
+</CardGroup>
