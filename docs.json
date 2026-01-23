@@ -14,14 +14,6 @@
         "tab": "Getting Started",
         "groups": [
           {
-            "group": "Welcome",
-            "pages": [
-              "getting-started/introduction",
-              "getting-started/quick-start",
-              "getting-started/platform-overview"
-            ]
-          },
-          {
             "group": "First Steps",
             "pages": [
               "getting-started/create-account",
@@ -46,10 +38,7 @@
           {
             "group": "Data Ingestion",
             "pages": [
-              "guides/ingestion/hashing-pii",
-              "guides/ingestion/connecting-data-sources",
-              "guides/ingestion/automated-syncs",
-              "guides/ingestion/schema-changes"
+              "guides/ingestion/hashing-pii"
             ]
           },
           {
@@ -79,9 +68,6 @@
           {
             "group": "Data Collaboration",
             "pages": [
-              "guides/collaboration/sharing-data",
-              "guides/collaboration/access-controls",
-              "guides/collaboration/data-products",
               "guides/collaboration/using-narrative-id"
             ]
           },
@@ -91,14 +77,6 @@
               "guides/rosetta-stone/mapping-schemas",
               "guides/rosetta-stone/validating-mappings",
               "guides/rosetta-stone/edge-cases"
-            ]
-          },
-          {
-            "group": "Best Practices",
-            "pages": [
-              "guides/best-practices/query-patterns",
-              "guides/best-practices/governance",
-              "guides/best-practices/security"
             ]
           },
           {
@@ -135,9 +113,6 @@
           {
             "group": "Core Primitives",
             "pages": [
-              "concepts/primitives/datasets",
-              "concepts/primitives/attributes",
-              "concepts/primitives/relationships",
               "concepts/primitives/data-planes",
               "concepts/primitives/control-plane"
             ]
@@ -164,7 +139,20 @@
           {
             "group": "Data Formats",
             "pages": [
-              "concepts/data-formats/unix-time"
+              "concepts/data-formats/unix-time",
+              "concepts/data-formats/ip-addresses",
+              "concepts/data-formats/location-data"
+            ]
+          },
+          {
+            "group": "Identifiers",
+            "pages": [
+              "concepts/identifiers/overview",
+              "concepts/identifiers/id-types",
+              "concepts/identifiers/mobile-ad-ids",
+              "concepts/identifiers/id-mapping",
+              "concepts/identifiers/uid2",
+              "concepts/identifiers/data-onboarding"
             ]
           },
           {
@@ -178,6 +166,8 @@
           {
             "group": "Security",
             "pages": [
+              "concepts/security/pii",
+              "concepts/security/hashing",
               "concepts/security/data-pseudonymization",
               "concepts/security/narrative-id",
               "concepts/security/sso"
@@ -211,14 +201,6 @@
               "reference/nql/functions",
               "reference/nql/reserved-keywords",
               "reference/nql/materialized-view-syntax"
-            ]
-          },
-          {
-            "group": "UI Reference",
-            "pages": [
-              "reference/ui/dashboard",
-              "reference/ui/query-editor",
-              "reference/ui/data-explorer"
             ]
           },
           {
@@ -277,14 +259,6 @@
             ]
           },
           {
-            "group": "Integration Recipes",
-            "pages": [
-              "cookbooks/integrations/snowflake-connection",
-              "cookbooks/integrations/customer-360",
-              "cookbooks/integrations/real-time-sharing"
-            ]
-          },
-          {
             "group": "NQL Patterns",
             "pages": [
               "cookbooks/nql/common-queries",
@@ -295,9 +269,7 @@
           {
             "group": "Use Cases",
             "pages": [
-              "cookbooks/use-cases/retail-collaboration",
-              "cookbooks/use-cases/marketing-normalization",
-              "cookbooks/use-cases/identity-resolution"
+              "cookbooks/use-cases/retail-collaboration"
             ]
           },
           {
