@@ -171,6 +171,22 @@ if (job.state === 'completed') {
 }
 ```
 
+### Model inference jobs
+
+```typescript
+import type { ModelInferenceRunResult } from '@narrative.io/data-collaboration-sdk-ts';
+
+const job = await api.getJob(inferenceJobId);
+
+if (job.state === 'completed' && job.result) {
+  const result = job.result as ModelInferenceRunResult;
+  console.log('Tokens used:', result.usage.total_tokens);
+  console.log('Output:', result.structured_output);
+}
+```
+
+For inference-specific patterns, see [Running Model Inference](/guides/sdk/running-model-inference).
+
 ## Error handling
 
 Handle job failures gracefully:

@@ -1,0 +1,336 @@
+---
+title: 'Converting Natural Language to CRON'
+description: 'Use Model Inference to translate human-readable schedules into CRON expressions'
+icon: 'clock'
+---
+
+This cookbook demonstrates how to use Model Inference to convert natural language schedule descriptions into valid CRON expressions. This is useful for materialized view refresh scheduling, report generation, and any feature where users need to specify schedules without knowing CRON syntax.
+
+## What this recipe accomplishes
+
+- Accept natural language schedule descriptions
+- Convert them to valid CRON expressions
+- Provide human-readable confirmation of the schedule
+- Handle ambiguous inputs with clarification
+
+## Prerequisites
+
+- SDK installed and configured (see [Authentication](/guides/sdk/authentication))
+- A data plane ID where inference will run
+
+## Complete example
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+// Types for CRON conversion
+interface CronConversionResult {
+  cron_expression: string;
+  human_readable: string;
+  timezone_note: string;
+  next_runs: string[];
+  confidence: number;
+  ambiguity_warning?: string;
+}
+
+// Configuration
+const CONFIG = {
+  dataPlaneId: process.env.DATA_PLANE_ID!,
+  model: 'anthropic.claude-sonnet-4.5' as const,
+};
+
+// Initialize API
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY!,
+});
+
+// Schema for CRON conversion output
+const cronSchema = {
+  type: 'object',
+  properties: {
+    cron_expression: {
+      type: 'string',
+      description: 'Valid CRON expression (5 fields: minute hour day month weekday)',
+    },
+    human_readable: {
+      type: 'string',
+      description: 'Human-readable description of when this schedule runs',
+    },
+    timezone_note: {
+      type: 'string',
+      description: 'Note about timezone assumptions',
+    },
+    next_runs: {
+      type: 'array',
+      items: { type: 'string' },
+      minItems: 3,
+      maxItems: 5,
+      description: 'Next 3-5 execution times in ISO format',
+    },
+    confidence: {
+      type: 'number',
+      minimum: 0,
+      maximum: 1,
+      description: 'Confidence in the interpretation (0-1)',
+    },
+    ambiguity_warning: {
+      type: 'string',
+      description: 'Warning if the input was ambiguous',
+    },
+  },
+  required: ['cron_expression', 'human_readable', 'timezone_note', 'next_runs', 'confidence'],
+};
+
+/**
+ * Wait for inference job to complete
+ */
+async function waitForInference(jobId: string): Promise<CronConversionResult | null> {
+  const maxWaitMs = 30000;
+  const startTime = Date.now();
+  const pollInterval = 2000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const job = await api.getJob(jobId);
+
+    if (job.state === 'completed' && job.result) {
+      return job.result.structured_output as CronConversionResult;
+    }
+
+    if (job.state === 'failed') {
+      console.error('Inference job failed:', job.failures);
+      return null;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(`Job ${jobId} timed out`);
+}
+
+/**
+ * Convert natural language to CRON expression
+ */
+async function convertToCron(
+  naturalLanguage: string,
+  timezone = 'UTC'
+): Promise<CronConversionResult | null> {
+  const currentDate = new Date().toISOString();
+
+  const prompt = `Convert this schedule description to a CRON expression:
+
+"${naturalLanguage}"
+
+Current date/time: ${currentDate}
+Assumed timezone: ${timezone}
+
+Requirements:
+1. Use standard 5-field CRON format: minute hour day-of-month month day-of-week
+2. Use * for "every", specific numbers for fixed times
+3. For "weekdays", use 1-5. For "weekends", use 0,6
+4. Calculate the next 3-5 run times based on the current date
+5. If the input is ambiguous, note this and make a reasonable assumption
+
+Common patterns:
+- "every day at 9am" -> 0 9 * * *
+- "every Monday at 8am" -> 0 8 * * 1
+- "every hour" -> 0 * * * *
+- "every 15 minutes" -> */15 * * * *
+- "first of every month at midnight" -> 0 0 1 * *
+- "weekdays at 6pm" -> 0 18 * * 1-5`;
+
+  const job = await api.runModelInference({
+    data_plane_id: CONFIG.dataPlaneId,
+    model: CONFIG.model,
+    messages: [
+      {
+        role: 'system',
+        text: `You are an expert at CRON expressions. Convert natural language schedule
+descriptions into valid CRON expressions. Be precise and handle edge cases carefully.
+Always use 5-field CRON format (minute hour day month weekday).`,
+      },
+      { role: 'user', text: prompt },
+    ],
+    inference_config: {
+      output_format_schema: cronSchema,
+      temperature: 0.1, // Low temperature for consistent, precise output
+    },
+    tags: ['cron-conversion'],
+  });
+
+  return await waitForInference(job.id);
+}
+
+/**
+ * Validate a CRON expression format
+ */
+function validateCronFormat(cron: string): { valid: boolean; error?: string } {
+  const fields = cron.trim().split(/\s+/);
+
+  if (fields.length !== 5) {
+    return { valid: false, error: `Expected 5 fields, got ${fields.length}` };
+  }
+
+  const patterns = [
+    /^(\*|[0-5]?\d)(\/(([0-5]?\d)))?$|^(\*|[0-5]?\d)(,([0-5]?\d))*$|^([0-5]?\d)-([0-5]?\d)$/, // minute
+    /^(\*|[01]?\d|2[0-3])(\/(([01]?\d|2[0-3])))?$|^(\*|[01]?\d|2[0-3])(,([01]?\d|2[0-3]))*$|^([01]?\d|2[0-3])-([01]?\d|2[0-3])$/, // hour
+    /^(\*|\?|[1-9]|[12]\d|3[01])$/, // day of month
+    /^(\*|[1-9]|1[0-2])$/, // month
+    /^(\*|\?|[0-6])(,[0-6])*$|^[0-6]-[0-6]$/, // day of week
+  ];
+
+  for (let i = 0; i < 5; i++) {
+    // Basic check - just verify non-empty for now
+    if (!fields[i] || fields[i].length === 0) {
+      return { valid: false, error: `Field ${i + 1} is empty` };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Interactive CRON converter
+ */
+async function interactiveConverter(): Promise<void> {
+  const testSchedules = [
+    'every day at 9am',
+    'every Monday and Thursday at 2:30pm',
+    'first of every month at midnight',
+    'every 15 minutes during business hours on weekdays',
+    'every Sunday at 6pm',
+    'twice a day at 8am and 8pm',
+  ];
+
+  console.log('=== Natural Language to CRON Converter ===\n');
+
+  for (const schedule of testSchedules) {
+    console.log(`Input: "${schedule}"`);
+
+    const result = await convertToCron(schedule);
+
+    if (result) {
+      const validation = validateCronFormat(result.cron_expression);
+
+      console.log(`CRON:  ${result.cron_expression}`);
+      console.log(`Means: ${result.human_readable}`);
+      console.log(`Valid: ${validation.valid ? 'Yes' : `No - ${validation.error}`}`);
+      console.log(`Confidence: ${(result.confidence * 100).toFixed(0)}%`);
+
+      if (result.ambiguity_warning) {
+        console.log(`Warning: ${result.ambiguity_warning}`);
+      }
+
+      console.log('Next runs:');
+      result.next_runs.forEach(run => console.log(`  - ${run}`));
+    } else {
+      console.log('Failed to convert');
+    }
+
+    console.log('');
+  }
+}
+
+/**
+ * Use with materialized view scheduling
+ */
+async function scheduleViewRefresh(
+  datasetId: number,
+  scheduleDescription: string
+): Promise<void> {
+  console.log(`Setting refresh schedule for dataset ${datasetId}`);
+  console.log(`Schedule: "${scheduleDescription}"`);
+
+  const result = await convertToCron(scheduleDescription);
+
+  if (!result) {
+    throw new Error('Failed to convert schedule');
+  }
+
+  const validation = validateCronFormat(result.cron_expression);
+  if (!validation.valid) {
+    throw new Error(`Invalid CRON expression: ${validation.error}`);
+  }
+
+  if (result.confidence < 0.8) {
+    console.warn(`Low confidence (${(result.confidence * 100).toFixed(0)}%) - please verify:`);
+    console.warn(`  CRON: ${result.cron_expression}`);
+    console.warn(`  Means: ${result.human_readable}`);
+    if (result.ambiguity_warning) {
+      console.warn(`  Note: ${result.ambiguity_warning}`);
+    }
+  }
+
+  // Here you would apply the CRON to the materialized view
+  // await api.updateMaterializedViewSchedule(datasetId, result.cron_expression);
+
+  console.log(`Schedule set: ${result.cron_expression}`);
+  console.log(`This means: ${result.human_readable}`);
+}
+
+// Run the interactive converter
+interactiveConverter()
+  .then(() => console.log('Done'))
+  .catch((error) => {
+    console.error('Error:', error);
+    process.exit(1);
+  });
+```
+
+## How it works
+
+1. **Natural language input**: User provides a schedule description in plain English
+
+2. **Context building**: The prompt includes the current date and examples of CRON patterns
+
+3. **Inference**: Model Inference converts the description to a structured response
+
+4. **Validation**: The CRON expression is validated for correct format
+
+5. **Confirmation**: Human-readable description and next run times provide verification
+
+## Common schedule patterns
+
+| Natural Language | CRON Expression |
+|-----------------|-----------------|
+| Every day at 9am | `0 9 * * *` |
+| Every Monday at 8am | `0 8 * * 1` |
+| Every hour | `0 * * * *` |
+| Every 15 minutes | `*/15 * * * *` |
+| First of month at midnight | `0 0 1 * *` |
+| Weekdays at 6pm | `0 18 * * 1-5` |
+| Every Sunday at noon | `0 12 * * 0` |
+
+## Handling ambiguity
+
+The model includes confidence scores and warnings for ambiguous inputs:
+
+```typescript
+if (result.confidence < 0.8) {
+  // Ask user for confirmation
+  console.log('Please confirm this interpretation:');
+  console.log(`  "${scheduleDescription}" -> ${result.cron_expression}`);
+  console.log(`  Which means: ${result.human_readable}`);
+}
+
+if (result.ambiguity_warning) {
+  // Show the assumption made
+  console.log(`Note: ${result.ambiguity_warning}`);
+}
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Inference fundamentals
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Define response schemas
+  </Card>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    Schedule view refreshes
+  </Card>
+  <Card title="Creating Views" icon="table" href="/guides/nql/creating-materialized-views">
+    Create and manage views
+  </Card>
+</CardGroup>

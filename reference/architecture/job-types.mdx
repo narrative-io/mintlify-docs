@@ -50,6 +50,20 @@ Jobs that retrieve a sample of rows from a dataset and store it in the control p
 
 **Related:** [Data Flow](/concepts/architecture/data-flow#how-you-view-query-results), [Managing Datasets](/guides/sdk/managing-datasets#sampling-data)
 
+### Model inference jobs
+
+Jobs that submit prompts to an LLM hosted within the data plane and return structured output. Unlike external AI API calls, inference jobs keep all data within customer infrastructure—no data is sent to external model providers.
+
+| Field | Description |
+|-------|-------------|
+| Type | `model_inference` |
+| Payload | Model identifier, conversation messages, inference configuration with JSON Schema |
+| Result | Completion status, token usage statistics, structured output matching the schema |
+
+Model inference jobs support multiple models from Anthropic (Claude Haiku, Sonnet, Opus) and OpenAI (GPT-4.1, o4-mini). The structured output capability guarantees predictable, typed responses suitable for programmatic consumption.
+
+**Related:** [Model Inference Overview](/concepts/model-inference/overview), [Running Model Inference](/guides/sdk/running-model-inference), [Model Inference API](/reference/sdks/typescript/model-inference-api)
+
 ### Dataset operations
 
 {/* TODO: Document dataset-related job types (registration, schema updates, etc.) */}

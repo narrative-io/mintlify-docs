@@ -1,0 +1,255 @@
+---
+title: 'Choosing the Right Model'
+description: 'Select the appropriate model based on task complexity, speed, and cost'
+icon: 'scale-balanced'
+---
+
+Model Inference supports multiple models with different capabilities. This guide helps you choose the right model for your use case.
+
+## Quick selection guide
+
+| Your Priority | Recommended Model |
+|--------------|-------------------|
+| **Speed and cost** | `anthropic.claude-haiku-4.5` or `openai.o4-mini` |
+| **Balanced performance** | `anthropic.claude-sonnet-4.5` |
+| **Complex reasoning** | `anthropic.claude-opus-4.5` or `openai.gpt-4.1` |
+
+## Model comparison
+
+### Anthropic Claude models
+
+| Model | Speed | Capability | Best For |
+|-------|-------|------------|----------|
+| Claude Haiku 4.5 | Fastest | Good | Simple classification, extraction |
+| Claude Sonnet 4.5 | Fast | Better | Analysis, summarization, most tasks |
+| Claude Opus 4.5 | Slower | Best | Complex reasoning, nuanced decisions |
+
+### OpenAI models
+
+| Model | Speed | Capability | Best For |
+|-------|-------|------------|----------|
+| o4-mini | Fastest | Good | Quick responses, simple tasks |
+| GPT-4.1 | Moderate | Better | Advanced reasoning |
+| GPT-oss-120b | Moderate | Good | General-purpose tasks |
+
+## When to use smaller models
+
+Use Claude Haiku or o4-mini when:
+
+- **Task is straightforward**: Binary classification, simple extraction
+- **High volume**: Processing many items where speed matters
+- **Cost sensitivity**: Budget constraints require efficiency
+- **Latency matters**: User-facing features needing fast response
+
+```typescript
+// Good use case for Haiku: Simple classification
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-haiku-4.5',
+  messages: [
+    { role: 'user', text: 'Is this email spam? Subject: "You won $1M!"' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        is_spam: { type: 'boolean' },
+        confidence: { type: 'number', minimum: 0, maximum: 1 }
+      },
+      required: ['is_spam', 'confidence']
+    }
+  }
+});
+```
+
+## When to use medium models
+
+Use Claude Sonnet 4.5 when:
+
+- **Task requires understanding**: Content analysis, summarization
+- **Balanced needs**: Good quality without excessive cost
+- **Most production use cases**: Default choice for typical workflows
+
+```typescript
+// Good use case for Sonnet: Content analysis
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'system', text: 'Analyze dataset descriptions for quality and completeness.' },
+    { role: 'user', text: 'Dataset: Customer transactions\nColumns: user_id, amount, date, category' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string' },
+        completeness_score: { type: 'number', minimum: 0, maximum: 1 },
+        missing_elements: { type: 'array', items: { type: 'string' } },
+        suggestions: { type: 'array', items: { type: 'string' } }
+      },
+      required: ['summary', 'completeness_score']
+    }
+  }
+});
+```
+
+## When to use larger models
+
+Use Claude Opus 4.5 or GPT-4.1 when:
+
+- **Complex reasoning required**: Multi-step analysis, nuanced judgment
+- **High stakes**: Decisions with significant impact
+- **Ambiguous inputs**: Tasks requiring interpretation
+- **Quality over speed**: Accuracy is paramount
+
+```typescript
+// Good use case for Opus: Complex analysis
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-opus-4.5',
+  messages: [
+    {
+      role: 'system',
+      text: 'You are a data governance expert. Analyze datasets for compliance risks.'
+    },
+    {
+      role: 'user',
+      text: `Analyze this dataset schema for privacy compliance:
+        - email (string)
+        - phone (string)
+        - purchase_history (array)
+        - ip_address (string)
+        - device_fingerprint (string)`
+    }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        risk_level: { type: 'string', enum: ['low', 'medium', 'high', 'critical'] },
+        pii_fields: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              field: { type: 'string' },
+              pii_type: { type: 'string' },
+              risk: { type: 'string' }
+            },
+            required: ['field', 'pii_type', 'risk']
+          }
+        },
+        compliance_concerns: { type: 'array', items: { type: 'string' } },
+        recommendations: { type: 'array', items: { type: 'string' } }
+      },
+      required: ['risk_level', 'pii_fields', 'compliance_concerns', 'recommendations']
+    }
+  }
+});
+```
+
+## Task-based recommendations
+
+### Classification tasks
+
+| Complexity | Recommended Model |
+|------------|-------------------|
+| Binary (yes/no, spam/not spam) | Claude Haiku |
+| Multi-class (3-5 categories) | Claude Haiku or Sonnet |
+| Complex taxonomy (many categories, nuanced) | Claude Sonnet or Opus |
+
+### Extraction tasks
+
+| Complexity | Recommended Model |
+|------------|-------------------|
+| Simple fields (dates, names, numbers) | Claude Haiku |
+| Structured entities (addresses, products) | Claude Sonnet |
+| Complex relationships (multi-entity) | Claude Opus |
+
+### Generation tasks
+
+| Complexity | Recommended Model |
+|------------|-------------------|
+| Short text (taglines, labels) | Claude Haiku or Sonnet |
+| Medium content (descriptions, summaries) | Claude Sonnet |
+| Long-form (reports, analysis) | Claude Sonnet or Opus |
+
+### Transformation tasks
+
+| Complexity | Recommended Model |
+|------------|-------------------|
+| Format conversion (dates, units) | Claude Haiku |
+| Language translation (technical to plain) | Claude Sonnet |
+| Complex interpretation (natural language to code) | Claude Opus |
+
+## Testing different models
+
+Try multiple models on sample data to compare quality:
+
+```typescript
+async function compareModels(prompt: string, schema: object) {
+  const models = [
+    'anthropic.claude-haiku-4.5',
+    'anthropic.claude-sonnet-4.5',
+    'anthropic.claude-opus-4.5'
+  ];
+
+  const results = await Promise.all(
+    models.map(async (model) => {
+      const start = Date.now();
+      const job = await api.runModelInference({
+        data_plane_id: 'dp_your_data_plane_id',
+        model,
+        messages: [{ role: 'user', text: prompt }],
+        inference_config: { output_format_schema: schema }
+      });
+
+      const result = await waitForJob(job.id);
+      const duration = Date.now() - start;
+
+      return {
+        model,
+        duration,
+        tokens: result.result?.usage.total_tokens,
+        output: result.result?.structured_output
+      };
+    })
+  );
+
+  console.table(results.map(r => ({
+    model: r.model,
+    duration_ms: r.duration,
+    tokens: r.tokens
+  })));
+
+  return results;
+}
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Start small | Begin with Haiku, upgrade if quality is insufficient |
+| Test on samples | Compare models on representative data before production |
+| Monitor quality | Track output quality metrics over time |
+| Balance cost and quality | Don't over-engineer simple tasks |
+| Consider latency | User-facing features may need faster models |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Supported Models" icon="microchip" href="/reference/model-inference/supported-models">
+    Complete model reference
+  </Card>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Submit inference requests
+  </Card>
+  <Card title="Model Inference Overview" icon="brain" href="/concepts/model-inference/overview">
+    How inference works
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Define response schemas
+  </Card>
+</CardGroup>

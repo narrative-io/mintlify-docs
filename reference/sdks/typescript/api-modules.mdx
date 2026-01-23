@@ -315,6 +315,53 @@ const job = await api.getJob('job-id-here');
 
 ---
 
+## Model Inference API
+
+Run LLM inference within your data plane.
+
+### runModelInference
+
+Submit a model inference request.
+
+```typescript
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'system', text: 'You are a helpful assistant.' },
+    { role: 'user', text: 'Analyze this data...' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        analysis: { type: 'string' }
+      },
+      required: ['analysis']
+    },
+    max_tokens: 1000,
+    temperature: 0.7
+  },
+  tags: ['analysis']  // optional
+});
+
+console.log('Job ID:', job.id);
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `data_plane_id` | `string` | Yes | Target data plane ID |
+| `model` | `InferenceModel` | Yes | Model to use for inference |
+| `messages` | `InferenceMessage[]` | Yes | Conversation messages |
+| `inference_config` | `InferenceConfig` | Yes | Inference configuration with JSON Schema |
+| `tags` | `string[]` | No | Optional tags for the job |
+
+**Returns:** `Promise<ModelInferenceRunJob>`
+
+For complete type definitions and detailed examples, see [Model Inference API Reference](/reference/sdks/typescript/model-inference-api).
+
+---
+
 ## Access Rules API
 
 Manage access permissions.

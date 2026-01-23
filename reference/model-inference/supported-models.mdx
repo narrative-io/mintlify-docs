@@ -1,0 +1,161 @@
+---
+title: 'Supported Models'
+description: 'Available models for Model Inference and their specifications'
+icon: 'microchip'
+---
+
+Model Inference supports models from Anthropic and OpenAI, all hosted within your [data plane](/concepts/primitives/data-planes). This reference lists available models and links to their official documentation.
+
+## Available models
+
+| Model ID | Provider | Description |
+|----------|----------|-------------|
+| `anthropic.claude-haiku-4.5` | Anthropic | Fast, cost-effective model for simple tasks |
+| `anthropic.claude-sonnet-4.5` | Anthropic | Balanced model for most use cases |
+| `anthropic.claude-opus-4.5` | Anthropic | Most capable model for complex reasoning |
+| `openai.gpt-4.1` | OpenAI | Advanced reasoning and analysis |
+| `openai.o4-mini` | OpenAI | Fast, efficient model |
+| `openai.gpt-oss-120b` | OpenAI | Open-source large language model |
+
+## Anthropic Claude models
+
+Claude models excel at analysis, summarization, and following detailed instructions.
+
+### Claude Haiku 4.5
+
+**Model ID:** `anthropic.claude-haiku-4.5`
+
+The fastest Claude model, optimized for high-throughput tasks where speed matters more than deep analysis.
+
+**Best for:**
+- Simple classification tasks
+- Data extraction
+- Quick summaries
+- High-volume processing
+
+**Official documentation:** [Claude Haiku](https://docs.anthropic.com/en/docs/about-claude/models#claude-3-5-haiku)
+
+### Claude Sonnet 4.5
+
+**Model ID:** `anthropic.claude-sonnet-4.5`
+
+A balanced model offering strong performance across most tasks with good efficiency.
+
+**Best for:**
+- Content analysis
+- Code generation
+- Multi-step reasoning
+- General-purpose tasks
+
+**Official documentation:** [Claude Sonnet](https://docs.anthropic.com/en/docs/about-claude/models#claude-3-5-sonnet)
+
+### Claude Opus 4.5
+
+**Model ID:** `anthropic.claude-opus-4.5`
+
+The most capable Claude model for complex tasks requiring deep analysis and nuanced understanding.
+
+**Best for:**
+- Complex reasoning chains
+- Nuanced analysis
+- Research tasks
+- High-stakes decisions
+
+**Official documentation:** [Claude Opus](https://docs.anthropic.com/en/docs/about-claude/models#claude-3-opus)
+
+## OpenAI models
+
+OpenAI models offer strong reasoning capabilities and broad knowledge.
+
+### GPT-4.1
+
+**Model ID:** `openai.gpt-4.1`
+
+Advanced reasoning model with strong analytical capabilities.
+
+**Best for:**
+- Complex analysis
+- Technical reasoning
+- Multi-domain tasks
+
+**Official documentation:** [GPT-4 Models](https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo)
+
+### o4-mini
+
+**Model ID:** `openai.o4-mini`
+
+Smaller, faster model optimized for efficiency.
+
+**Best for:**
+- Quick responses
+- Simple tasks
+- Cost-sensitive applications
+
+**Official documentation:** [OpenAI Models](https://platform.openai.com/docs/models)
+
+### GPT-oss-120b
+
+**Model ID:** `openai.gpt-oss-120b`
+
+Open-source large language model with broad capabilities.
+
+**Best for:**
+- General-purpose tasks
+- Open-source requirements
+
+## Choosing a model
+
+| Consideration | Recommendation |
+|---------------|----------------|
+| **Speed priority** | Claude Haiku or o4-mini |
+| **Balance of speed/quality** | Claude Sonnet |
+| **Complex reasoning** | Claude Opus or GPT-4.1 |
+| **Cost sensitivity** | Claude Haiku or o4-mini |
+| **High accuracy required** | Claude Opus |
+
+For detailed guidance on model selection, see [Choosing the Right Model](/guides/sdk/choosing-inference-models).
+
+## Usage example
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+// Use Claude Sonnet for balanced performance
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'user', text: 'Analyze this dataset...' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        analysis: { type: 'string' }
+      },
+      required: ['analysis']
+    }
+  }
+});
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Choosing Models" icon="scale-balanced" href="/guides/sdk/choosing-inference-models">
+    Detailed model selection guide
+  </Card>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Submit inference requests
+  </Card>
+  <Card title="Model Inference API" icon="code" href="/reference/sdks/typescript/model-inference-api">
+    Complete API reference
+  </Card>
+  <Card title="Model Inference Overview" icon="brain" href="/concepts/model-inference/overview">
+    How inference works
+  </Card>
+</CardGroup>

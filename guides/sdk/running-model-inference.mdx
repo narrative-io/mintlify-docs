@@ -1,0 +1,268 @@
+---
+title: 'Running Model Inference'
+description: 'Submit inference requests to hosted LLMs using the TypeScript SDK'
+icon: 'play'
+---
+
+Model Inference enables you to run LLM operations within your [data plane](/concepts/primitives/data-planes), keeping data secure while leveraging AI capabilities. This guide covers how to submit inference requests and handle results.
+
+## Prerequisites
+
+- SDK installed and configured (see [Authentication](/guides/sdk/authentication))
+- A data plane ID where inference will run
+- An API key with appropriate permissions
+
+## Basic inference request
+
+Submit a simple inference request with a system prompt and user message:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'system', text: 'You are a helpful data assistant.' },
+    { role: 'user', text: 'What are common use cases for customer data collaboration?' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        use_cases: {
+          type: 'array',
+          items: { type: 'string' }
+        }
+      },
+      required: ['use_cases']
+    }
+  }
+});
+
+console.log('Inference job created:', job.id);
+```
+
+## Tracking job completion
+
+Inference jobs are asynchronous. Poll for completion using the job ID:
+
+```typescript
+async function waitForInference(jobId: string, maxWaitMs = 60000) {
+  const startTime = Date.now();
+  const pollInterval = 2000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const job = await api.getJob(jobId);
+
+    if (job.state === 'completed') {
+      return { success: true, result: job.result };
+    }
+
+    if (job.state === 'failed') {
+      return { success: false, error: job.failures };
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(`Inference job ${jobId} timed out`);
+}
+
+// Usage
+const result = await waitForInference(job.id);
+
+if (result.success) {
+  console.log('Use cases:', result.result.structured_output.use_cases);
+  console.log('Tokens used:', result.result.usage.total_tokens);
+}
+```
+
+For more polling patterns, see [Tracking Job Status](/guides/sdk/tracking-jobs).
+
+## Configuring inference parameters
+
+Fine-tune the model's behavior with configuration options:
+
+```typescript
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'user', text: 'Generate a creative tagline for a data platform.' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        tagline: { type: 'string' },
+        tone: { type: 'string', enum: ['professional', 'playful', 'bold'] }
+      },
+      required: ['tagline', 'tone']
+    },
+    max_tokens: 200,
+    temperature: 0.8,  // Higher for more creative responses
+    top_p: 0.9
+  }
+});
+```
+
+| Parameter | Effect | Typical Values |
+|-----------|--------|----------------|
+| `temperature` | Controls randomness. Lower = more deterministic | 0.0-0.3 for factual, 0.7-1.0 for creative |
+| `max_tokens` | Limits response length | 100-4000 depending on task |
+| `top_p` | Nucleus sampling threshold | 0.9-1.0 for most cases |
+| `stop_sequences` | Strings that end generation | `["\n\n", "END"]` |
+
+## Multi-turn conversations
+
+Include previous messages for context-aware responses:
+
+```typescript
+const messages = [
+  { role: 'system', text: 'You are a data classification assistant.' },
+  { role: 'user', text: 'I have a dataset with email, purchase_date, and amount columns.' },
+  { role: 'assistant', text: 'This appears to be transactional customer data.' },
+  { role: 'user', text: 'What privacy considerations should I be aware of?' }
+];
+
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages,
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        considerations: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              issue: { type: 'string' },
+              recommendation: { type: 'string' }
+            },
+            required: ['issue', 'recommendation']
+          }
+        }
+      },
+      required: ['considerations']
+    }
+  }
+});
+```
+
+## Choosing a model
+
+Select the model based on your task requirements:
+
+| Model | Best For |
+|-------|----------|
+| `anthropic.claude-haiku-4.5` | Fast, simple tasks (classification, extraction) |
+| `anthropic.claude-sonnet-4.5` | Balanced tasks (summarization, analysis) |
+| `anthropic.claude-opus-4.5` | Complex reasoning (multi-step analysis, nuanced decisions) |
+| `openai.gpt-4.1` | Advanced reasoning tasks |
+| `openai.o4-mini` | Fast, cost-effective tasks |
+
+For detailed guidance, see [Choosing the Right Model](/guides/sdk/choosing-inference-models).
+
+## Typing responses
+
+Use TypeScript generics to type the structured output:
+
+```typescript
+interface SentimentResult {
+  sentiment: 'positive' | 'negative' | 'neutral';
+  confidence: number;
+  key_phrases: string[];
+}
+
+const job = await api.runModelInference({
+  data_plane_id: 'dp_your_data_plane_id',
+  model: 'anthropic.claude-haiku-4.5',
+  messages: [
+    { role: 'user', text: 'Analyze the sentiment: "This product exceeded my expectations!"' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        sentiment: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
+        confidence: { type: 'number', minimum: 0, maximum: 1 },
+        key_phrases: { type: 'array', items: { type: 'string' } }
+      },
+      required: ['sentiment', 'confidence', 'key_phrases']
+    }
+  }
+});
+
+// After polling for completion
+const result = completedJob.result as ModelInferenceRunResult<SentimentResult>;
+
+// Fully typed access
+const sentiment: string = result.structured_output.sentiment;
+const confidence: number = result.structured_output.confidence;
+```
+
+## Error handling
+
+Handle common inference errors:
+
+```typescript
+try {
+  const job = await api.runModelInference(request);
+  const result = await waitForInference(job.id);
+
+  if (!result.success) {
+    // Job failed during execution
+    console.error('Inference failed:', result.error);
+    return;
+  }
+
+  // Process successful result
+  console.log('Output:', result.result.structured_output);
+
+} catch (error) {
+  if (error.status === 400) {
+    console.error('Invalid request:', error.message);
+    // Check schema, messages, or model
+  } else if (error.status === 403) {
+    console.error('Access denied to data plane');
+  } else if (error.status === 404) {
+    console.error('Data plane not found');
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Use specific schemas | Define precise JSON Schema to get consistent outputs |
+| Choose appropriate models | Use smaller models for simple tasks to save cost and time |
+| Set reasonable max_tokens | Avoid unnecessarily large values that increase latency |
+| Include system prompts | Guide model behavior with clear instructions |
+| Handle failures gracefully | Implement retries for transient errors |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Structured Output Guide" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Deep dive into JSON Schema for inference
+  </Card>
+  <Card title="Choosing Models" icon="scale-balanced" href="/guides/sdk/choosing-inference-models">
+    Select the right model for your task
+  </Card>
+  <Card title="Model Inference API" icon="code" href="/reference/sdks/typescript/model-inference-api">
+    Complete API reference
+  </Card>
+  <Card title="Tracking Jobs" icon="spinner" href="/guides/sdk/tracking-jobs">
+    Monitor job status and handle completion
+  </Card>
+</CardGroup>

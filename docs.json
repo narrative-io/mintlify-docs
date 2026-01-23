@@ -90,6 +90,14 @@
             ]
           },
           {
+            "group": "Model Inference",
+            "pages": [
+              "concepts/model-inference/overview",
+              "concepts/model-inference/data-privacy",
+              "concepts/model-inference/structured-output"
+            ]
+          },
+          {
             "group": "Security",
             "pages": [
               "concepts/security/pii",
@@ -178,6 +186,9 @@
               "guides/sdk/executing-queries",
               "guides/sdk/managing-datasets",
               "guides/sdk/uploading-data",
+              "guides/sdk/running-model-inference",
+              "guides/sdk/structured-inference-output",
+              "guides/sdk/choosing-inference-models",
               "guides/sdk/tracking-jobs",
               "guides/sdk/error-handling"
             ]
@@ -204,13 +215,17 @@
           {
             "group": "Use Cases",
             "pages": [
-              "cookbooks/use-cases/retail-collaboration"
+              "cookbooks/use-cases/retail-collaboration",
+              "cookbooks/use-cases/ai-dataset-descriptions",
+              "cookbooks/use-cases/natural-language-to-cron"
             ]
           },
           {
             "group": "SDK Recipes",
             "pages": [
-              "cookbooks/sdk/typescript-automation"
+              "cookbooks/sdk/typescript-automation",
+              "cookbooks/sdk/model-inference-automation",
+              "cookbooks/sdk/batch-inference-patterns"
             ]
           }
         ]
@@ -250,6 +265,13 @@
             ]
           },
           {
+            "group": "Model Inference Reference",
+            "pages": [
+              "reference/model-inference/supported-models",
+              "reference/model-inference/json-schema-reference"
+            ]
+          },
+          {
             "group": "Rosetta Stone Reference",
             "pages": [
               "reference/rosetta-stone/attribute-types",
@@ -265,7 +287,8 @@
                 "pages": [
                   "reference/sdks/typescript/index",
                   "reference/sdks/typescript/configuration",
-                  "reference/sdks/typescript/api-modules"
+                  "reference/sdks/typescript/api-modules",
+                  "reference/sdks/typescript/model-inference-api"
                 ]
               }
             ]

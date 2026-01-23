@@ -1,0 +1,328 @@
+---
+title: 'Model Inference API'
+description: 'Complete reference for Model Inference SDK methods and types'
+icon: 'brain'
+---
+
+The Model Inference API enables you to run LLM inference within your [data plane](/concepts/primitives/data-planes). This reference documents all methods, types, and interfaces available in the TypeScript SDK.
+
+## Methods
+
+### runModelInference
+
+Submits a model inference request and returns a job that can be polled for results.
+
+```typescript
+async runModelInference(request: ModelInferenceRunRequest): Promise<ModelInferenceRunJob>
+```
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| `request` | `ModelInferenceRunRequest` | Yes | The inference request configuration |
+
+**Returns:** `Promise<ModelInferenceRunJob>` - A job object that can be polled for completion.
+
+**Example:**
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+const job = await api.runModelInference({
+  data_plane_id: 'dp_abc123',
+  model: 'anthropic.claude-sonnet-4.5',
+  messages: [
+    { role: 'system', text: 'You are a helpful assistant.' },
+    { role: 'user', text: 'Summarize this data in one sentence.' }
+  ],
+  inference_config: {
+    output_format_schema: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string' }
+      },
+      required: ['summary']
+    },
+    max_tokens: 500,
+    temperature: 0.7
+  }
+});
+
+console.log('Job ID:', job.id);
+```
+
+---
+
+## Types
+
+### InferenceModel
+
+Model identifiers supported by the Narrative model inference API.
+
+```typescript
+type InferenceModel =
+  | 'anthropic.claude-haiku-4.5'
+  | 'anthropic.claude-sonnet-4.5'
+  | 'anthropic.claude-opus-4.5'
+  | 'openai.gpt-oss-120b'
+  | 'openai.gpt-4.1'
+  | 'openai.o4-mini';
+```
+
+| Model | Provider | Use Case |
+|-------|----------|----------|
+| `anthropic.claude-haiku-4.5` | Anthropic | Fast, cost-effective tasks |
+| `anthropic.claude-sonnet-4.5` | Anthropic | Balanced performance and capability |
+| `anthropic.claude-opus-4.5` | Anthropic | Complex reasoning and analysis |
+| `openai.gpt-oss-120b` | OpenAI | Open-source large model |
+| `openai.gpt-4.1` | OpenAI | Advanced reasoning |
+| `openai.o4-mini` | OpenAI | Fast, efficient responses |
+
+---
+
+### MessageRole
+
+The role of a message in the conversation.
+
+```typescript
+type MessageRole = 'user' | 'assistant' | 'system';
+```
+
+| Role | Description |
+|------|-------------|
+| `system` | Sets the model's behavior and context |
+| `user` | Input from the user or application |
+| `assistant` | Previous model responses (for multi-turn conversations) |
+
+---
+
+### InferenceMessage
+
+A message in the inference conversation.
+
+```typescript
+interface InferenceMessage {
+  role: MessageRole;
+  text: string;
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `role` | `MessageRole` | Yes | The role of the message sender |
+| `text` | `string` | Yes | The message content |
+
+**Example:**
+
+```typescript
+const messages: InferenceMessage[] = [
+  { role: 'system', text: 'You are a data classification expert.' },
+  { role: 'user', text: 'Classify the following record: {...}' }
+];
+```
+
+---
+
+### InferenceConfig
+
+Configuration parameters for the inference request.
+
+```typescript
+interface InferenceConfig {
+  output_format_schema: Record<string, unknown>;
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stop_sequences?: string[];
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `output_format_schema` | `Record<string, unknown>` | Yes | JSON Schema defining the expected output format |
+| `max_tokens` | `number` | No | Maximum number of tokens to generate |
+| `temperature` | `number` | No | Sampling temperature (0-1). Lower = more deterministic |
+| `top_p` | `number` | No | Nucleus sampling parameter (0-1) |
+| `stop_sequences` | `string[]` | No | Sequences that will stop generation |
+
+**Example:**
+
+```typescript
+const config: InferenceConfig = {
+  output_format_schema: {
+    type: 'object',
+    properties: {
+      category: {
+        type: 'string',
+        enum: ['retail', 'finance', 'healthcare', 'technology']
+      },
+      confidence: {
+        type: 'number',
+        minimum: 0,
+        maximum: 1
+      },
+      reasoning: {
+        type: 'string'
+      }
+    },
+    required: ['category', 'confidence']
+  },
+  max_tokens: 1000,
+  temperature: 0.3
+};
+```
+
+---
+
+### ModelInferenceRunRequest
+
+The complete request body for running a model inference job.
+
+```typescript
+interface ModelInferenceRunRequest {
+  data_plane_id: string;
+  model: InferenceModel;
+  messages: InferenceMessage[];
+  inference_config: InferenceConfig;
+  tags?: string[];
+}
+```
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `data_plane_id` | `string` | Yes | The data plane ID where inference will execute |
+| `model` | `InferenceModel` | Yes | The model to use for inference |
+| `messages` | `InferenceMessage[]` | Yes | The conversation messages |
+| `inference_config` | `InferenceConfig` | Yes | Configuration for the inference |
+| `tags` | `string[]` | No | Optional tags for organizing and filtering jobs |
+
+---
+
+### InferenceUsage
+
+Token usage metrics from the inference response.
+
+```typescript
+interface InferenceUsage {
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `total_tokens` | `number` | Total tokens used (prompt + completion) |
+| `prompt_tokens` | `number` | Tokens in the input messages |
+| `completion_tokens` | `number` | Tokens in the generated response |
+
+---
+
+### ModelInferenceRunResult
+
+The result from a completed model inference job.
+
+```typescript
+interface ModelInferenceRunResult<T = unknown> {
+  usage: InferenceUsage;
+  structured_output: T;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `usage` | `InferenceUsage` | Token usage metrics |
+| `structured_output` | `T` | The model's response, typed according to your schema |
+
+**Example with typed output:**
+
+```typescript
+interface ClassificationResult {
+  category: string;
+  confidence: number;
+  reasoning?: string;
+}
+
+// After job completion
+const result = job.result as ModelInferenceRunResult<ClassificationResult>;
+
+console.log('Category:', result.structured_output.category);
+console.log('Confidence:', result.structured_output.confidence);
+console.log('Tokens used:', result.usage.total_tokens);
+```
+
+---
+
+### ModelInferenceRunJob
+
+The job object returned when submitting an inference request. Extends the base job type with inference-specific result typing.
+
+```typescript
+interface ModelInferenceRunJob extends Job {
+  type: 'model_inference';
+  result?: ModelInferenceRunResult;
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Unique job identifier |
+| `type` | `'model_inference'` | The job type |
+| `state` | `'pending' \| 'running' \| 'completed' \| 'failed'` | Current job state |
+| `result` | `ModelInferenceRunResult` | Present when job completes successfully |
+| `failures` | `object[]` | Present when job fails |
+| `created_at` | `string` | ISO timestamp of job creation |
+| `updated_at` | `string` | ISO timestamp of last update |
+
+---
+
+## Error handling
+
+Model Inference jobs can fail for several reasons:
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Invalid schema | JSON Schema is malformed | Validate schema before submission |
+| Model unavailable | Requested model not available in data plane | Check supported models |
+| Token limit exceeded | Response would exceed max_tokens | Increase max_tokens or simplify request |
+| Invalid data plane | Data plane ID not found or no access | Verify data plane ID and permissions |
+
+**Example error handling:**
+
+```typescript
+const job = await api.runModelInference(request);
+
+// Poll for completion
+const completedJob = await waitForJob(job.id);
+
+if (completedJob.state === 'failed') {
+  console.error('Inference failed:', completedJob.failures);
+  // Handle specific failure types
+} else {
+  console.log('Result:', completedJob.result.structured_output);
+}
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Running Model Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Step-by-step guide to submitting inference requests
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Working with JSON Schema for typed responses
+  </Card>
+  <Card title="Tracking Jobs" icon="spinner" href="/guides/sdk/tracking-jobs">
+    Monitor inference job status
+  </Card>
+  <Card title="Supported Models" icon="microchip" href="/reference/model-inference/supported-models">
+    Available models and specifications
+  </Card>
+</CardGroup>

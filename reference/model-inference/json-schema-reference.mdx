@@ -1,0 +1,425 @@
+---
+title: 'JSON Schema Reference'
+description: 'Supported JSON Schema features for Model Inference structured output'
+icon: 'brackets-curly'
+---
+
+Model Inference uses [JSON Schema](https://json-schema.org/) to define the structure of responses. This reference documents supported features and patterns.
+
+## Supported draft version
+
+Model Inference supports JSON Schema Draft 2020-12 features commonly used for structured output definition.
+
+## Basic types
+
+### String
+
+```json
+{
+  "type": "string"
+}
+```
+
+With constraints:
+
+```json
+{
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 1000
+}
+```
+
+### Number
+
+```json
+{
+  "type": "number"
+}
+```
+
+With constraints:
+
+```json
+{
+  "type": "number",
+  "minimum": 0,
+  "maximum": 1
+}
+```
+
+### Integer
+
+```json
+{
+  "type": "integer",
+  "minimum": 0
+}
+```
+
+### Boolean
+
+```json
+{
+  "type": "boolean"
+}
+```
+
+### Null
+
+```json
+{
+  "type": "null"
+}
+```
+
+## Object type
+
+Define structured objects with named properties:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": "integer" },
+    "active": { "type": "boolean" }
+  },
+  "required": ["name", "age"]
+}
+```
+
+### Required properties
+
+Use the `required` array to specify mandatory fields:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "description": { "type": "string" }
+  },
+  "required": ["id", "title"]
+}
+```
+
+### Additional properties
+
+Control whether extra properties are allowed:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" }
+  },
+  "additionalProperties": false
+}
+```
+
+## Array type
+
+### Simple arrays
+
+```json
+{
+  "type": "array",
+  "items": { "type": "string" }
+}
+```
+
+### Array constraints
+
+```json
+{
+  "type": "array",
+  "items": { "type": "string" },
+  "minItems": 1,
+  "maxItems": 10
+}
+```
+
+### Arrays of objects
+
+```json
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string" },
+      "value": { "type": "number" }
+    },
+    "required": ["name", "value"]
+  }
+}
+```
+
+## Enum constraint
+
+Restrict values to a predefined set:
+
+```json
+{
+  "type": "string",
+  "enum": ["low", "medium", "high"]
+}
+```
+
+Enum with numbers:
+
+```json
+{
+  "type": "integer",
+  "enum": [1, 2, 3, 4, 5]
+}
+```
+
+## Numeric constraints
+
+| Keyword | Description |
+|---------|-------------|
+| `minimum` | Value must be >= this number |
+| `maximum` | Value must be <= this number |
+| `exclusiveMinimum` | Value must be > this number |
+| `exclusiveMaximum` | Value must be < this number |
+| `multipleOf` | Value must be divisible by this number |
+
+Example:
+
+```json
+{
+  "type": "number",
+  "minimum": 0,
+  "maximum": 100,
+  "multipleOf": 0.01
+}
+```
+
+## String constraints
+
+| Keyword | Description |
+|---------|-------------|
+| `minLength` | Minimum string length |
+| `maxLength` | Maximum string length |
+| `pattern` | Regex pattern the string must match |
+
+Example:
+
+```json
+{
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 500,
+  "pattern": "^[A-Z][a-z]+$"
+}
+```
+
+## Array constraints
+
+| Keyword | Description |
+|---------|-------------|
+| `minItems` | Minimum array length |
+| `maxItems` | Maximum array length |
+| `uniqueItems` | All items must be unique |
+
+Example:
+
+```json
+{
+  "type": "array",
+  "items": { "type": "string" },
+  "minItems": 1,
+  "maxItems": 5,
+  "uniqueItems": true
+}
+```
+
+## Descriptions
+
+Add descriptions to help the model understand field purpose:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "sentiment": {
+      "type": "string",
+      "enum": ["positive", "negative", "neutral"],
+      "description": "The overall emotional tone of the text"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence score where 0 is uncertain and 1 is certain"
+    }
+  },
+  "required": ["sentiment", "confidence"]
+}
+```
+
+## Nested structures
+
+### Nested objects
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "created_at": { "type": "string" },
+        "version": { "type": "integer" }
+      },
+      "required": ["created_at"]
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  },
+  "required": ["metadata"]
+}
+```
+
+## Common patterns
+
+### Classification result
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "category": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D"]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "reasoning": {
+      "type": "string"
+    }
+  },
+  "required": ["category", "confidence"]
+}
+```
+
+### Entity extraction
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["person", "organization", "location", "date"]
+          },
+          "start_index": { "type": "integer" },
+          "end_index": { "type": "integer" }
+        },
+        "required": ["text", "type"]
+      }
+    }
+  },
+  "required": ["entities"]
+}
+```
+
+### Summary with key points
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "key_points": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "maxItems": 5
+    },
+    "word_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": ["summary", "key_points"]
+}
+```
+
+### CRON expression result
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "cron_expression": {
+      "type": "string",
+      "pattern": "^[\\d\\*\\/\\-\\,]+\\s+[\\d\\*\\/\\-\\,]+\\s+[\\d\\*\\/\\-\\,\\?LW]+\\s+[\\d\\*\\/\\-\\,]+\\s+[\\d\\*\\/\\-\\,\\?L#]+$",
+      "description": "Valid CRON expression"
+    },
+    "human_readable": {
+      "type": "string",
+      "description": "Human-readable description of the schedule"
+    },
+    "next_runs": {
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 3,
+      "description": "Next 3 scheduled execution times in ISO format"
+    }
+  },
+  "required": ["cron_expression", "human_readable"]
+}
+```
+
+## TypeScript mapping
+
+| JSON Schema Type | TypeScript Type |
+|------------------|-----------------|
+| `string` | `string` |
+| `number` | `number` |
+| `integer` | `number` |
+| `boolean` | `boolean` |
+| `null` | `null` |
+| `array` | `T[]` |
+| `object` | `{ [key: string]: T }` |
+| `enum` | Union type (`'a' \| 'b' \| 'c'`) |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Using Structured Output" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Practical guide to schema definition
+  </Card>
+  <Card title="Model Inference API" icon="code" href="/reference/sdks/typescript/model-inference-api">
+    Complete API reference
+  </Card>
+  <Card title="Structured Output Concepts" icon="lightbulb" href="/concepts/model-inference/structured-output">
+    Why structured output matters
+  </Card>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Submit inference requests
+  </Card>
+</CardGroup>

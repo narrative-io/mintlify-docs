@@ -1,0 +1,361 @@
+---
+title: 'Auto-generating Dataset Descriptions'
+description: 'Use Model Inference to automatically generate human-readable dataset descriptions'
+icon: 'file-lines'
+---
+
+This cookbook demonstrates how to use Model Inference to automatically generate descriptions for datasets based on their metadata and sample data. This is useful for documenting datasets, improving discoverability, and maintaining data catalogs.
+
+## What this recipe accomplishes
+
+- Fetch dataset metadata and column information
+- Analyze sample data to understand content patterns
+- Generate a comprehensive, human-readable description
+- Update the dataset with the generated description
+
+## Prerequisites
+
+- SDK installed and configured (see [Authentication](/guides/sdk/authentication))
+- A dataset that needs a description
+- A data plane ID where inference will run
+
+## Complete example
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+// Types for the generated description
+interface GeneratedDescription {
+  title: string;
+  summary: string;
+  column_descriptions: Array<{
+    column_name: string;
+    data_type: string;
+    description: string;
+    sample_values: string;
+  }>;
+  use_cases: string[];
+  data_quality_notes: string[];
+}
+
+// Configuration
+const CONFIG = {
+  dataPlaneId: process.env.DATA_PLANE_ID!,
+  datasetId: parseInt(process.env.DATASET_ID!),
+  model: 'anthropic.claude-sonnet-4.5' as const,
+};
+
+// Initialize API
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY!,
+});
+
+// Schema for the description output
+const descriptionSchema = {
+  type: 'object',
+  properties: {
+    title: {
+      type: 'string',
+      maxLength: 100,
+      description: 'A clear, descriptive title for the dataset',
+    },
+    summary: {
+      type: 'string',
+      maxLength: 500,
+      description: 'A comprehensive summary of what this dataset contains and its purpose',
+    },
+    column_descriptions: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          column_name: { type: 'string' },
+          data_type: { type: 'string' },
+          description: { type: 'string', maxLength: 200 },
+          sample_values: { type: 'string', maxLength: 100 },
+        },
+        required: ['column_name', 'data_type', 'description'],
+      },
+      description: 'Description of each column in the dataset',
+    },
+    use_cases: {
+      type: 'array',
+      items: { type: 'string' },
+      maxItems: 5,
+      description: 'Potential use cases for this dataset',
+    },
+    data_quality_notes: {
+      type: 'array',
+      items: { type: 'string' },
+      maxItems: 3,
+      description: 'Notes about data quality or considerations',
+    },
+  },
+  required: ['title', 'summary', 'column_descriptions', 'use_cases'],
+};
+
+/**
+ * Wait for inference job to complete
+ */
+async function waitForInference(jobId: string): Promise<GeneratedDescription | null> {
+  const maxWaitMs = 90000; // 90 seconds for potentially long analysis
+  const startTime = Date.now();
+  const pollInterval = 3000;
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const job = await api.getJob(jobId);
+
+    if (job.state === 'completed' && job.result) {
+      return job.result.structured_output as GeneratedDescription;
+    }
+
+    if (job.state === 'failed') {
+      console.error('Inference job failed:', job.failures);
+      return null;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(`Job ${jobId} timed out`);
+}
+
+/**
+ * Format sample data for the prompt
+ */
+function formatSampleForPrompt(
+  sample: Record<string, unknown>[],
+  maxRows = 5
+): string {
+  if (sample.length === 0) return 'No sample data available';
+
+  const rows = sample.slice(0, maxRows);
+  const columns = Object.keys(rows[0]);
+
+  let formatted = 'Sample rows:\n';
+  formatted += columns.join(' | ') + '\n';
+  formatted += columns.map(() => '---').join(' | ') + '\n';
+
+  rows.forEach(row => {
+    formatted += columns.map(col => {
+      const val = row[col];
+      const str = val === null ? 'NULL' : String(val);
+      return str.length > 30 ? str.substring(0, 27) + '...' : str;
+    }).join(' | ') + '\n';
+  });
+
+  return formatted;
+}
+
+/**
+ * Generate description for a dataset
+ */
+async function generateDatasetDescription(
+  datasetId: number
+): Promise<GeneratedDescription | null> {
+  console.log(`Fetching metadata for dataset ${datasetId}...`);
+
+  // Step 1: Get dataset metadata
+  const dataset = await api.getDataset(datasetId);
+
+  // Step 2: Get sample data
+  console.log('Fetching sample data...');
+  const sample = await api.getDatasetSample(datasetId, 20);
+  const sampleRecords = sample.records as Record<string, unknown>[];
+
+  // Step 3: Extract schema information
+  const schemaInfo = dataset.schema?.properties
+    ? Object.entries(dataset.schema.properties).map(([name, prop]: [string, any]) => ({
+        name,
+        type: prop.type || 'unknown',
+        description: prop.description || '',
+      }))
+    : [];
+
+  // Step 4: Build the prompt
+  const prompt = `Analyze this dataset and generate a comprehensive description.
+
+Dataset Name: ${dataset.name}
+Display Name: ${dataset.display_name || 'Not set'}
+Current Description: ${dataset.description || 'None'}
+
+Schema (${schemaInfo.length} columns):
+${schemaInfo.map(col => `- ${col.name} (${col.type}): ${col.description || 'No description'}`).join('\n')}
+
+${formatSampleForPrompt(sampleRecords)}
+
+Total rows in sample: ${sampleRecords.length}
+
+Based on this information:
+1. Generate a clear, descriptive title
+2. Write a comprehensive summary explaining what this dataset contains
+3. Describe each column based on its name, type, and sample values
+4. Suggest potential use cases
+5. Note any data quality observations`;
+
+  console.log('Running inference to generate description...');
+
+  // Step 5: Run inference
+  const job = await api.runModelInference({
+    data_plane_id: CONFIG.dataPlaneId,
+    model: CONFIG.model,
+    messages: [
+      {
+        role: 'system',
+        text: `You are a data documentation expert. Analyze datasets and generate clear,
+accurate descriptions that help users understand the data. Be specific and factual,
+basing your analysis on the actual schema and sample data provided.`,
+      },
+      { role: 'user', text: prompt },
+    ],
+    inference_config: {
+      output_format_schema: descriptionSchema,
+      max_tokens: 2000,
+      temperature: 0.3,
+    },
+    tags: ['description-generation', `dataset-${datasetId}`],
+  });
+
+  console.log(`Inference job created: ${job.id}`);
+  return await waitForInference(job.id);
+}
+
+/**
+ * Update dataset with generated description
+ */
+async function updateDatasetDescription(
+  datasetId: number,
+  description: GeneratedDescription
+): Promise<void> {
+  // Format the full description
+  const fullDescription = `${description.summary}
+
+## Columns
+
+${description.column_descriptions.map(col =>
+  `**${col.column_name}** (${col.data_type}): ${col.description}${col.sample_values ? ` Examples: ${col.sample_values}` : ''}`
+).join('\n\n')}
+
+## Use Cases
+
+${description.use_cases.map(uc => `- ${uc}`).join('\n')}
+
+${description.data_quality_notes?.length ? `
+## Data Quality Notes
+
+${description.data_quality_notes.map(note => `- ${note}`).join('\n')}` : ''}`;
+
+  console.log('Updating dataset with generated description...');
+
+  await api.updateDataset({
+    dataset_id: datasetId,
+    display_name: description.title,
+    description: fullDescription,
+  });
+
+  console.log('Dataset updated successfully');
+}
+
+/**
+ * Main function
+ */
+async function main(): Promise<void> {
+  console.log('=== Dataset Description Generator ===\n');
+
+  const description = await generateDatasetDescription(CONFIG.datasetId);
+
+  if (!description) {
+    console.error('Failed to generate description');
+    process.exit(1);
+  }
+
+  console.log('\n=== Generated Description ===\n');
+  console.log(`Title: ${description.title}`);
+  console.log(`\nSummary:\n${description.summary}`);
+  console.log(`\nColumns:`);
+  description.column_descriptions.forEach(col => {
+    console.log(`  - ${col.column_name}: ${col.description}`);
+  });
+  console.log(`\nUse Cases:`);
+  description.use_cases.forEach(uc => console.log(`  - ${uc}`));
+
+  // Optionally update the dataset
+  const shouldUpdate = process.env.UPDATE_DATASET === 'true';
+  if (shouldUpdate) {
+    await updateDatasetDescription(CONFIG.datasetId, description);
+  } else {
+    console.log('\nSet UPDATE_DATASET=true to apply this description to the dataset');
+  }
+}
+
+// Run
+main()
+  .then(() => console.log('\nDone'))
+  .catch((error) => {
+    console.error('Error:', error);
+    process.exit(1);
+  });
+```
+
+## How it works
+
+1. **Fetch metadata**: The script retrieves the dataset's schema and existing metadata
+
+2. **Get sample data**: A sample of records helps the model understand actual data patterns
+
+3. **Build context**: Schema information and sample data are formatted into a comprehensive prompt
+
+4. **Generate description**: Model Inference analyzes the data and generates structured documentation
+
+5. **Update dataset**: The generated description can be applied back to the dataset
+
+## Variations
+
+### Batch processing multiple datasets
+
+```typescript
+async function describeAllDatasets(): Promise<void> {
+  const datasets = await api.getDatasets();
+
+  for (const dataset of datasets.records) {
+    if (!dataset.description || dataset.description.length < 50) {
+      console.log(`Processing: ${dataset.name}`);
+      const description = await generateDatasetDescription(dataset.id);
+      if (description) {
+        await updateDatasetDescription(dataset.id, description);
+      }
+    }
+  }
+}
+```
+
+### Description quality scoring
+
+```typescript
+const qualitySchema = {
+  type: 'object',
+  properties: {
+    completeness_score: { type: 'number', minimum: 0, maximum: 1 },
+    clarity_score: { type: 'number', minimum: 0, maximum: 1 },
+    improvements: { type: 'array', items: { type: 'string' } }
+  },
+  required: ['completeness_score', 'clarity_score']
+};
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Inference fundamentals
+  </Card>
+  <Card title="Managing Datasets" icon="database" href="/guides/sdk/managing-datasets">
+    Dataset operations
+  </Card>
+  <Card title="Structured Output" icon="brackets-curly" href="/guides/sdk/structured-inference-output">
+    Define response schemas
+  </Card>
+  <Card title="Model Inference Overview" icon="brain" href="/concepts/model-inference/overview">
+    How inference works
+  </Card>
+</CardGroup>

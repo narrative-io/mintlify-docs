@@ -1,0 +1,305 @@
+---
+title: 'Structured Output'
+description: 'How JSON Schema ensures predictable, typed responses from Model Inference'
+icon: 'brackets-curly'
+---
+
+Structured output is a core capability of Model Inference that guarantees the model returns data in a predictable, machine-readable format. By providing a JSON Schema, you constrain the model's response to match your exact specification.
+
+## The problem with unstructured output
+
+Traditional LLM interactions return free-form text:
+
+```
+User: Classify this review as positive, negative, or neutral.
+Model: Based on my analysis, I believe this review expresses a positive sentiment. The customer seems satisfied with their purchase.
+```
+
+This creates challenges:
+- **Parsing complexity**: Must extract the actual classification from prose
+- **Inconsistent formats**: Response structure varies between calls
+- **Error-prone**: Regex or string matching can fail on edge cases
+- **No type safety**: Can't validate response structure at compile time
+
+## How structured output works
+
+With structured output, you define the exact response format:
+
+```typescript
+const schema = {
+  type: 'object',
+  properties: {
+    sentiment: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
+    confidence: { type: 'number', minimum: 0, maximum: 1 }
+  },
+  required: ['sentiment', 'confidence']
+};
+```
+
+The model returns exactly what you specify:
+
+```json
+{
+  "sentiment": "positive",
+  "confidence": 0.92
+}
+```
+
+## Why structured output matters
+
+### 1. Reliable automation
+
+Structured output enables reliable automation pipelines:
+
+```typescript
+// Process results immediately without parsing
+const result = job.result.structured_output;
+await database.insert({
+  category: result.category,
+  confidence: result.confidence,
+  tags: result.tags
+});
+```
+
+### 2. Type safety
+
+With TypeScript, you get compile-time type checking:
+
+```typescript
+interface ClassificationResult {
+  category: 'retail' | 'finance' | 'healthcare';
+  confidence: number;
+}
+
+const result = job.result as ModelInferenceRunResult<ClassificationResult>;
+// TypeScript knows result.structured_output.category is a string
+// and result.structured_output.confidence is a number
+```
+
+### 3. Schema validation
+
+The model is constrained to produce valid JSON matching your schema:
+- Required fields are always present
+- Types match your specification
+- Enum values are restricted to defined options
+- Numeric constraints are enforced
+
+### 4. Consistent integration
+
+Every response has the same structure, making integration predictable:
+
+| Without Schema | With Schema |
+|----------------|-------------|
+| Parse response text | Direct property access |
+| Handle format variations | Consistent structure |
+| Runtime validation needed | Schema-enforced validity |
+| Type casting required | Native types |
+
+## JSON Schema capabilities
+
+Model Inference supports standard JSON Schema features:
+
+### Basic types
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "count": { "type": "integer" },
+    "score": { "type": "number" },
+    "active": { "type": "boolean" }
+  }
+}
+```
+
+### Constraints
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "category": {
+      "type": "string",
+      "enum": ["A", "B", "C"]
+    }
+  }
+}
+```
+
+### Nested structures
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "analysis": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string" },
+        "details": { "type": "string" }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
+```
+
+## Design principles
+
+### 1. Define what you need
+
+Only include fields your application will use:
+
+```typescript
+// Good: Focused schema
+const schema = {
+  type: 'object',
+  properties: {
+    category: { type: 'string', enum: ['spam', 'not_spam'] },
+    confidence: { type: 'number' }
+  },
+  required: ['category', 'confidence']
+};
+
+// Avoid: Overly broad schema
+const schema = {
+  type: 'object',
+  properties: {
+    category: { type: 'string' },
+    confidence: { type: 'number' },
+    reasoning: { type: 'string' },
+    alternatives: { type: 'array' },
+    metadata: { type: 'object' }
+    // ... many unused fields
+  }
+};
+```
+
+### 2. Use enums for known values
+
+Constrain categorical outputs to valid options:
+
+```typescript
+const schema = {
+  type: 'object',
+  properties: {
+    priority: {
+      type: 'string',
+      enum: ['low', 'medium', 'high', 'critical']
+    }
+  }
+};
+```
+
+### 3. Set appropriate bounds
+
+Define numeric ranges when applicable:
+
+```typescript
+const schema = {
+  type: 'object',
+  properties: {
+    confidence: {
+      type: 'number',
+      minimum: 0,
+      maximum: 1,
+      description: 'Confidence score from 0 (uncertain) to 1 (certain)'
+    }
+  }
+};
+```
+
+### 4. Add descriptions
+
+Help the model understand field semantics:
+
+```typescript
+const schema = {
+  type: 'object',
+  properties: {
+    sentiment: {
+      type: 'string',
+      enum: ['positive', 'negative', 'neutral'],
+      description: 'Overall emotional tone: positive for satisfaction, negative for complaints, neutral for factual'
+    }
+  }
+};
+```
+
+## Common patterns
+
+### Classification
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "label": { "type": "string", "enum": ["class_a", "class_b", "class_c"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "reasoning": { "type": "string" }
+  },
+  "required": ["label", "confidence"]
+}
+```
+
+### Extraction
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "value": { "type": "string" },
+          "type": { "type": "string" }
+        },
+        "required": ["value", "type"]
+      }
+    }
+  },
+  "required": ["entities"]
+}
+```
+
+### Transformation
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "input_format": { "type": "string" },
+    "output_format": { "type": "string" },
+    "transformed_value": { "type": "string" }
+  },
+  "required": ["transformed_value"]
+}
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Using Structured Output" icon="code" href="/guides/sdk/structured-inference-output">
+    Practical guide to schema definition
+  </Card>
+  <Card title="JSON Schema Reference" icon="book" href="/reference/model-inference/json-schema-reference">
+    Supported schema features
+  </Card>
+  <Card title="Model Inference Overview" icon="brain" href="/concepts/model-inference/overview">
+    How inference works
+  </Card>
+  <Card title="Running Inference" icon="play" href="/guides/sdk/running-model-inference">
+    Submit inference requests
+  </Card>
+</CardGroup>
