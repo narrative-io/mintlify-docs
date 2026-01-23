@@ -1,0 +1,327 @@
+---
+title: 'Glossary'
+description: 'Definitions for terms and concepts used throughout Narrative I/O'
+icon: 'book-bookmark'
+---
+
+This glossary defines key terms and concepts used throughout the Narrative I/O documentation and platform.
+
+---
+
+## A
+
+### Access grant
+
+An explicit permission that allows a specific organization to query a dataset they don't own. Access grants enable controlled data sharing between organizations while maintaining ownership and governance.
+
+### Access rules
+
+Policies that define who can access specific datasets or fields within the Narrative platform. Access rules are enforced at query execution time and can be configured at both the dataset and field level.
+
+**Related:** [Security Model](/concepts/architecture/security-model)
+
+### Attributes
+
+The individual fields or columns that constitute a dataset. Attributes are the basic unit of data structure in Narrative and can have their own access controls and metadata.
+
+In the Rosetta Stone context, attributes are standardized field definitions that form the common schema. Each Rosetta Stone attribute has a name, description, type, optional tags, and validations. Attributes can be global (platform-wide standards like `hl7_gender`) or organization-specific.
+
+**Related:** [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Built-in Attributes](/reference/rosetta-stone/built-in-attributes)
+
+---
+
+## C
+
+### CCPA (California Consumer Privacy Act)
+
+A comprehensive privacy law that gives California residents rights over their personal information, including the rights to know what data is collected, to delete it, to opt-out of its sale, and to non-discrimination for exercising these rights. As amended by CPRA, it applies to for-profit businesses meeting certain revenue or data volume thresholds.
+
+**Related:** [CCPA](/concepts/compliance/ccpa), [GDPR](#gdpr-general-data-protection-regulation)
+
+### Consent
+
+In privacy law, a data subject's freely given, specific, informed, and unambiguous indication of agreement to the processing of their personal data. Under GDPR, consent is one of six legal bases for processing. Under CCPA, consent is typically required for selling personal information of minors.
+
+**Related:** [Legal basis](#legal-basis), [GDPR](/concepts/compliance/gdpr)
+
+### Control plane
+
+The centralized orchestration layer that manages metadata, enforces permissions, and coordinates queries across data planes. The control plane never touches raw data directly—it only handles the coordination and governance aspects of data collaboration.
+
+**Related:** [Control Plane Architecture](/concepts/primitives/control-plane)
+
+### Cookie syncing
+
+The process of sharing cookie-based identifiers between domains by passing IDs as query parameters. Because web browsers enforce same-origin policies that prevent one domain from reading another domain's cookies, cookie syncing creates a shared understanding of user identity across separate cookie namespaces.
+
+**Related:** [Cookie Syncing Reference](/reference/integrations/cookie-syncing)
+
+### CPRA (California Privacy Rights Act)
+
+An amendment to CCPA that took effect January 1, 2023, strengthening California's privacy law by adding new consumer rights (correction, limiting sensitive data use), creating the California Privacy Protection Agency (CPPA) for enforcement, and expanding business obligations.
+
+**Related:** [CCPA](#ccpa-california-consumer-privacy-act), [CCPA Concepts](/concepts/compliance/ccpa)
+
+---
+
+## D
+
+### Data collaboration
+
+The process by which multiple organizations share, query, and analyze each other's data while maintaining control and compliance. Data collaboration in Narrative enables organizations to unlock value from combined datasets without sacrificing data governance.
+
+### Data controller
+
+Under GDPR, an entity that determines the purposes and means of processing personal data. The controller decides what data to collect, why to collect it, and how it will be used. Controllers bear primary responsibility for compliance with data protection principles.
+
+**Related:** [Data processor](#data-processor), [GDPR](/concepts/compliance/gdpr)
+
+### Data plane
+
+The infrastructure where data physically resides and where queries execute. Data planes can be hosted by Narrative (Narrative-hosted) or deployed within a customer's own infrastructure (customer-hosted) for maximum control over data residency.
+
+**Related:** [Data Planes](/concepts/primitives/data-planes)
+
+### Data portability
+
+A data subject right under GDPR allowing individuals to receive their personal data in a structured, commonly used, machine-readable format and to transmit that data to another controller. This right supports individuals' ability to switch between service providers.
+
+**Related:** [GDPR](/concepts/compliance/gdpr)
+
+### Data processor
+
+Under GDPR, an entity that processes personal data on behalf of a data controller. Processors act only on the controller's documented instructions and must maintain appropriate security measures. Service providers under CCPA serve a similar role.
+
+**Related:** [Data controller](#data-controller), [GDPR](/concepts/compliance/gdpr)
+
+### Data Processing Agreement (DPA)
+
+A legally binding contract between a data controller and data processor that governs the processing of personal data. Required under GDPR, DPAs specify the subject matter, duration, nature, and purpose of processing, as well as the processor's obligations regarding data security, sub-processors, and data subject rights.
+
+**Related:** [Data controller](#data-controller), [Data processor](#data-processor), [GDPR](/concepts/compliance/gdpr)
+
+### Data products
+
+Curated, packaged datasets designed for sharing with partner organizations. Data products include relevant metadata, access controls, and documentation to enable effective data collaboration.
+
+### Data subject
+
+Under GDPR, an identified or identifiable natural person whose personal data is being processed. Data subjects have various rights including access, rectification, erasure, and data portability.
+
+**Related:** [GDPR](/concepts/compliance/gdpr)
+
+### Dataset
+
+A collection of structured data registered in Narrative that can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
+
+---
+
+## G
+
+### GDPR (General Data Protection Regulation)
+
+The European Union's comprehensive data protection law that governs the collection, processing, and storage of personal data for individuals in the EU. Effective since May 2018, GDPR establishes data subject rights, requires legal bases for processing, mandates breach notification, and imposes significant penalties for non-compliance. It has influenced privacy legislation worldwide.
+
+**Related:** [GDPR](/concepts/compliance/gdpr), [CCPA](#ccpa-california-consumer-privacy-act)
+
+---
+
+## H
+
+### Hash function
+
+A one-way mathematical algorithm that converts input data (like an email address) into a fixed-length string of characters. Hash functions are deterministic (same input always produces same output), non-reversible (you cannot recover the original input from the hash), and collision-resistant (different inputs produce different outputs). Common hash functions include MD5, SHA-1, and SHA-256.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Hash join
+
+An efficient join algorithm where the query planner builds a hash table from one table's join keys and probes it with the other table's keys. Hash joins require single-key equality conditions and are significantly faster than nested loop joins for large datasets.
+
+**Related:** [Understanding JOIN Performance](/concepts/nql/join-performance)
+
+---
+
+## I
+
+### Identity provider (IdP)
+
+An enterprise system (such as Okta, Azure AD, or OneLogin) that manages user authentication and maintains the authoritative record of user identities and credentials. Organizations can integrate their IdP with Narrative for single sign-on access.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Incremental View Maintenance (IVM)
+
+An optimization technique that updates materialized views by processing only changed data rather than recomputing the entire result. IVM dramatically reduces refresh time for views over large datasets with relatively small changes between refreshes.
+
+**Related:** [Incremental View Maintenance](/concepts/nql/incremental-view-maintenance), [Materialized view](#materialized-view)
+
+---
+
+## J
+
+### Just-in-time provisioning (JIT)
+
+The automatic creation of user accounts on first login, eliminating the need for manual account creation before SSO access. When enabled, Narrative creates user accounts automatically when users authenticate through SSO for the first time.
+
+**Related:** [SSO Configuration](/account-settings/sso)
+
+---
+
+## L
+
+### Legal basis
+
+Under GDPR, a lawful ground that permits the processing of personal data. GDPR recognizes six legal bases: consent, contract performance, legal obligation, vital interests, public task, and legitimate interests. Organizations must identify and document a valid legal basis before processing personal data.
+
+**Related:** [Consent](#consent), [GDPR](/concepts/compliance/gdpr)
+
+---
+
+## M
+
+### Mapping (Rosetta Stone)
+
+A translation rule that associates a Rosetta Stone attribute with a specific column in a dataset. Mappings can include transformation expressions to convert source data formats to the standard attribute format. Each mapping connects a source column to a target attribute and optionally includes NQL logic to transform values.
+
+**Related:** [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Marketplace
+
+The Narrative platform's catalog where organizations discover available datasets from other organizations. The marketplace enables data discovery and facilitates data collaboration relationships.
+
+### MD5
+
+Message-Digest Algorithm 5—a widely-used hash function that produces a 128-bit (32-character hexadecimal) hash value. While cryptographically broken for security purposes, MD5 remains acceptable for non-security applications like identifier matching in data collaboration. Narrative supports MD5 alongside SHA-1 and SHA-256 for hashing PII.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Materialized view
+
+A pre-computed query result stored as a dataset. Unlike executing a query each time, a materialized view stores results physically for faster access. Views can be refreshed on a schedule or manually to incorporate changes in underlying data.
+
+**Related:** [Materialized Views](/concepts/nql/materialized-views), [Creating Materialized Views](/guides/nql/creating-materialized-views), [Materialized View Syntax](/reference/nql/materialized-view-syntax)
+
+---
+
+## N
+
+### Nested loop join
+
+A join algorithm that iterates through each row of one table and, for each row, scans the other table for matches. Less efficient than hash joins, nested loops are often the fallback when query conditions prevent hash join optimization, such as when OR operators appear in JOIN clauses.
+
+**Related:** [Understanding JOIN Performance](/concepts/nql/join-performance)
+
+### NQL (Narrative Query Language)
+
+Narrative's proprietary query language designed specifically for data collaboration and normalization. NQL is distinct from SQL and includes unique features for cross-organization queries, automatic schema mapping, and data governance enforcement.
+
+---
+
+## P
+
+### PII (Personally Identifiable Information)
+
+Data that can be used to identify a specific individual, either directly or in combination with other data. Common examples include email addresses, phone numbers, names, addresses, and government-issued IDs. Narrative requires that PII be pseudonymized (hashed) before upload to protect individual privacy.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Pseudonymization
+
+A data protection technique that replaces directly identifying information with artificial identifiers (pseudonyms). In Narrative's context, pseudonymization is achieved by hashing PII such as email addresses and phone numbers. Unlike anonymization, pseudonymized data can still be matched across datasets (same input produces same hash) while protecting individual privacy.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+---
+
+## R
+
+### Relationships
+
+Connections between datasets that enable querying across multiple related data sources. Relationships allow organizations to join and analyze data across different datasets while respecting access controls.
+
+### Right to erasure
+
+A data subject right under GDPR (also known as the "right to be forgotten") allowing individuals to request deletion of their personal data under certain circumstances, such as when the data is no longer necessary, when consent is withdrawn, or when processing was unlawful. Similar deletion rights exist under CCPA.
+
+**Related:** [Data subject](#data-subject), [GDPR](/concepts/compliance/gdpr), [CCPA](/concepts/compliance/ccpa)
+
+### Rosetta Stone
+
+Narrative's schema normalization system that enables data collaboration across organizations with different data structures. Rosetta Stone uses two core primitives—attributes (standardized field definitions) and mappings (translations between source columns and attributes)—to automatically normalize data from multiple sources into a queryable common schema.
+
+The system combines machine learning and human curation to create accurate mappings, handles schema changes transparently, and eliminates the need for custom ETL pipelines between partners.
+
+**Related:** [Rosetta Stone Overview](/concepts/rosetta-stone/overview), [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+---
+
+## S
+
+### SAML 2.0
+
+Security Assertion Markup Language 2.0—the industry standard protocol enabling secure authentication between an identity provider and Narrative. SAML 2.0 is used for enterprise single sign-on integrations.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Schema inference
+
+The automated process by which Narrative analyzes uploaded data to identify column types and suggest appropriate Rosetta Stone attribute mappings. Schema inference uses pattern recognition and machine learning to propose mappings that can be accepted, modified, or rejected.
+
+**Related:** [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Schema mapping
+
+The process of defining how fields from one data schema correspond to fields in another schema or to a standard schema. Schema mapping is a key component of Narrative's Rosetta Stone functionality.
+
+**Related:** [Rosetta Stone Overview](/concepts/rosetta-stone/overview), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Schema normalization
+
+The process of mapping different data schemas to a common standardized format, enabling organizations to work with data in consistent ways regardless of how it was originally structured.
+
+**Related:** [The Normalization Model](/concepts/rosetta-stone/normalization-model), [Rosetta Stone Overview](/concepts/rosetta-stone/overview)
+
+### Schema preset
+
+A pre-defined collection of Rosetta Stone attributes designed for common use cases such as demographic data, marketing events, or identity resolution. Organizations can use public presets to accelerate mapping or create private presets to standardize across teams.
+
+**Related:** [The Normalization Model](/concepts/rosetta-stone/normalization-model)
+
+### SHA-1
+
+Secure Hash Algorithm 1—a hash function that produces a 160-bit (40-character hexadecimal) hash value. More secure than MD5 but now considered cryptographically deprecated for security purposes. Still acceptable for identifier matching in data collaboration. Narrative supports SHA-1 alongside MD5 and SHA-256 for hashing PII.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### SHA-256
+
+Secure Hash Algorithm 256-bit—a member of the SHA-2 family that produces a 256-bit (64-character hexadecimal) hash value. Currently considered cryptographically secure and is the recommended algorithm for new implementations. Narrative supports SHA-256 as the preferred hashing algorithm alongside MD5 and SHA-1.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### SSO (Single Sign-On)
+
+An authentication method that allows users to access Narrative using their organization's existing credentials and identity provider. SSO eliminates the need for separate Narrative-specific passwords and enables centralized access management.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+---
+
+## T
+
+### Transformation expression
+
+An NQL expression used within a Rosetta Stone mapping to convert source data to the target attribute format. Transformation expressions can include type conversions, string manipulation, conditional logic (CASE statements), and null handling. They enable mappings to normalize diverse source formats into consistent attribute values.
+
+**Related:** [Mapping Schemas](/guides/rosetta-stone/mapping-schemas), [Transformation Functions](/reference/rosetta-stone/transformation-functions), [Edge Cases](/guides/rosetta-stone/edge-cases)
+
+---
+
+## U
+
+### UNNEST
+
+An NQL function that expands an array column into multiple rows, with one row generated for each element in the array. UNNEST is commonly used to flatten multi-key matching scenarios into single-key joins that the query planner can optimize efficiently.
+
+**Related:** [NQL Functions Reference](/reference/nql/functions), [Avoid OR in JOIN Clauses](/guides/nql/query-optimization/avoid-or-in-join)

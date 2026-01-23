@@ -71,6 +71,14 @@ Keep these four types of documentation separate and distinct. Each serves a diff
 - Use consistent terminology throughout all documentation
 - Three-column layout works well for reference documentation
 
+### Glossary maintenance
+When creating or editing any article:
+1. **Review the glossary first** - Read `/reference/glossary.mdx` to understand existing terminology
+2. **Use existing terms** - When a glossary term applies, use that exact term consistently
+3. **Add new terms** - If introducing domain-specific terminology not in the glossary, add a definition
+4. **Update existing terms** - If an article reveals that a definition is incomplete or outdated, update it
+5. **Link to glossary** - Consider linking to glossary entries when terms are first introduced in an article
+
 ## Frontmatter requirements for pages
 - title: Clear, descriptive page title
 - description: Concise summary for SEO/navigation
