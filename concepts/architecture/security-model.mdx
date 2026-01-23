@@ -1,0 +1,137 @@
+---
+title: 'Security Model'
+description: 'Understand how Narrative protects your data through architecture, access controls, and operational practices'
+icon: 'shield'
+---
+
+Narrative's security model is built on the principle that your data remains under your control. The platform architecture, access controls, and operational practices work together to protect sensitive information while enabling collaboration.
+
+## Separation of control and data planes
+
+Narrative's most fundamental security design is the separation between the [control plane](/concepts/primitives/control-plane) and [data planes](/concepts/primitives/data-planes).
+
+**The control plane** manages metadata, permissions, and orchestration. It knows *about* your data—schema, access rules, query patterns—but never sees the data itself.
+
+**Data planes** store and process actual data. They can be hosted by Narrative or within your own infrastructure, giving you control over where sensitive information resides.
+
+This separation provides several security benefits:
+
+- **Data residency control** — Keep data within specific geographic or infrastructure boundaries
+- **Reduced attack surface** — The control plane has no access to raw data, limiting exposure from any single point of compromise
+- **Audit clarity** — Data access and metadata operations are logged separately, making compliance auditing straightforward
+
+## Access control model
+
+Narrative uses a multi-layered access control system:
+
+### Organization-level controls
+
+Organizations are the top-level security boundary. Each organization has:
+
+- **Member management** — Control who belongs to your organization
+- **Role assignments** — Assign admin or standard roles to members
+- **Authentication policies** — Enforce SSO, MFA requirements, or other authentication standards through your identity provider
+
+### Dataset-level controls
+
+When you register or share data, you define who can access it:
+
+- **Visibility rules** — Control which organizations can discover your datasets
+- **Access grants** — Explicitly grant query access to specific organizations
+- **Field-level permissions** — Restrict access to sensitive columns within a dataset
+
+### Query-time enforcement
+
+Access controls are enforced at query execution, not just at the UI level:
+
+- Every query is validated against current permissions before execution
+- Changes to access rules take effect immediately
+- Queries that exceed granted permissions fail with clear error messages
+
+## Data isolation
+
+Data from different organizations never mingles unintentionally:
+
+**Storage isolation** — Datasets are stored with clear ownership boundaries. Customer-hosted data planes provide physical isolation when required.
+
+**Query isolation** — When you query across organizations (in data collaboration scenarios), the data plane enforces that you only see data you're explicitly permitted to access.
+
+**Result isolation** — Query results are delivered only to the requesting user and are not cached or stored beyond the query session.
+
+## Encryption
+
+Narrative encrypts data at multiple levels:
+
+| Layer | Protection |
+|-------|------------|
+| **In transit** | All API and data transfer uses TLS 1.2+ encryption |
+| **At rest** | Data planes encrypt stored data using AES-256 |
+| **Key management** | Encryption keys are managed separately from data, with regular rotation |
+
+Customer-hosted data planes can integrate with your organization's key management infrastructure for additional control.
+
+## Authentication
+
+Narrative supports multiple authentication methods:
+
+- **Email magic links** — Passwordless authentication for quick access
+- **Single Sign-On (SSO)** — SAML 2.0 integration with enterprise identity providers
+- **API keys** — Long-lived tokens for programmatic access with scoped permissions
+
+Enterprise organizations can enforce SSO-only authentication and inherit MFA requirements from their identity provider.
+
+<Note>
+For SSO configuration details, see [SSO Configuration](/account-settings/sso).
+</Note>
+
+## Audit and compliance
+
+Narrative maintains comprehensive audit logs:
+
+- **Authentication events** — Login attempts, SSO assertions, API key usage
+- **Data access** — Queries executed, datasets accessed, results delivered
+- **Administrative actions** — Permission changes, member management, configuration updates
+
+These logs support compliance requirements including SOC 2 Type II. Contact your account representative for compliance documentation.
+
+## Operational security
+
+Beyond architectural controls, Narrative maintains operational security practices:
+
+- **Vulnerability management** — Regular security assessments and penetration testing
+- **Incident response** — Documented procedures for security event handling
+- **Employee access** — Strict access controls and background checks for personnel with system access
+- **Change management** — All production changes go through review and approval processes
+
+## Shared responsibility
+
+Security is a shared responsibility between Narrative and customers:
+
+**Narrative is responsible for:**
+- Platform infrastructure security
+- Control plane availability and integrity
+- Narrative-hosted data plane security
+- Security updates and vulnerability remediation
+
+**Customers are responsible for:**
+- Managing organization membership and roles
+- Configuring appropriate access controls for datasets
+- Securing API keys and credentials
+- Customer-hosted data plane security (when applicable)
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Understand where your data lives and how data planes provide isolation
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    Learn how Narrative orchestrates operations without accessing your data
+  </Card>
+  <Card title="Single Sign-On (SSO)" icon="shield-keyhole" href="/concepts/security/sso">
+    Configure enterprise authentication for your organization
+  </Card>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Manage API keys for programmatic access
+  </Card>
+</CardGroup>
