@@ -223,6 +223,28 @@ FROM company_data."123"
 WHERE identifier_type = 'email'
 ```
 
+### Prefer bracket notation for property access
+
+When accessing struct fields, bracket notation avoids reserved keyword conflicts:
+
+```sql
+-- Bracket notation: no quoting needed for reserved keywords
+SELECT
+  data['type'],
+  data['value'],
+  data['group']
+FROM company_data."123"
+
+-- Dot notation: reserved keywords must be double-quoted
+SELECT
+  data."type",
+  data."value",
+  data."group"
+FROM company_data."123"
+```
+
+Both syntaxes work, but bracket notation is simpler when field names may include reserved keywords.
+
 ---
 
 ## Related content
