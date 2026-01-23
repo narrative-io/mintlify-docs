@@ -1,0 +1,86 @@
+---
+title: 'Cookie Syncing'
+description: 'Reference for implementing cookie synchronization with Narrative'
+icon: 'cookie'
+---
+
+Cookie syncing enables partners to share browser-based identifiers with Narrative by passing IDs as query parameters.
+
+## Overview
+
+Web browsers enforce same-origin policies that restrict cookies set by one domain (e.g., `example.com`) to be readable only within that same domain. This means different companies typically maintain separate, isolated cookie-based identifiers for the same user.
+
+Cookie syncing bridges these separate namespaces by passing identifiers as query parameters, creating a shared understanding between Narrative and partner systems.
+
+## Partner-initiated syncs
+
+Narrative currently supports partners initiating the sync. Partners call the Narrative endpoint with their identifier, and Narrative can optionally redirect back with the Narrative identifier.
+
+## Endpoint
+
+```
+//io.narrative.io/?
+```
+
+## Query parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `companyId` | Yes | Unique ID assigned to the partner by Narrative |
+| `id` | Yes | Type and value of the identifier, formatted as `partner_id_type:partner_id_value`. The `partner_id_type` is assigned to partners by Narrative. |
+| `red` | No | URL-encoded redirect URL. If provided, Narrative redirects back to this URL with the Narrative ID appended. |
+
+## Macros
+
+When using the redirect parameter, you can include macros that Narrative replaces with actual values:
+
+| Macro | Description |
+|-------|-------------|
+| `${narrative.id.value}` | Replaced with the Narrative cookie identifier on redirect |
+
+## Examples
+
+### Basic implementation
+
+A partner called BrandA wants to sync their customer identifier with Narrative.
+
+**Given:**
+- Company ID: `789`
+- Customer ID: `123456789`
+- Partner ID type (assigned by Narrative): `brandA_id`
+
+**Template:**
+```
+//io.narrative.io/?companyId=XXX&id=partner_id_type:[[partner_id_value]]
+```
+
+**Implemented:**
+```
+//io.narrative.io/?companyId=789&id=brandA_id:123456789
+```
+
+### With redirect
+
+To receive the Narrative identifier back, include a URL-encoded redirect URL with the macro:
+
+```
+//io.narrative.io/?companyId=789&id=brandA_id:123456789&red=https%3A%2F%2Fexample.com%2F%3Fnarrative_id%3D%24%7Bnarrative.id.value%7D
+```
+
+When decoded, the redirect URL is:
+```
+https://example.com/?narrative_id=${narrative.id.value}
+```
+
+Narrative replaces `${narrative.id.value}` with the actual Narrative cookie identifier before redirecting.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Glossary" icon="book-bookmark" href="/reference/glossary">
+    Definitions for cookie syncing and other terms
+  </Card>
+  <Card title="Identity Resolution" icon="fingerprint" href="/cookbooks/use-cases/identity-resolution">
+    Cookbook for identity resolution use cases
+  </Card>
+</CardGroup>
