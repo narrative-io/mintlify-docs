@@ -219,7 +219,6 @@
             "group": "Rosetta Stone Reference",
             "pages": [
               "reference/rosetta-stone/attribute-types",
-              "reference/rosetta-stone/built-in-attributes",
               "reference/rosetta-stone/transformation-functions"
             ]
           },
