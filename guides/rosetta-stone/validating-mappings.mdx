@@ -267,7 +267,7 @@ After activation, query the normalized data to verify it looks correct:
 ```sql
 SELECT
     target_attribute,
-    COUNT(*) as count
+    COUNT(1) as count
 FROM narrative.rosetta_stone
 WHERE _nio_source_dataset_id = 'your-dataset-id'
 GROUP BY target_attribute

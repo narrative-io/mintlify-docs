@@ -15,7 +15,7 @@ Using OR in JOIN conditions can make queries 100x slower or more. Always restruc
 This query attempts to match records where either `user_id` or `email` matches:
 
 ```sql
-SELECT *
+SELECT p.purchase_id, p.amount, u.name, u.email
 FROM Purchases p
 JOIN Users u
   ON p.user_id = u.id

@@ -16,7 +16,7 @@ Execute an NQL query and return results.
 
 ```typescript
 const result = await api.executeNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
   execution_cluster: { type: 'shared' },  // optional
   create_as_view: false,                   // optional
@@ -38,7 +38,7 @@ Compile an NQL query and return the transpiled SQL.
 
 ```typescript
 const compiled = await api.compileNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
 });
 
@@ -53,7 +53,7 @@ Validate an NQL query's syntax.
 
 ```typescript
 const ast = await api.validateNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
 });
 ```
@@ -66,7 +66,7 @@ Parse an NQL query into an abstract syntax tree.
 
 ```typescript
 const ast = await api.parseNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
 });
 ```

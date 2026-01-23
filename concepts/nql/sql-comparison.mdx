@@ -28,12 +28,12 @@ LIMIT 100
 ```sql
 SELECT
   category,
-  COUNT(*) AS count,
+  COUNT(1) AS count,
   SUM(amount) AS total,
   AVG(score) AS average
 FROM table_reference
 GROUP BY category
-HAVING COUNT(*) > 10
+HAVING COUNT(1) > 10
 ```
 
 ### Joins
@@ -53,7 +53,7 @@ WITH summary AS (
   FROM sales
   GROUP BY category
 )
-SELECT * FROM summary WHERE total > 1000
+SELECT category, total FROM summary WHERE total > 1000
 ```
 
 ### Standard functions
@@ -75,13 +75,13 @@ In traditional SQL, you reference tables by name. In NQL, you reference datasets
 <CodeGroup>
 
 ```sql Standard SQL
-SELECT * FROM users
-SELECT * FROM analytics.events
+SELECT user_id, email FROM users
+SELECT event_type, timestamp FROM analytics.events
 ```
 
 ```sql NQL
-SELECT * FROM company_data."123"
-SELECT * FROM company_data."456"
+SELECT user_id, email FROM company_data."123"
+SELECT event_type, timestamp FROM company_data."456"
 ```
 
 </CodeGroup>
@@ -103,7 +103,8 @@ SELECT unique_id, event_timestamp
 FROM narrative.rosetta_stone
 
 -- Data from another company's access rule
-SELECT * FROM partner_company."fitness_data"
+SELECT user_id, activity_type, calories
+FROM partner_company."fitness_data"
 ```
 
 ### Price filtering
@@ -112,7 +113,7 @@ Every dataset includes a `_price_cpm_usd` column representing the cost per 1,000
 
 ```sql
 -- Only get data priced at $1 or less per 1000 rows
-SELECT *
+SELECT user_id, email, created_at
 FROM company_data."123"
 WHERE _price_cpm_usd <= 1.00
 ```
@@ -125,12 +126,12 @@ In traditional SQL, `EXPLAIN` shows the query execution plan. In NQL, `EXPLAIN` 
 
 ```sql Standard SQL EXPLAIN
 -- Shows: Seq Scan, Index Scan, costs, row estimates
-EXPLAIN SELECT * FROM users WHERE age > 30
+EXPLAIN SELECT user_id, email FROM users WHERE age > 30
 ```
 
 ```sql NQL EXPLAIN
 -- Shows: estimated row count, estimated cost, data freshness
-EXPLAIN SELECT * FROM company_data."123" WHERE age > 30
+EXPLAIN SELECT user_id, email FROM company_data."123" WHERE age > 30
 ```
 
 </CodeGroup>
@@ -147,7 +148,7 @@ NQL includes budget clauses to control data spending—a concept that doesn't ex
 
 ```sql
 CREATE MATERIALIZED VIEW "my_data"
-AS (SELECT * FROM company_data."123")
+AS (SELECT user_id, email, created_at FROM company_data."123")
 BUDGET 50 USD
 
 -- Recurring budget limits
@@ -168,7 +169,7 @@ EXPIRE = 'P30D'
 TAGS = ('analytics', 'daily')
 PARTITIONED_BY event_date DAY
 AS (
-  SELECT date, COUNT(*) as events
+  SELECT date, COUNT(1) as events
   FROM company_data."123"
   GROUP BY date
 )
@@ -208,7 +209,7 @@ WHERE rn = 1
 Query only changed records since the last execution—useful for incremental processing:
 
 ```sql
-SELECT *
+SELECT user_id, email, updated_at
 FROM DELTA(TABLE company_data."123")
 ```
 
@@ -246,6 +247,7 @@ Some SQL features aren't available in NQL:
 
 | Feature | Status | Alternative |
 |---------|--------|-------------|
+| `SELECT *`, `COUNT(*)` | Not supported | [List columns explicitly](/reference/nql/explicit-columns) |
 | `CREATE TABLE` | Not supported | Use `CREATE MATERIALIZED VIEW` |
 | `INSERT/UPDATE/DELETE` | Not supported | Views are the output mechanism |
 | `CREATE INDEX` | Not supported | Partitioning provides similar benefits |

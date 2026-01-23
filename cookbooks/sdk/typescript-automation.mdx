@@ -102,7 +102,7 @@ async function runQuery(datasetId: number): Promise<any[]> {
     nql: `
       SELECT
         sha256_hashed_email,
-        COUNT(*) as event_count,
+        COUNT(1) as event_count,
         MAX(event_timestamp) as last_seen,
         SUM(event_value) as total_value
       FROM company_data."dataset_${datasetId}"
@@ -305,7 +305,7 @@ async function runIncrementalQuery(datasetId: number) {
 
   const result = await api.executeNql({
     nql: `
-      SELECT *
+      SELECT user_id, email, event_timestamp, event_value
       FROM company_data."dataset_${datasetId}"
       ${whereClause}
       LIMIT 100000

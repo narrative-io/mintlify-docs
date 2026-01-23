@@ -37,7 +37,7 @@ Start by writing the query you want to materialize. Run it to verify it returns 
 ```sql
 SELECT
     region,
-    COUNT(*) as user_count,
+    COUNT(1) as user_count,
     COUNT(DISTINCT company_id) as company_count
 FROM user_data
 WHERE status = 'active'
@@ -53,7 +53,7 @@ CREATE MATERIALIZED VIEW "active_users_by_region"
 AS
 SELECT
     region,
-    COUNT(*) as user_count,
+    COUNT(1) as user_count,
     COUNT(DISTINCT company_id) as company_count
 FROM user_data
 WHERE status = 'active'
@@ -69,7 +69,8 @@ Run the statement to create the view. The query executes immediately and stores 
 Once created, query it like any other table:
 
 ```sql
-SELECT * FROM active_users_by_region
+SELECT region, user_count, company_count
+FROM active_users_by_region
 WHERE user_count > 1000
 ```
 
@@ -87,7 +88,7 @@ REFRESH_SCHEDULE = '@daily'
 AS
 SELECT
     DATE(order_timestamp) as order_date,
-    COUNT(*) as order_count,
+    COUNT(1) as order_count,
     SUM(total_amount) as total_revenue
 FROM orders
 GROUP BY DATE(order_timestamp)
@@ -124,7 +125,7 @@ AS
 SELECT
     DATE(event_timestamp) as event_date,
     event_type,
-    COUNT(*) as event_count
+    COUNT(1) as event_count
 FROM events
 GROUP BY DATE(event_timestamp), event_type
 ```
@@ -190,7 +191,7 @@ Each refresh adds new data to the existing view:
 CREATE MATERIALIZED VIEW "event_log"
 WRITE_MODE = 'append'
 AS
-SELECT *
+SELECT event_id, user_id, event_type, event_timestamp
 FROM events
 WHERE event_timestamp > CURRENT_TIMESTAMP - INTERVAL 1 HOUR
 ```

@@ -152,13 +152,13 @@ By the end of this tutorial, your dataset will be normalized to Rosetta Stone at
 Run this query to see your normalized data:
 
 ```sql
-SELECT *
+SELECT unique_id, email_sha256, event_timestamp
 FROM narrative.rosetta_stone
 WHERE _nio_source_dataset_id = 'YOUR_DATASET_ID'
 LIMIT 10
 ```
 
-Replace `YOUR_DATASET_ID` with your actual dataset ID (visible in the dataset detail view).
+Replace `YOUR_DATASET_ID` with your actual dataset ID (visible in the dataset detail view). Adjust the column names to match the attributes you mapped.
 
 You should see your data with standardized column names matching the attributes you mapped.
 

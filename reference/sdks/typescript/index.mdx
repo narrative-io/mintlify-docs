@@ -37,7 +37,7 @@ const api = new NarrativeApi({
 
 // Execute an NQL query
 const result = await api.executeNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
 });
 

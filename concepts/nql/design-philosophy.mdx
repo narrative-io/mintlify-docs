@@ -39,19 +39,19 @@ Transpilation is the process of converting NQL into equivalent SQL for a specifi
 <CodeGroup>
 
 ```sql NQL
-SELECT *
+SELECT user_id, email, event_date
 FROM my_dataset
 WHERE event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
 ```
 
 ```sql Snowflake SQL
-SELECT *
+SELECT user_id, email, event_date
 FROM my_dataset
 WHERE event_date >= DATEADD(DAY, -7, CURRENT_DATE())
 ```
 
 ```sql Spark SQL
-SELECT *
+SELECT user_id, email, event_date
 FROM my_dataset
 WHERE event_date >= DATE_SUB(CURRENT_DATE(), 7)
 ```
@@ -80,6 +80,8 @@ Building NQL as an interpreted, transpiled language provides several advantages:
 **Cross-organization coordination.** For queries that span multiple data planes, the control plane can coordinate execution and optimize data movement.
 
 **Consistent behavior.** NQL provides consistent semantics regardless of the underlying database. A query behaves the same way whether it runs on Snowflake or Spark.
+
+**Explicit column selection.** NQL requires you to list columns explicitly rather than using wildcards like `SELECT *`. This design choice enables better cost transparency, governance compliance, and query optimization—particularly for [Rosetta Stone](/concepts/rosetta-stone/overview) queries where wildcards would expand across many underlying tables. See [Explicit Column Selection](/reference/nql/explicit-columns) for details.
 
 ## Trade-offs
 

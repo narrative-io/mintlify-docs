@@ -57,7 +57,7 @@ WHERE
 Add `_price_cpm_usd` filters to limit data costs:
 
 ```sql
-SELECT *
+SELECT user_id, email, category, event_date
 FROM company_data."123"
 WHERE
   _price_cpm_usd <= 1.00  -- Apply price filter early
@@ -136,7 +136,7 @@ OR conditions prevent efficient join algorithms:
 
 ```sql
 -- Avoid: OR in join condition
-SELECT *
+SELECT t1.id, t1.value, t2.related_value
 FROM company_data."100" t1
 INNER JOIN company_data."200" t2
   ON t1.id = t2.id OR t1.alt_id = t2.alt_id
@@ -144,7 +144,7 @@ INNER JOIN company_data."200" t2
 
 ```sql
 -- Better: Use COALESCE
-SELECT *
+SELECT t1.id, t1.value, t2.related_value
 FROM company_data."100" t1
 INNER JOIN company_data."200" t2
   ON COALESCE(t1.id, t1.alt_id) = COALESCE(t2.id, t2.alt_id)
@@ -152,10 +152,12 @@ INNER JOIN company_data."200" t2
 
 ```sql
 -- Or: Union separate queries
-SELECT * FROM company_data."100" t1
+SELECT t1.id, t1.value, t2.related_value
+FROM company_data."100" t1
 INNER JOIN company_data."200" t2 ON t1.id = t2.id
 UNION
-SELECT * FROM company_data."100" t1
+SELECT t1.id, t1.value, t2.related_value
+FROM company_data."100" t1
 INNER JOIN company_data."200" t2 ON t1.alt_id = t2.alt_id
 WHERE t1.id IS NULL OR t2.id IS NULL
 ```
@@ -175,7 +177,7 @@ FROM company_data."100" c
 INNER JOIN (
   SELECT
     customer_id,
-    COUNT(*) AS total_orders,
+    COUNT(1) AS total_orders,
     SUM(amount) AS total_amount
   FROM company_data."200"
   GROUP BY customer_id
@@ -211,7 +213,7 @@ AS (
   SELECT
     DATE_TRUNC('month', event_date) AS report_month,
     category,
-    COUNT(*) AS event_count,
+    COUNT(1) AS event_count,
     SUM(amount) AS total_amount
   FROM company_data."123"
   GROUP BY DATE_TRUNC('month', event_date), category
@@ -231,13 +233,13 @@ Match budget to expected data volume:
 -- Daily budget for daily refreshes
 CREATE MATERIALIZED VIEW "daily_data"
 REFRESH_SCHEDULE = '@daily'
-AS (SELECT * FROM company_data."123" WHERE event_date = CURRENT_DATE - INTERVAL '1' DAY)
+AS (SELECT user_id, email, event_date FROM company_data."123" WHERE event_date = CURRENT_DATE - INTERVAL '1' DAY)
 LIMIT 10 USD PER CALENDAR_DAY
 
 -- Monthly budget for larger datasets
 CREATE MATERIALIZED VIEW "monthly_data"
 REFRESH_SCHEDULE = '@monthly'
-AS (SELECT * FROM company_data."123")
+AS (SELECT user_id, email, created_at FROM company_data."123")
 LIMIT 500 USD PER CALENDAR_MONTH
 ```
 
@@ -246,7 +248,7 @@ LIMIT 500 USD PER CALENDAR_MONTH
 Maximize value by filtering on both price and recency:
 
 ```sql
-SELECT *
+SELECT user_id, email, event_timestamp
 FROM company_data."123"
 WHERE
   _price_cpm_usd <= 0.75
@@ -280,7 +282,7 @@ AS (
   SELECT
     DATE_TRUNC('day', event_timestamp) AS event_date,
     category,
-    COUNT(*) AS events,
+    COUNT(1) AS events,
     COUNT(DISTINCT user_id) AS users,
     SUM(amount) AS total
   FROM company_data."123"
@@ -298,7 +300,7 @@ BUDGET 25 USD PER CALENDAR_DAY
 
 ```sql
 -- While exploring data
-SELECT *
+SELECT user_id, email, category
 FROM company_data."123"
 WHERE category = 'test'
 LIMIT 100 ROWS
@@ -312,7 +314,7 @@ LIMIT 100 OFFSET 100 ROWS
 ```sql
 -- Preview before executing
 EXPLAIN
-SELECT *
+SELECT user_id, email, event_timestamp
 FROM company_data."123"
 WHERE event_timestamp >= CURRENT_DATE - INTERVAL '90' DAY
 ```
@@ -326,7 +328,7 @@ WHERE event_timestamp >= CURRENT_DATE - INTERVAL '90' DAY
 ```sql
 SELECT
   DATE_TRUNC('day', event_timestamp) AS day,
-  COUNT(*) AS events
+  COUNT(1) AS events
 FROM company_data."123"
 GROUP BY DATE_TRUNC('day', event_timestamp)
 ```
@@ -350,7 +352,7 @@ WHERE EXTRACT(YEAR FROM event_date) = 2024
 ```sql
 WITH
   base_data AS (
-    SELECT *
+    SELECT user_id, event_date, amount
     FROM company_data."123"
     WHERE
       event_date >= CURRENT_DATE - INTERVAL '30' DAY
@@ -359,7 +361,7 @@ WITH
   user_metrics AS (
     SELECT
       user_id,
-      COUNT(*) AS event_count,
+      COUNT(1) AS event_count,
       SUM(amount) AS total_amount
     FROM base_data
     GROUP BY user_id
@@ -372,7 +374,7 @@ WITH
       RANK() OVER (ORDER BY total_amount DESC) AS rank
     FROM user_metrics
   )
-SELECT *
+SELECT user_id, event_count, total_amount, rank
 FROM ranked_users
 WHERE rank <= 100
 ```
@@ -381,14 +383,22 @@ WHERE rank <= 100
 
 ## Anti-patterns to avoid
 
-### Don't SELECT * in production queries
+### Use explicit column lists (wildcards not supported)
+
+NQL requires explicit column lists—`SELECT *` and `COUNT(*)` are not supported. See [Explicit Column Selection](/reference/nql/explicit-columns) for why this design choice improves cost transparency, governance, and query optimization.
 
 ```sql
--- Avoid
+-- Not supported in NQL
 SELECT * FROM company_data."123"
 
--- Better: Select only needed columns
+-- Required: Select only needed columns
 SELECT user_id, email, created_at FROM company_data."123"
+
+-- Not supported: COUNT(*)
+SELECT COUNT(*) FROM company_data."123"
+
+-- Required: Use COUNT(1) for row counts
+SELECT COUNT(1) FROM company_data."123"
 ```
 
 ### Don't use LIKE with leading wildcards when possible
@@ -405,19 +415,19 @@ WHERE REGEXP_EXTRACT(email, '@(.+)$') = 'gmail.com'
 
 ```sql
 -- Avoid: Deeply nested subqueries
-SELECT * FROM (
-  SELECT * FROM (
-    SELECT * FROM (
-      SELECT * FROM company_data."123"
+SELECT user_id, email FROM (
+  SELECT user_id, email FROM (
+    SELECT user_id, email FROM (
+      SELECT user_id, email FROM company_data."123"
     ) a
   ) b
 ) c
 
 -- Better: Use CTEs
-WITH step1 AS (SELECT * FROM company_data."123"),
-     step2 AS (SELECT * FROM step1),
-     step3 AS (SELECT * FROM step2)
-SELECT * FROM step3
+WITH step1 AS (SELECT user_id, email FROM company_data."123"),
+     step2 AS (SELECT user_id, email FROM step1),
+     step3 AS (SELECT user_id, email FROM step2)
+SELECT user_id, email FROM step3
 ```
 
 ---

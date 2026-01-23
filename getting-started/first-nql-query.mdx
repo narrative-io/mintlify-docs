@@ -51,18 +51,20 @@ This tutorial is part of the First Steps series. Complete [Normalize with Rosett
 
     ```sql
     SELECT
-      *
+      user_id,
+      email,
+      created_at
     FROM
       company_data."123"
     LIMIT 10 ROWS
     ```
 
     This query:
-    - Selects all columns (`*`)
+    - Selects specific columns from your dataset
     - From your dataset (`company_data."123"`)
     - Limits results to 10 rows
 
-    Replace `"123"` with your actual dataset ID.
+    Replace `"123"` with your actual dataset ID and adjust column names to match your schema.
   </Step>
 
   <Step title="Preview with EXPLAIN">
@@ -71,7 +73,9 @@ This tutorial is part of the First Steps series. Complete [Normalize with Rosett
     ```sql
     EXPLAIN
     SELECT
-      *
+      user_id,
+      email,
+      created_at
     FROM
       company_data."123"
     LIMIT 10 ROWS
@@ -92,7 +96,9 @@ This tutorial is part of the First Steps series. Complete [Normalize with Rosett
 
     ```sql
     SELECT
-      *
+      user_id,
+      email,
+      created_at
     FROM
       company_data."123"
     LIMIT 10 ROWS
@@ -208,7 +214,7 @@ WHERE company_data."123"._price_cpm_usd <= 1.00
 ```sql
 SELECT
   company_data."123".category,
-  COUNT(*) AS count
+  COUNT(1) AS count
 FROM
   company_data."123"
 GROUP BY
@@ -222,7 +228,9 @@ LIMIT 20 ROWS
 
 ```sql
 SELECT
-  *
+  company_data."123".user_id,
+  company_data."123".email,
+  company_data."123".created_at
 FROM
   company_data."123"
 WHERE
@@ -236,7 +244,7 @@ LIMIT 50 ROWS
 
 ```sql
 SELECT
-  COUNT(*) AS total,
+  COUNT(1) AS total,
   COUNT(company_data."123".email) AS has_email,
   COUNT(company_data."123".phone) AS has_phone
 FROM

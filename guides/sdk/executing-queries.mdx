@@ -56,7 +56,7 @@ The `executeNql()` method accepts the following options:
 
 ```typescript
 const result = await api.executeNql({
-  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
   data_plane_id: null,
   execution_cluster: { type: 'dedicated' },
 });
@@ -180,7 +180,7 @@ const result = await api.executeNql({
   nql: `
     SELECT
       event_type,
-      COUNT(*) as event_count
+      COUNT(1) as event_count
     FROM company_data."customer_events"
     GROUP BY event_type
     LIMIT 100
@@ -214,7 +214,7 @@ Wrap query execution in try-catch to handle errors:
 ```typescript
 try {
   const result = await api.executeNql({
-    nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+    nql: 'SELECT user_id, email, created_at FROM company_data."my_dataset" LIMIT 10',
     data_plane_id: null,
   });
 

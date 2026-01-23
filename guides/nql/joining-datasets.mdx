@@ -99,7 +99,7 @@ SELECT
   COALESCE(o.order_count, 0) AS order_count
 FROM company_data."100" c
 LEFT JOIN (
-  SELECT customer_id, COUNT(*) AS order_count
+  SELECT customer_id, COUNT(1) AS order_count
   FROM company_data."200"
   GROUP BY customer_id
 ) o ON c.customer_id = o.customer_id
@@ -278,7 +278,11 @@ INNER JOIN company_data."456" sessions
 Use `IS NOT DISTINCT FROM` for NULL-safe equality:
 
 ```sql
-SELECT t1.*, t2.*
+SELECT
+  t1.id,
+  t1.nullable_key,
+  t2.value,
+  t2.nullable_key AS t2_nullable_key
 FROM company_data."123" t1
 INNER JOIN company_data."456" t2
   ON t1.nullable_key IS NOT DISTINCT FROM t2.nullable_key
@@ -317,7 +321,7 @@ INNER JOIN (
   SELECT
     customer_id,
     SUM(total_amount) AS total_spent,
-    COUNT(*) AS order_count
+    COUNT(1) AS order_count
   FROM company_data."200"
   GROUP BY customer_id
 ) stats ON c.customer_id = stats.customer_id
@@ -360,21 +364,21 @@ SELECT
   c.customer_id,
   o.order_id
 FROM (
-  SELECT * FROM company_data."100"
+  SELECT customer_id, email, status FROM company_data."100"
   WHERE status = 'active'
 ) c
 INNER JOIN (
-  SELECT * FROM company_data."200"
+  SELECT order_id, customer_id, order_date FROM company_data."200"
   WHERE order_date >= '2024-01-01'
 ) o ON c.customer_id = o.customer_id
 
 -- Or use CTEs for clarity
 WITH active_customers AS (
-  SELECT * FROM company_data."100"
+  SELECT customer_id, email, status FROM company_data."100"
   WHERE status = 'active'
 ),
 recent_orders AS (
-  SELECT * FROM company_data."200"
+  SELECT order_id, customer_id, order_date FROM company_data."200"
   WHERE order_date >= '2024-01-01'
 )
 SELECT
@@ -412,7 +416,7 @@ AS (
     o.total_orders
   FROM company_data."100" c
   INNER JOIN (
-    SELECT customer_id, COUNT(*) AS total_orders
+    SELECT customer_id, COUNT(1) AS total_orders
     FROM company_data."200"
     GROUP BY customer_id
   ) o ON c.customer_id = o.customer_id

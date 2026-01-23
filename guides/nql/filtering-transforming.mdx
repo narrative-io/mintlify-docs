@@ -61,15 +61,9 @@ FROM company_data."123"
 Always use fully qualified column names in joins to avoid ambiguity.
 </Tip>
 
-### Select all columns
-
-Use `*` to select all columns (use sparingly):
-
-```sql
-SELECT *
-FROM company_data."123"
-LIMIT 100 ROWS
-```
+<Note>
+NQL requires explicit column lists. Wildcards (`SELECT *`) are not supported. See [Explicit Column Selection](/reference/nql/explicit-columns) for why and how to list columns explicitly.
+</Note>
 
 ### Select distinct values
 
@@ -89,7 +83,7 @@ FROM company_data."123"
 Filter rows using comparison operators:
 
 ```sql
-SELECT *
+SELECT user_id, email, age, status
 FROM company_data."123"
 WHERE
   age >= 18
@@ -111,7 +105,7 @@ WHERE
 Use `AND`, `OR`, and `NOT` to combine conditions:
 
 ```sql
-SELECT *
+SELECT user_id, email, status, region
 FROM company_data."123"
 WHERE
   (status = 'active' OR status = 'pending')
@@ -126,7 +120,7 @@ Use parentheses to control evaluation order. `AND` is evaluated before `OR`.
 Check membership in a list:
 
 ```sql
-SELECT *
+SELECT user_id, category, source, created_at
 FROM company_data."123"
 WHERE
   category IN ('electronics', 'clothing', 'home')
@@ -138,7 +132,7 @@ WHERE
 Filter within a range (inclusive):
 
 ```sql
-SELECT *
+SELECT user_id, email, age, score
 FROM company_data."123"
 WHERE
   age BETWEEN 25 AND 45
@@ -150,7 +144,7 @@ WHERE
 Check for missing values:
 
 ```sql
-SELECT *
+SELECT user_id, email, phone
 FROM company_data."123"
 WHERE
   email IS NOT NULL
@@ -164,10 +158,10 @@ Don't use `= NULL` or `<> NULL`. These always return NULL, not true/false. Use `
 
 ### Pattern matching with LIKE
 
-Match string patterns using wildcards:
+Match string patterns using LIKE wildcards:
 
 ```sql
-SELECT *
+SELECT user_id, email, name, code
 FROM company_data."123"
 WHERE
   email LIKE '%@gmail.com'      -- Ends with @gmail.com
@@ -195,7 +189,7 @@ WHERE LOWER(email) LIKE '%@gmail.com'
 Filter relative to the current date:
 
 ```sql
-SELECT *
+SELECT user_id, event_date, created_at
 FROM company_data."123"
 WHERE
   -- Last 30 days
@@ -210,7 +204,7 @@ WHERE
 Filter within specific date ranges:
 
 ```sql
-SELECT *
+SELECT user_id, email, event_date
 FROM company_data."123"
 WHERE
   event_date BETWEEN '2024-01-01' AND '2024-12-31'
@@ -221,7 +215,7 @@ WHERE
 Filter by specific date components:
 
 ```sql
-SELECT *
+SELECT user_id, event_date, event_type
 FROM company_data."123"
 WHERE
   EXTRACT(YEAR FROM event_date) = 2024
@@ -236,7 +230,7 @@ WHERE
 Control costs by filtering on the special `_price_cpm_usd` column:
 
 ```sql
-SELECT *
+SELECT user_id, email, category
 FROM company_data."123"
 WHERE
   category = 'premium'
@@ -384,7 +378,7 @@ Compute summary statistics:
 
 ```sql
 SELECT
-  COUNT(*) AS total_rows,
+  COUNT(1) AS total_rows,
   COUNT(DISTINCT user_id) AS unique_users,
   SUM(amount) AS total_amount,
   AVG(score) AS average_score,
@@ -400,7 +394,7 @@ Aggregate by categories:
 ```sql
 SELECT
   category,
-  COUNT(*) AS count,
+  COUNT(1) AS count,
   SUM(amount) AS total,
   AVG(amount) AS average
 FROM company_data."123"
@@ -414,10 +408,10 @@ Use `HAVING` to filter after aggregation:
 ```sql
 SELECT
   category,
-  COUNT(*) AS count
+  COUNT(1) AS count
 FROM company_data."123"
 GROUP BY category
-HAVING COUNT(*) > 100
+HAVING COUNT(1) > 100
 ```
 
 ---

@@ -22,7 +22,7 @@ Compare two values and return a boolean result.
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   status = 'active'
@@ -63,7 +63,7 @@ WHERE (a = 1 OR b = 2) AND c = 3
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   (status = 'active' OR status = 'pending')
@@ -140,7 +140,7 @@ column NOT IN (value1, value2)
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   status IN ('active', 'pending', 'review')
@@ -150,7 +150,7 @@ WHERE
 ### IN with subquery
 
 ```sql
-SELECT *
+SELECT user_id, email, status
 FROM company_data."1"
 WHERE user_id IN (
   SELECT user_id
@@ -183,7 +183,7 @@ column >= lower_bound AND column <= upper_bound
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   age BETWEEN 25 AND 45
@@ -212,7 +212,7 @@ WHERE email <> NULL
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   email IS NOT NULL
@@ -253,7 +253,7 @@ Match string patterns using wildcards.
 | `_` | Exactly one character |
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   name LIKE 'John%'           -- Starts with "John"
@@ -303,7 +303,7 @@ timestamp_column - INTERVAL 'n' unit
 ### Examples
 
 ```sql
-SELECT *
+SELECT user_id, email, status, age
 FROM company_data."123"
 WHERE
   -- Last 30 days

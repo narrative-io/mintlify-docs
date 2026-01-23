@@ -67,7 +67,7 @@ SELECT
   segment,
   category,
   COUNT(DISTINCT product_id) AS unique_products,
-  COUNT(*) AS total_purchases
+  COUNT(1) AS total_purchases
 FROM order_products
 GROUP BY customer_id, customer_name, segment, category
 ```
@@ -337,7 +337,7 @@ FROM company_data."100" c
 LEFT JOIN (
   SELECT
     customer_id,
-    COUNT(*) AS order_count,
+    COUNT(1) AS order_count,
     SUM(amount) AS total_spent,
     AVG(amount) AS avg_order
   FROM company_data."200"
@@ -357,7 +357,7 @@ WITH customer_base AS (
 order_summary AS (
   SELECT
     customer_id,
-    COUNT(*) AS orders,
+    COUNT(1) AS orders,
     SUM(amount) AS total
   FROM company_data."200"
   GROUP BY customer_id
@@ -365,7 +365,7 @@ order_summary AS (
 engagement_summary AS (
   SELECT
     customer_id,
-    COUNT(*) AS interactions,
+    COUNT(1) AS interactions,
     MAX(interaction_date) AS last_interaction
   FROM company_data."300"
   GROUP BY customer_id
@@ -451,7 +451,7 @@ AS (
   LEFT JOIN (
     SELECT
       customer_id,
-      COUNT(*) AS order_count,
+      COUNT(1) AS order_count,
       SUM(amount) AS total_value,
       MAX(order_date) AS last_order_date
     FROM company_data."200"

@@ -39,6 +39,10 @@ FROM table_reference [AS alias]
 [LIMIT n [OFFSET m] ROWS]
 ```
 
+<Note>
+NQL requires explicit column lists. Wildcards (`SELECT *` and `COUNT(*)`) are not supported. See [Explicit Column Selection](/reference/nql/explicit-columns) for details.
+</Note>
+
 ### Clause order
 
 Clauses must appear in this order:
@@ -69,11 +73,11 @@ WHERE created_at > '2024-01-01'
 ```sql
 SELECT
   region,
-  COUNT(*) AS user_count,
+  COUNT(1) AS user_count,
   AVG(lifetime_value) AS avg_ltv
 FROM company_data."456"
 GROUP BY region
-HAVING COUNT(*) > 100
+HAVING COUNT(1) > 100
 ORDER BY avg_ltv DESC
 ```
 
@@ -318,7 +322,7 @@ FROM DELTA(TABLE narrative.rosetta_stone)
 ```sql
 SELECT long_value
 FROM DELTA((
-  SELECT *
+  SELECT long_value
   FROM company_data.rosetta_stone
   WHERE long_value > 42
 ))

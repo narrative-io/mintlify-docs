@@ -1,0 +1,133 @@
+---
+title: 'Explicit Column Selection'
+description: 'Why NQL requires explicit column lists instead of wildcards'
+icon: 'list-check'
+---
+
+NQL requires you to explicitly list the columns you want to select. Wildcard syntax (`SELECT *` and `COUNT(*)`) is not supported.
+
+## Why explicit columns are required
+
+### Cost transparency
+
+NQL queries can have costs associated with them based on the data accessed. By requiring explicit column lists, you know exactly what data you're requesting and can better predict query costs. Implicit column selection through `*` would obscure this.
+
+### Governance compliance
+
+Narrative's governance engine evaluates every query to determine what data can be accessed based on permissions and access rules. Explicit column lists allow the governance engine to make precise decisions about query eligibility. With wildcard syntax, the engine couldn't determine ahead of time which columns would be accessed.
+
+### Query plan optimization
+
+This is especially important for [Rosetta Stone](/concepts/rosetta-stone/overview) queries. When you query Rosetta Stone, NQL compiles your query into SQL that pulls from multiple underlying tables.
+
+Consider this query:
+
+```sql
+SELECT
+  rs.email,
+  rs.phone
+FROM narrative.rosetta_stone rs
+```
+
+NQL compiles this into something like:
+
+```sql
+SELECT email, NULL AS phone FROM email_table
+UNION ALL
+SELECT NULL AS email, phone FROM phone_table
+```
+
+With explicit columns, the query planner knows exactly which tables to include in the union. Tables that don't contain any of the requested columns can be pruned entirely.
+
+If wildcards were allowed, a query like `SELECT * FROM narrative.rosetta_stone` would need to include **every column from every table** in the Rosetta Stone catalog. This would create massive query plans with potentially hundreds of tables in the union, even when you only need a few fields.
+
+---
+
+## Migration from SQL
+
+If you're coming from standard SQL, here's how to adapt your queries:
+
+### Replace SELECT *
+
+Instead of selecting all columns, list the specific columns you need:
+
+```sql
+-- Instead of this (not supported):
+SELECT * FROM company_data."123"
+
+-- Write this:
+SELECT
+  user_id,
+  email,
+  created_at
+FROM company_data."123"
+```
+
+### Replace COUNT(*)
+
+For counting rows, use `COUNT(1)`:
+
+```sql
+-- Instead of this (not supported):
+SELECT COUNT(*) FROM company_data."123"
+
+-- Write this:
+SELECT COUNT(1) AS row_count FROM company_data."123"
+```
+
+When you specifically want to count non-null values in a column, use `COUNT(column_name)`:
+
+```sql
+-- Count rows where email is not null
+SELECT COUNT(email) AS emails_present FROM company_data."123"
+```
+
+### Replace SELECT t1.*, t2.*
+
+In joins, enumerate the columns from each table:
+
+```sql
+-- Instead of this (not supported):
+SELECT t1.*, t2.*
+FROM company_data."123" t1
+JOIN company_data."456" t2 ON t1.id = t2.id
+
+-- Write this:
+SELECT
+  t1.user_id,
+  t1.email,
+  t2.order_id,
+  t2.amount
+FROM company_data."123" t1
+JOIN company_data."456" t2 ON t1.id = t2.id
+```
+
+---
+
+## Benefits of explicit selection
+
+While requiring explicit columns may seem like extra work, it provides several benefits:
+
+- **Clearer intent**: Your query documents exactly what data you need
+- **Faster queries**: Only requested columns are processed and transferred
+- **Easier maintenance**: Changes to the underlying schema won't unexpectedly affect your query results
+- **Better cost control**: You pay only for the data you actually use
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL vs SQL" icon="code-compare" href="/concepts/nql/sql-comparison">
+    Other differences between NQL and standard SQL
+  </Card>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Complete query structure and grammar
+  </Card>
+  <Card title="Rosetta Stone" icon="language" href="/concepts/rosetta-stone/overview">
+    Understanding identity resolution across datasets
+  </Card>
+  <Card title="Query Optimization" icon="bolt" href="/guides/nql/query-optimization">
+    Tips for writing efficient queries
+  </Card>
+</CardGroup>
