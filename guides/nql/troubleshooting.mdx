@@ -1,0 +1,53 @@
+---
+title: 'NQL Troubleshooting'
+description: 'Diagnose and resolve common NQL query errors'
+icon: 'triangle-exclamation'
+---
+
+When an NQL query fails, the platform returns a structured error response with details about what went wrong. This section helps you diagnose and resolve common errors.
+
+## Understanding error responses
+
+NQL errors return a JSON response with the following structure:
+
+```json
+{
+  "type": "https://www.narrative.io/knowledge-base/...",
+  "title": "Error Title",
+  "status": 422,
+  "detail": "Detailed explanation of what went wrong",
+  "instance": "/nql/run",
+  "logId": "unique-error-identifier"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | URL identifying the error type |
+| `title` | Brief error summary |
+| `status` | HTTP status code (typically 422 for validation errors) |
+| `detail` | Detailed explanation of the problem |
+| `instance` | The API endpoint that produced the error |
+| `logId` | Unique identifier for support requests |
+
+<Tip>
+When contacting support about an error, include the `logId` value to help quickly identify your specific issue.
+</Tip>
+
+## Common errors
+
+<CardGroup cols={2}>
+  <Card title="Cross-Data Plane Queries" icon="database" href="/guides/nql/troubleshooting/cross-data-plane-queries">
+    Resolve errors when queries reference datasets in different data planes
+  </Card>
+  <Card title="Unsupported Type Errors" icon="ban" href="/guides/nql/troubleshooting/unsupported-type-error">
+    Fix type mismatches and unsupported operations in your queries
+  </Card>
+</CardGroup>
+
+## General troubleshooting steps
+
+1. **Read the error detail** — The `detail` field usually explains exactly what's wrong
+2. **Check the instance** — Identifies whether the error occurred during parsing (`/nql/parse`) or execution (`/nql/run`)
+3. **Review your query** — Look for the specific element mentioned in the error
+4. **Consult the reference** — Check [NQL syntax](/reference/nql/syntax) and [data types](/reference/nql/data-types) for supported operations

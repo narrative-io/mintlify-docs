@@ -1,0 +1,79 @@
+---
+title: 'Cross-Data Plane Query Errors'
+description: 'Resolve errors when queries reference data across multiple data planes'
+icon: 'database'
+---
+
+NQL queries execute within a single [data plane](/concepts/primitives/data-planes). If your query references datasets that reside in different data planes, the query will fail.
+
+<Warning>
+NQL cannot join or query across multiple data planes. All datasets referenced in a query must exist within the same data plane.
+</Warning>
+
+## Why this happens
+
+A data plane is the infrastructure where your data physically resides and where queries execute. Narrative's architecture separates data planes to enable:
+
+- **Data residency compliance** — Keep data in specific geographic or organizational boundaries
+- **Security isolation** — Maintain separate security perimeters for different data sources
+- **Infrastructure flexibility** — Run data planes on different platforms (Narrative-hosted, Snowflake, Spark)
+
+Because each data plane is an independent execution environment, the query engine cannot access data across data plane boundaries in a single query.
+
+For a deeper understanding of data plane architecture, see [Data Planes](/concepts/primitives/data-planes).
+
+## Troubleshooting steps
+
+### 1. Identify which datasets are in different data planes
+
+Review your query and identify all datasets referenced. In the Narrative platform:
+
+1. Navigate to the dataset catalog
+2. Check the data plane assignment for each dataset in your query
+3. Note which datasets belong to different data planes
+
+### 2. Modify your query
+
+Once you've identified the issue, you have two options:
+
+**Option A: Query datasets separately**
+
+Run separate queries against each data plane and combine results outside of NQL:
+
+```sql
+-- Query 1: Run against Data Plane A
+SELECT * FROM "companydata"."dataset_in_plane_a" WHERE ...
+
+-- Query 2: Run against Data Plane B
+SELECT * FROM "companydata"."dataset_in_plane_b" WHERE ...
+
+-- Combine results in your application
+```
+
+**Option B: Move data to a common data plane**
+
+If you need to join datasets frequently, consider:
+
+1. Creating a materialized view that copies the necessary data to a single data plane
+2. Working with your Narrative representative to consolidate datasets
+
+<Note>
+Data movement between data planes may have compliance implications. Consult your data governance team before moving data.
+</Note>
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Understand where your data lives and is processed
+  </Card>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries flow from submission through execution
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    How Narrative orchestrates across data planes
+  </Card>
+  <Card title="NQL Troubleshooting" icon="triangle-exclamation" href="/guides/nql/troubleshooting">
+    Overview of common NQL errors
+  </Card>
+</CardGroup>

@@ -1,0 +1,141 @@
+---
+title: 'Unsupported Type Errors'
+description: 'Resolve errors when NQL queries use unsupported data types or operations'
+icon: 'ban'
+---
+
+NQL validates data types during query parsing and execution. When a query includes unsupported types or incompatible type operations, the platform returns a 422 error with details about the type issue.
+
+## GEOMETRY type not supported in SELECT
+
+The GEOMETRY type cannot be used directly in SELECT statements. This error occurs when your query attempts to return a geometry column or the result of a geometry function.
+
+### Error response
+
+```json
+{
+  "type": "https://www.narrative.io/knowledge-base/support-troubleshooting/nql/unsupported-type-error",
+  "title": "Unsupported Type Error: Unsupported GEOMETRY Type",
+  "status": 422,
+  "detail": "The NQL query includes the unsupported GEOMETRY type. The request cannot be processed because the GEOMETRY type is not supported in the SELECT.",
+  "instance": "/nql/run",
+  "logId": "2cf8fef9-9dc2-4438-b6f9-e28c386e48cc"
+}
+```
+
+### Cause
+
+Geometry functions like `STCIRCLE()` return GEOMETRY types that cannot be serialized in query results. While you can use geometry functions in JOIN conditions and WHERE clauses, you cannot SELECT them directly.
+
+### Solution
+
+Remove the GEOMETRY column from your SELECT statement. Keep geometry operations only in JOIN or WHERE clauses.
+
+**Before (causes error):**
+
+```sql
+SELECT
+  maid,
+  STCIRCLE(longitude, latitude, 15) AS geofence  -- GEOMETRY in SELECT
+FROM companydata.locations
+```
+
+**After (fixed):**
+
+```sql
+SELECT
+  maid,
+  longitude,
+  latitude
+FROM companydata.locations
+```
+
+If you need to use geometry for filtering, keep it in the JOIN or WHERE clause:
+
+```sql
+SELECT
+  observations.maid,
+  observations.event_timestamp,
+  pois.name AS poi_name
+FROM companydata.observations
+INNER JOIN companydata.pois
+  ON STIntersects(
+    STSafePoint(observations.longitude, observations.latitude),
+    STCIRCLE(pois.longitude, pois.latitude, 15)
+  )
+```
+
+## String concatenation type mismatch
+
+The `||` operator concatenates strings but requires compatible types on both sides. This error occurs when you try to concatenate incompatible types.
+
+### Error response
+
+```json
+{
+  "type": "https://www.narrative.io/knowledge-base/support-troubleshooting/nql/unsupported-type-error",
+  "title": "Unsupported Type Error: String Concatenation",
+  "status": 422,
+  "detail": "The NQL query encountered an unsupported type error when attempting to concatenate different types using the '||' operator. The '||' operator can only concatenate :string || :string or <EQUIVALENTTYPE> || <EQUIVALENTTYPE> and is not compatible with '<RECORDTYPE:PEEK_DEFAULT(VARCHAR TYPE, VARCHAR VALUE)> || <CHAR(1)>'.",
+  "instance": "/nql/parse",
+  "logId": "7798e641-5d5e-47d3-a884-f5271e788b6b"
+}
+```
+
+### Cause
+
+The `||` operator requires both operands to be strings (or equivalent string types). Common causes include:
+
+- Concatenating a complex record type with a string
+- Mixing incompatible character types
+- Using structured fields that haven't been extracted to simple strings
+
+### Solution
+
+Extract string values from complex types before concatenation, or cast values to compatible string types.
+
+**Before (causes error):**
+
+```sql
+SELECT
+  "hashedemail" || '-' || "mobileiduniqueidentifier" || '-' || "eventtimestamp" AS unique_key
+FROM companydata.events
+```
+
+**After (fixed):**
+
+If the fields are structured types with nested values, extract the string value first:
+
+```sql
+SELECT
+  "hashedemail"."value" || '-' || "mobileiduniqueidentifier"."value" || '-' || CAST("eventtimestamp" AS VARCHAR) AS unique_key
+FROM companydata.events
+```
+
+<Tip>
+When concatenating timestamps or other non-string types, use `CAST(field AS VARCHAR)` to convert them to strings first.
+</Tip>
+
+## General tips for type errors
+
+1. **Check the `detail` field** — It identifies the specific types that are incompatible
+2. **Review structured fields** — Many fields in Narrative are record types with `.value` subfields
+3. **Use explicit casts** — When in doubt, cast values to the expected type with `CAST(field AS type)`
+4. **Check the instance** — `/nql/parse` errors occur during query validation; `/nql/run` errors occur during execution
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Data Types" icon="list-check" href="/reference/nql/data-types">
+    Reference for supported data types
+  </Card>
+  <Card title="NQL Functions" icon="code" href="/reference/nql/functions">
+    Reference for built-in functions including geometry operations
+  </Card>
+  <Card title="NQL Troubleshooting" icon="triangle-exclamation" href="/guides/nql/troubleshooting">
+    Overview of common NQL errors
+  </Card>
+  <Card title="Rosetta Stone Attributes" icon="language" href="/reference/rosetta-stone/attribute-types">
+    Understanding structured attribute types
+  </Card>
+</CardGroup>

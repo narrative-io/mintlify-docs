@@ -64,6 +64,14 @@
                   "guides/nql/query-optimization",
                   "guides/nql/query-optimization/avoid-or-in-join"
                 ]
+              },
+              {
+                "group": "Troubleshooting",
+                "pages": [
+                  "guides/nql/troubleshooting",
+                  "guides/nql/troubleshooting/cross-data-plane-queries",
+                  "guides/nql/troubleshooting/unsupported-type-error"
+                ]
               }
             ]
           },
