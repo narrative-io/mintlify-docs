@@ -56,6 +56,14 @@ The process of sharing cookie-based identifiers between domains by passing IDs a
 
 **Related:** [Cookie Syncing Reference](/reference/integrations/cookie-syncing)
 
+### Company ID
+
+A unique identifier assigned to each partner or customer organization on the Narrative data collaboration platform. Company IDs are used internally to identify organizations in API calls, integrations, and data collaboration workflows.
+
+To find the company name associated with a Company ID, or to determine your own organization's Company ID, contact your Narrative partner success representative or [reach out to support](mailto:support@narrative.io).
+
+**Related:** [Cookie Syncing](/reference/integrations/cookie-syncing)
+
 ### CPRA (California Privacy Rights Act)
 
 An amendment to CCPA that took effect January 1, 2023, strengthening California's privacy law by adding new consumer rights (correction, limiting sensitive data use), creating the California Privacy Protection Agency (CPPA) for enforcement, and expanding business obligations.
@@ -113,6 +121,10 @@ Under GDPR, an identified or identifiable natural person whose personal data is 
 ### Dataset
 
 A collection of structured data registered in Narrative that can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
+
+### Device alias
+
+A data field that provides details about a user's device, broken out into make, model, and operating system. Device alias data helps categorize user devices and is collected through SDKs or real-time bidding environments. Examples include "iPhone X, iOS 13.3.1" or "Pixel 3, Android 10.0".
 
 ### Encoding space
 
@@ -201,6 +213,12 @@ A translation rule that associates a Rosetta Stone attribute with a specific col
 ### Marketplace
 
 The Narrative platform's catalog where organizations discover available datasets from other organizations. The marketplace enables data discovery and facilitates data collaboration relationships.
+
+### Mobile Advertising ID (MAID)
+
+A unique pseudo-anonymous identifier tied to a mobile device, provided by the mobile operating system. iOS calls this the Identifier For Advertisers (IDFA), while Android calls it the Advertising ID (GAID or Ad ID). Both consist of 32 hyphen-separated characters. MAIDs are resettable and users can opt out of their collection.
+
+**Related:** [Mobile Ad IDs](/concepts/identifiers/mobile-ad-ids)
 
 ### Match table
 
@@ -378,6 +396,18 @@ An NQL expression used within a Rosetta Stone mapping to convert source data to 
 
 ## U
 
+### UID2 (Unified ID 2.0)
+
+A privacy-focused user identifier developed by the Identity Consortium (including The Trade Desk) that enables cross-platform data matching without compromising user privacy. UID2 is an open-source, standalone solution that can be generated from hashed emails or phone numbers. Narrative supports automatic UID2 generation from uploaded data.
+
+**Related:** [UID2](/concepts/identifiers/uid2)
+
+### UNNEST
+
+An NQL function that expands an array column into multiple rows, with one row generated for each element in the array. UNNEST is commonly used to flatten multi-key matching scenarios into single-key joins that the query planner can optimize efficiently.
+
+**Related:** [NQL Functions Reference](/reference/nql/functions), [Avoid OR in JOIN Clauses](/guides/nql/query-optimization/avoid-or-in-join)
+
 ### Unix time
 
 The number of seconds (or milliseconds) elapsed since January 1st, 1970 at 00:00:00 UTC (the Unix epoch). Narrative's Data Streaming Platform uses Unix time in milliseconds for all timestamp fields, providing millisecond-level precision for data collaboration.
@@ -390,8 +420,10 @@ A database operation that inserts a new record if it does not exist, or updates 
 
 **Related:** [Incremental Upserts with MERGE ON](/guides/nql/incremental-upserts), [Materialized View Syntax](/reference/nql/materialized-view-syntax)
 
-### UNNEST
+### URI (Uniform Resource Identifier)
 
-An NQL function that expands an array column into multiple rows, with one row generated for each element in the array. UNNEST is commonly used to flatten multi-key matching scenarios into single-key joins that the query planner can optimize efficiently.
+A string that represents a particular resource. Common resources include web pages (full URLs like `http://example.org/page`) and mobile applications (iOS app IDs like `553834731` or Android package names like `com.example.app`). In Narrative, URI is a required attribute in the Digital Consumption data type, denoting where a digital behavior took place.
 
-**Related:** [NQL Functions Reference](/reference/nql/functions), [Avoid OR in JOIN Clauses](/guides/nql/query-optimization/avoid-or-in-join)
+### User agent
+
+A string from a user's device that identifies the operating system, browser, carrier, and hardware information. User agent strings are collected in digital consumption scenarios and help identify device characteristics. Example: `Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15`.
