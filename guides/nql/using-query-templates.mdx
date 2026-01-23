@@ -1,0 +1,241 @@
+---
+title: 'Using Query Templates'
+description: 'Create and use reusable queries with configurable placeholders'
+icon: 'file-code'
+---
+
+Query templates let you build reusable queries that others can customize without editing NQL. This guide walks through finding existing templates, using them, and creating your own.
+
+## Prerequisites
+
+Before working with query templates, you should have:
+
+- Basic familiarity with [NQL syntax](/reference/nql/syntax)
+- Access to Data Studio
+- Understanding of [what query templates are](/concepts/nql/query-templates) and when to use them
+
+## Finding templates
+
+To browse available templates:
+
+1. Navigate to **My Data** in the main navigation
+2. Select **Queries**
+3. Click **Query Templates**
+
+The template list shows all templates available to your organization. Each entry displays the template name, description, and the placeholders it requires.
+
+## Using an existing template
+
+### Select a template
+
+From the Query Templates list, click on the template you want to use. The template opens showing:
+
+- The template's description and purpose
+- A list of placeholders with their names, types, and descriptions
+- Which placeholders are required vs. optional
+
+### Fill in placeholders
+
+For each placeholder, enter an appropriate value:
+
+- **Required placeholders** must have values before you can execute the query
+- **Optional placeholders** use default values if left empty
+- The placeholder type determines what values are valid (dates, numbers, column names, etc.)
+
+<Tip>
+Placeholder descriptions explain what each value controls. Read them carefully to understand how your inputs affect the query results.
+</Tip>
+
+### Execute the query
+
+Once all required placeholders are filled:
+
+1. Click **Execute** to run the query
+2. Review the results in the query output panel
+3. Optionally, save the executed query for future reference
+
+## Creating a template
+
+### Enter Template Mode
+
+To create a new template:
+
+1. Open **Data Studio**
+2. Click **Template Mode** in the toolbar
+
+Template Mode enables placeholder insertion and template-specific options.
+
+### Write your base query
+
+Start by writing a working NQL query that produces the results you want. Test it with specific values to verify it works correctly:
+
+```sql
+SELECT
+    region,
+    COUNT(1) as user_count,
+    SUM(revenue) as total_revenue
+FROM sales_data
+WHERE
+    sale_date >= '2024-01-01'
+    AND sale_date < '2024-02-01'
+    AND region = 'North America'
+GROUP BY region
+```
+
+### Add placeholders
+
+Identify the parts of your query that should be variable, then replace them with placeholders using `{{placeholder_name}}` syntax:
+
+```sql
+SELECT
+    region,
+    COUNT(1) as user_count,
+    SUM(revenue) as total_revenue
+FROM sales_data
+WHERE
+    sale_date >= {{start_date}}
+    AND sale_date < {{end_date}}
+    AND region = {{target_region}}
+GROUP BY region
+```
+
+### Define placeholder metadata
+
+For each placeholder, specify:
+
+- **Name**: A clear, descriptive identifier
+- **Type**: The data type (string, number, date, etc.)
+- **Description**: What this placeholder controls
+- **Required**: Whether users must provide a value
+- **Default** (optional): A fallback value for optional placeholders
+
+<Tip>
+Good placeholder names are self-documenting. `start_date` is clearer than `d1`. `min_revenue_threshold` is clearer than `thresh`.
+</Tip>
+
+### Save the template
+
+1. Click **Save Template**
+2. Enter a template name that describes its purpose
+3. Add a description explaining what the template does and when to use it
+4. Add tags to help others find the template
+5. Click **Save**
+
+## Editing templates
+
+To modify an existing template:
+
+1. Navigate to **Queries** → **Query Templates**
+2. Click on the template you want to edit
+3. Click **Edit**
+4. Modify the query or placeholder definitions as needed
+5. Save your changes
+
+<Warning>
+Editing a template affects all future uses. If others rely on the template, communicate changes before modifying placeholder names or removing placeholders.
+</Warning>
+
+## Example: Date-range report template
+
+Let's create a template for a sales report that users can run for any date range and region.
+
+### Step 1: Write the base query
+
+```sql
+SELECT
+    DATE(sale_timestamp) as sale_date,
+    product_category,
+    COUNT(1) as transactions,
+    SUM(amount) as revenue
+FROM sales
+WHERE
+    sale_timestamp >= '2024-01-01'
+    AND sale_timestamp < '2024-02-01'
+    AND region = 'EMEA'
+GROUP BY DATE(sale_timestamp), product_category
+ORDER BY sale_date, revenue DESC
+```
+
+### Step 2: Identify variable parts
+
+In this query, three things might change:
+- Start date (`2024-01-01`)
+- End date (`2024-02-01`)
+- Region (`EMEA`)
+
+### Step 3: Add placeholders
+
+```sql
+SELECT
+    DATE(sale_timestamp) as sale_date,
+    product_category,
+    COUNT(1) as transactions,
+    SUM(amount) as revenue
+FROM sales
+WHERE
+    sale_timestamp >= {{start_date}}
+    AND sale_timestamp < {{end_date}}
+    AND region = {{region}}
+GROUP BY DATE(sale_timestamp), product_category
+ORDER BY sale_date, revenue DESC
+```
+
+### Step 4: Define placeholder metadata
+
+| Placeholder | Type | Required | Description |
+|-------------|------|----------|-------------|
+| `start_date` | date | Yes | Beginning of the reporting period (inclusive) |
+| `end_date` | date | Yes | End of the reporting period (exclusive) |
+| `region` | string | Yes | Geographic region to filter by |
+
+### Step 5: Save and test
+
+Save the template as "Regional Sales Report" with a description like "Daily sales metrics by product category for a specified region and date range."
+
+Test with different placeholder values to verify results match expectations.
+
+## Example: Materialized view template
+
+Templates can also create materialized views. This lets users generate scheduled data products with customized parameters.
+
+```sql
+CREATE MATERIALIZED VIEW {{view_name}}
+REFRESH_SCHEDULE = '@daily'
+DISPLAY_NAME = {{display_name}}
+AS
+SELECT
+    user_id,
+    COUNT(1) as event_count,
+    MAX(event_timestamp) as last_activity
+FROM events
+WHERE
+    event_type = {{event_type}}
+    AND event_timestamp > CURRENT_TIMESTAMP - INTERVAL {{lookback_days}} DAY
+GROUP BY user_id
+```
+
+| Placeholder | Type | Required | Description |
+|-------------|------|----------|-------------|
+| `view_name` | string | Yes | Internal name for the materialized view |
+| `display_name` | string | Yes | Human-readable name shown in the UI |
+| `event_type` | string | Yes | Type of event to aggregate |
+| `lookback_days` | number | Yes | Number of days of history to include |
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Query Templates" icon="lightbulb" href="/concepts/nql/query-templates">
+    Understand when and why to use templates
+  </Card>
+  <Card title="Query Template Syntax" icon="code" href="/reference/nql/query-template-syntax">
+    Complete reference for placeholder syntax
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Pre-compute and cache query results
+  </Card>
+  <Card title="NQL Syntax" icon="terminal" href="/reference/nql/syntax">
+    Core NQL syntax reference
+  </Card>
+</CardGroup>

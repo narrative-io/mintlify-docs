@@ -58,7 +58,8 @@
               "concepts/nql/type-system",
               "concepts/nql/join-performance",
               "concepts/nql/materialized-views",
-              "concepts/nql/incremental-view-maintenance"
+              "concepts/nql/incremental-view-maintenance",
+              "concepts/nql/query-templates"
             ]
           },
           {
@@ -130,6 +131,7 @@
               "guides/nql/joining-datasets",
               "guides/nql/creating-materialized-views",
               "guides/nql/incremental-upserts",
+              "guides/nql/using-query-templates",
               {
                 "group": "Query Optimization",
                 "pages": [
@@ -231,7 +233,8 @@
               "reference/nql/operators",
               "reference/nql/functions",
               "reference/nql/reserved-keywords",
-              "reference/nql/materialized-view-syntax"
+              "reference/nql/materialized-view-syntax",
+              "reference/nql/query-template-syntax"
             ]
           },
           {

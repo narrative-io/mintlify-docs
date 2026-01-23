@@ -298,6 +298,12 @@ A data protection technique that replaces directly identifying information with 
 
 **Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
 
+### Placeholder (query template)
+
+A variable element in a [query template](#query-template) marked with `{{name}}` syntax that is replaced with a user-provided value at execution time. Placeholder types include literal values (strings, numbers, dates), columns, filters, and output fields. Each placeholder has metadata including name, type, description, and whether it is required.
+
+**Related:** [Query Template Syntax](/reference/nql/query-template-syntax), [Using Query Templates](/guides/nql/using-query-templates)
+
 ---
 
 ## Q
@@ -307,6 +313,12 @@ A data protection technique that replaces directly identifying information with 
 The process by which the [control plane](#control-plane) transforms an [NQL](#nql-narrative-query-language) query into executable SQL for a target [data plane](#data-plane). Query compilation includes parsing, permission validation, optimization, and [transpilation](#transpilation) to the target database's SQL dialect.
 
 **Related:** [Query Processing](/concepts/architecture/query-processing), [Transpilation](#transpilation)
+
+### Query template
+
+A reusable NQL query pattern with configurable [placeholders](#placeholder-query-template) that users fill in at execution time. Templates enable users to run customized queries without writing NQL directly, making complex queries accessible to non-technical users while ensuring consistent query structure.
+
+**Related:** [Query Templates](/concepts/nql/query-templates), [Using Query Templates](/guides/nql/using-query-templates), [Query Template Syntax](/reference/nql/query-template-syntax)
 
 ---
 

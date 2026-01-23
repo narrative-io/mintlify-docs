@@ -1,0 +1,264 @@
+---
+title: 'Query Template Syntax'
+description: 'Complete reference for query template placeholders and structure'
+icon: 'code'
+---
+
+Query templates use placeholders to mark variable parts of a query. When a user runs a template, they provide values for each placeholder, and the system substitutes them into the query before execution.
+
+## Placeholder syntax
+
+Placeholders use double curly braces with a name:
+
+```
+{{placeholder_name}}
+```
+
+Placeholder names should be:
+- Descriptive and self-documenting
+- Lowercase with underscores for word separation
+- Unique within the template
+
+**Examples:**
+- `{{start_date}}` - a date parameter
+- `{{min_revenue_threshold}}` - a numeric threshold
+- `{{target_region}}` - a string filter value
+
+---
+
+## Placeholder types
+
+Each placeholder has a type that determines what values it accepts and how the value is substituted into the query.
+
+### Literal value placeholders
+
+Replace constants like strings, numbers, booleans, or dates.
+
+**Supported types:**
+
+| Type | Description | Example values |
+|------|-------------|----------------|
+| `string` | Text values | `'North America'`, `'active'` |
+| `number` | Numeric values | `100`, `3.14`, `-50` |
+| `boolean` | True/false values | `true`, `false` |
+| `date` | Date values | `'2024-01-15'` |
+| `timestamp` | Date and time values | `'2024-01-15 14:30:00'` |
+
+**Example:**
+
+```sql
+SELECT user_id, email, created_at
+FROM users
+WHERE
+    status = {{user_status}}
+    AND created_at >= {{start_date}}
+    AND account_balance > {{min_balance}}
+```
+
+| Placeholder | Type | Description |
+|-------------|------|-------------|
+| `user_status` | string | Account status to filter by |
+| `start_date` | date | Beginning of date range |
+| `min_balance` | number | Minimum account balance threshold |
+
+---
+
+### Column placeholders
+
+Replace column names in SELECT, GROUP BY, or ORDER BY clauses. Use these when users need to choose which fields appear in results.
+
+**Example:**
+
+```sql
+SELECT
+    {{grouping_column}},
+    COUNT(1) as record_count,
+    SUM(amount) as total_amount
+FROM transactions
+GROUP BY {{grouping_column}}
+ORDER BY {{sort_column}} DESC
+```
+
+| Placeholder | Type | Description |
+|-------------|------|-------------|
+| `grouping_column` | column | Field to group results by |
+| `sort_column` | column | Field to sort results by |
+
+<Note>
+Column placeholders should specify which columns are valid options in the placeholder metadata. This prevents users from selecting columns that don't exist or aren't appropriate for the query context.
+</Note>
+
+---
+
+### Filter placeholders
+
+Replace entire WHERE conditions. Use these when the filtering logic itself varies, not just the filter values.
+
+**Example:**
+
+```sql
+SELECT order_id, customer_id, total, order_date
+FROM orders
+WHERE
+    order_date >= {{start_date}}
+    AND order_date < {{end_date}}
+    AND {{custom_filter}}
+```
+
+| Placeholder | Type | Description |
+|-------------|------|-------------|
+| `start_date` | date | Beginning of date range |
+| `end_date` | date | End of date range |
+| `custom_filter` | filter | Additional filtering condition |
+
+A user might provide `region = 'EMEA' AND total > 1000` for the `custom_filter` placeholder.
+
+<Warning>
+Filter placeholders give users significant flexibility. Use them only when necessary, and document expected filter formats clearly.
+</Warning>
+
+---
+
+### Output field placeholders
+
+Replace parts of the SELECT list. Use these when the shape of the output depends on user choice.
+
+**Example:**
+
+```sql
+SELECT
+    customer_id,
+    customer_name,
+    {{output_fields}}
+FROM customers
+WHERE region = {{region}}
+```
+
+| Placeholder | Type | Description |
+|-------------|------|-------------|
+| `output_fields` | output | Additional columns to include in results |
+| `region` | string | Region to filter by |
+
+A user might provide `email, phone, account_type` for the `output_fields` placeholder.
+
+---
+
+## Placeholder metadata
+
+Each placeholder includes metadata that describes how users should interact with it.
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Unique identifier for the placeholder |
+| `type` | enum | Yes | Data type (`string`, `number`, `boolean`, `date`, `timestamp`, `column`, `filter`, `output`) |
+| `description` | string | Yes | Explanation of what this placeholder controls |
+| `required` | boolean | No | Whether a value must be provided (default: `true`) |
+| `default` | varies | No | Default value used when not provided |
+
+### Required vs. optional placeholders
+
+- **Required placeholders** must have values before the query can execute
+- **Optional placeholders** use their default value if the user doesn't provide one
+
+**Example with optional placeholder:**
+
+```sql
+SELECT region, COUNT(1) as user_count
+FROM users
+WHERE
+    created_at >= {{start_date}}
+    AND status = {{status}}
+GROUP BY region
+```
+
+| Placeholder | Type | Required | Default | Description |
+|-------------|------|----------|---------|-------------|
+| `start_date` | date | Yes | — | Beginning of date range |
+| `status` | string | No | `'active'` | User status to filter by |
+
+If the user doesn't provide a `status` value, the query uses `'active'`.
+
+---
+
+## Complete example
+
+Here's a complete template with multiple placeholder types:
+
+```sql
+SELECT
+    {{grouping_column}},
+    COUNT(1) as record_count,
+    SUM(revenue) as total_revenue,
+    AVG(revenue) as avg_revenue
+FROM sales_data
+WHERE
+    sale_date >= {{start_date}}
+    AND sale_date < {{end_date}}
+    AND region = {{region}}
+    AND revenue >= {{min_revenue}}
+GROUP BY {{grouping_column}}
+ORDER BY total_revenue DESC
+LIMIT {{result_limit}}
+```
+
+**Placeholder definitions:**
+
+| Placeholder | Type | Required | Default | Description |
+|-------------|------|----------|---------|-------------|
+| `grouping_column` | column | Yes | — | Field to aggregate by (e.g., `product_category`, `sales_rep`) |
+| `start_date` | date | Yes | — | Beginning of reporting period (inclusive) |
+| `end_date` | date | Yes | — | End of reporting period (exclusive) |
+| `region` | string | Yes | — | Geographic region to analyze |
+| `min_revenue` | number | No | `0` | Minimum transaction amount to include |
+| `result_limit` | number | No | `100` | Maximum rows to return |
+
+---
+
+## Materialized view templates
+
+Templates can create materialized views, allowing users to generate scheduled data products with customized parameters.
+
+```sql
+CREATE MATERIALIZED VIEW {{view_name}}
+REFRESH_SCHEDULE = {{refresh_schedule}}
+DISPLAY_NAME = {{display_name}}
+AS
+SELECT
+    user_id,
+    COUNT(1) as event_count,
+    MAX(event_timestamp) as last_activity
+FROM events
+WHERE
+    event_type = {{event_type}}
+    AND event_timestamp > CURRENT_TIMESTAMP - INTERVAL {{lookback_days}} DAY
+GROUP BY user_id
+```
+
+| Placeholder | Type | Required | Description |
+|-------------|------|----------|-------------|
+| `view_name` | string | Yes | Internal identifier for the materialized view |
+| `refresh_schedule` | string | Yes | When to refresh (e.g., `'@daily'`, `'@hourly'`) |
+| `display_name` | string | Yes | Human-readable name shown in UI |
+| `event_type` | string | Yes | Type of event to aggregate |
+| `lookback_days` | number | Yes | Days of history to include |
+
+For materialized view options, see [Materialized View Syntax](/reference/nql/materialized-view-syntax).
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Using Query Templates" icon="play" href="/guides/nql/using-query-templates">
+    Step-by-step guide to creating and using templates
+  </Card>
+  <Card title="Query Templates" icon="lightbulb" href="/concepts/nql/query-templates">
+    Understand when and why to use templates
+  </Card>
+  <Card title="NQL Data Types" icon="shapes" href="/reference/nql/data-types">
+    Complete reference for NQL data types
+  </Card>
+  <Card title="NQL Syntax" icon="terminal" href="/reference/nql/syntax">
+    Core NQL syntax reference
+  </Card>
+</CardGroup>

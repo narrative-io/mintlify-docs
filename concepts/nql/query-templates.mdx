@@ -1,0 +1,85 @@
+---
+title: 'Query Templates'
+description: 'Reusable query patterns with configurable placeholders'
+icon: 'file-code'
+---
+
+A query template is a reusable NQL pattern with placeholders that users fill in at execution time. Instead of writing a new query from scratch, users select a template, provide values for the variable parts, and run it. Templates make complex queries accessible to users who don't need to understand the underlying NQL syntax.
+
+## Why query templates exist
+
+Query templates solve three common challenges in data collaboration:
+
+**Ease of customization.** Not everyone who needs data is comfortable writing NQL. Templates let you build sophisticated queries once and expose only the parameters that matter—date ranges, regions, thresholds—so others can customize without touching the query logic.
+
+**Reusability.** When you find yourself writing similar queries repeatedly with minor variations, a template captures the pattern. Change the date range or filter criteria without rewriting the joins, aggregations, or transformations each time.
+
+**Complexity management.** Large queries with multiple joins, conditional logic, and aggregations can be difficult to understand and modify. Templates hide this complexity behind a simple interface of named placeholders, reducing the cognitive load for users who just need to run the query.
+
+## Templates vs. saved queries
+
+Both templates and saved queries let you reuse NQL, but they serve different purposes:
+
+| Aspect | Saved query | Query template |
+|--------|-------------|----------------|
+| Variability | Static—runs the same way every time | Dynamic—placeholders filled at execution |
+| Audience | Query author who wants quick access | Anyone who needs customized results |
+| Modification | Edit the full NQL to change behavior | Fill in placeholders without editing NQL |
+| Use case | Personal shortcuts | Shared, parameterized queries |
+
+A saved query is like a bookmark—it gets you back to the same place quickly. A template is like a form—it captures a structure that different people can fill in differently.
+
+## Placeholder types
+
+Templates use placeholders to mark the variable parts of a query. Each placeholder has a type that determines what kind of value it accepts:
+
+**Literal values.** Replace constants like strings, numbers, booleans, or dates. Use these for parameters like date ranges, price thresholds, or status filters.
+
+**Columns.** Replace column names in SELECT or GROUP BY clauses. Use these when users need to choose which fields to include in results.
+
+**Filters.** Replace entire WHERE conditions. Use these when the filtering logic itself varies, not just the filter values.
+
+**Output fields.** Replace parts of the SELECT list. Use these when the shape of the output depends on user choice.
+
+For syntax details on each placeholder type, see the [Query Template Syntax](/reference/nql/query-template-syntax) reference.
+
+## When to use templates
+
+Templates work well for:
+
+**Standard reports with variable parameters.** A monthly sales report where the user picks the month, region, and product category. The query structure stays the same; only the filter values change.
+
+**Queries shared with partners.** When collaborators need to run queries against your data with their own parameters, templates let them customize without accessing the full query logic.
+
+**Recurring patterns with variable inputs.** Audience building, cohort analysis, or data exports that follow a consistent pattern but need different inputs each time.
+
+**Materialized views with configurable parameters.** Templates can define materialized views, letting users create scheduled data products with customized filters or aggregations.
+
+## When not to use templates
+
+Templates aren't always the right tool:
+
+**One-time exploratory queries.** If you're investigating data ad-hoc and won't rerun the query, just write it directly.
+
+**Simple queries with no variable parts.** If every aspect of the query is fixed, a saved query is simpler than a template with no placeholders.
+
+**When full NQL flexibility is needed.** Templates constrain what users can change. If the use case requires modifying joins, adding columns, or restructuring the query, direct NQL access is more appropriate.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Using Query Templates" icon="play" href="/guides/nql/using-query-templates">
+    Step-by-step guide to finding, using, and creating templates
+  </Card>
+  <Card title="Query Template Syntax" icon="code" href="/reference/nql/query-template-syntax">
+    Complete reference for placeholder syntax and options
+  </Card>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    Pre-compute query results for faster access
+  </Card>
+  <Card title="NQL Syntax" icon="terminal" href="/reference/nql/syntax">
+    Core NQL syntax reference
+  </Card>
+</CardGroup>
