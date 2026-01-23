@@ -154,6 +154,7 @@ Before completing any article, verify:
 - Never duplicate explanations—link instead
 - Never write reference docs that try to teach concepts
 - Never write tutorials that assume prior knowledge
+- Never use wildcards (*) in NQL queries—always specify explicit column names
 
 ## Your Workflow
 

@@ -93,6 +93,10 @@ When creating or editing any article:
 - Alt text on all images
 - Relative paths for internal links
 
+## NQL guidelines
+- NEVER use wildcards (*) in NQL queries—always specify explicit column names
+- All NQL code examples must use fully qualified column names
+
 ## Git workflow
 - NEVER use --no-verify when committing
 - Ask how to handle uncommitted changes before starting

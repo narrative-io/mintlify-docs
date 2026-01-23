@@ -134,6 +134,11 @@ Definition text that explains what the term means in the context of Narrative I/
 **Related:** [Link to relevant page](/path/to/page)
 ```
 
+## NQL code examples
+
+- Never use wildcards (*) in NQL queries—always specify explicit column names
+- Use fully qualified column names (e.g., `company_data."123".email`)
+
 ## Document APIs
 
 **Choose your approach:**
