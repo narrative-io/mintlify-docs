@@ -16,15 +16,15 @@ Jobs are the unit of work exchanged between the control plane and data plane ope
 
 ### Query jobs
 
-Jobs that execute compiled SQL queries against the data plane's database engine.
+Jobs that execute compiled SQL queries against the data plane's database engine. Query results are stored as a dataset in the data plane—only completion status is returned to the control plane.
 
 | Field | Description |
 |-------|-------------|
 | Type | `query` |
 | Payload | Transpiled SQL for the target database dialect |
-| Result | Query results or error details |
+| Result | Completion status, dataset reference, and row count |
 
-**Related:** [Query Processing](/concepts/architecture/query-processing)
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Data Flow](/concepts/architecture/data-flow)
 
 ### Materialized view jobs
 
@@ -37,6 +37,18 @@ Jobs that refresh materialized views by executing their defining queries and sto
 | Result | Completion status and row counts |
 
 **Related:** [Materialized Views](/concepts/nql/materialized-views)
+
+### Sample jobs
+
+Jobs that retrieve a sample of rows from a dataset and store it in the control plane for viewing.
+
+| Field | Description |
+|-------|-------------|
+| Type | `sample` |
+| Payload | Dataset ID and sample parameters |
+| Result | Completion status; sample data (up to 1,000 rows) stored in control plane |
+
+**Related:** [Data Flow](/concepts/architecture/data-flow#how-you-view-query-results), [Managing Datasets](/guides/sdk/managing-datasets#sampling-data)
 
 ### Dataset operations
 

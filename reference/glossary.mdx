@@ -122,6 +122,12 @@ Under GDPR, an identified or identifiable natural person whose personal data is 
 
 A collection of structured data registered in Narrative that can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
 
+### Data sample
+
+A preview of up to 1,000 rows from a dataset, retrieved via a sampling job and stored in the [control plane](#control-plane) for quick access through the API or UI. Samples are used to view [interactive query](#interactive-query) results and inspect dataset contents without downloading the full dataset from the [data plane](#data-plane). Samples can be requested on demand and cleared when no longer needed.
+
+**Related:** [Data Flow](/concepts/architecture/data-flow#how-you-view-query-results), [Managing Datasets](/guides/sdk/managing-datasets#sampling-data)
+
 ### Device alias
 
 A data field that provides details about a user's device, broken out into make, model, and operating system. Device alias data helps categorize user devices and is collected through SDKs or real-time bidding environments. Examples include "iPhone X, iOS 13.3.1" or "Pixel 3, Android 10.0".
@@ -167,6 +173,12 @@ An efficient join algorithm where the query planner builds a hash table from one
 An enterprise system (such as Okta, Azure AD, or OneLogin) that manages user authentication and maintains the authoritative record of user identities and credentials. Organizations can integrate their IdP with Narrative for single sign-on access.
 
 **Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Interactive query
+
+A query executed through the Query Editor or NQL API that stores results as a temporary dataset. Interactive queries are implemented as [materialized views](#materialized-view) with a 24-hour retention policy and an automatic row limit. Users view results through [data sampling](#data-sample) rather than receiving the full result set directly.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Data Flow](/concepts/architecture/data-flow), [Write Your First Query](/getting-started/first-nql-query)
 
 ### Incremental View Maintenance (IVM)
 

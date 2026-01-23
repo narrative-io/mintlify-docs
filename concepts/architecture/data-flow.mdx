@@ -37,9 +37,9 @@ Understanding what crosses boundaries helps clarify the architecture:
 
 ### From data plane to control plane
 
-- Query results (for interactive queries)
 - Status updates and completion signals
 - Error messages and diagnostics
+- Data samples (when requested for viewing results)
 
 ### What never leaves the data plane
 
@@ -49,7 +49,7 @@ Understanding what crosses boundaries helps clarify the architecture:
 
 ## Query data flow
 
-A typical query follows this path:
+All queries—including interactive queries run from the Query Editor—follow the same pattern as materialized views. Results are stored as a dataset in the data plane, not returned directly to the user.
 
 ```
 User                Control Plane              Data Plane
@@ -60,16 +60,19 @@ User                Control Plane              Data Plane
   │                      │                         │
   │                      │                    ┌────┴────┐
   │                      │                    │ Execute │
-  │                      │                    │  Query  │
+  │                      │                    │ & Store │
+  │                      │                    │(Dataset)│
   │                      │                    └────┬────┘
   │                      │                         │
-  │                      │<──── Results ───────────│
-  │                      │                         │
-  │<──── Results ────────│                         │
+  │                      │<──── Status ───────────│
   │                      │                         │
 ```
 
-For interactive queries, results flow back through the control plane to the user. The control plane acts as a relay but doesn't store or analyze the raw results.
+Interactive queries are implemented as [materialized views](/concepts/nql/materialized-views) with two automatic constraints:
+- A **24-hour retention policy** that expires the results automatically
+- A **row limit** that caps the result size
+
+This architecture ensures that even ad-hoc queries never move full result sets through the control plane—data stays in your data plane.
 
 ## Materialized view data flow
 
@@ -95,6 +98,42 @@ Control Plane              Data Plane
 ```
 
 The control plane receives only a completion status—never the actual data. Results are stored as a dataset within your data plane.
+
+## How you view query results
+
+Since query results stay in the data plane, how do you actually see them? Through **data sampling**.
+
+```
+User                Control Plane              Data Plane
+  │                      │                         │
+  │── View Results ─────>│                         │
+  │                      │                         │
+  │                      │── Sample Request ──────>│
+  │                      │                         │
+  │                      │                    ┌────┴────┐
+  │                      │                    │  Read   │
+  │                      │                    │ 1000    │
+  │                      │                    │  Rows   │
+  │                      │                    └────┬────┘
+  │                      │                         │
+  │                      │<── Sample Data ────────│
+  │                      │                         │
+  │<── Display Sample ───│                         │
+  │                      │                         │
+```
+
+When you click to view query results in the UI or request results via the API:
+
+1. **Sample job** — The control plane requests a sample from the dataset in your data plane
+2. **Row retrieval** — Up to 1,000 rows are read from the stored results
+3. **Sample storage** — The sample is stored in the control plane for quick access
+4. **Display** — The sample appears in the UI or API response
+
+This sample is a preview of your results, not the complete dataset. For full access to query results, use [data exports](/guides/nql/creating-materialized-views) or access the underlying dataset directly.
+
+<Tip>
+You can clear samples when you no longer need them to free up storage in the control plane. See [Managing Datasets](/guides/sdk/managing-datasets#sampling-data) for programmatic sample management.
+</Tip>
 
 ## Cross-data-plane queries
 

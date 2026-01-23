@@ -87,15 +87,15 @@ The query runs entirely within your infrastructure. Your data never leaves the d
 
 ## Stage 6: Result handling
 
-After execution completes, results are handled based on the query type:
+After execution completes, results are stored in the data plane—never returned directly through the control plane:
 
-**Interactive queries.** Results flow back through the control plane to the user interface or API caller. For large result sets, pagination or streaming may apply.
+**Interactive queries.** Results are stored as a new dataset in your data plane. Interactive queries are implemented as materialized views with a **24-hour retention policy** and an **automatic row limit**. The control plane receives only a completion status—not the data itself. You view results through [data sampling](/concepts/architecture/data-flow#how-you-view-query-results), which retrieves a preview of up to 1,000 rows.
 
-**Materialized views.** Results are written to a dataset in your data plane. The control plane is notified of completion but doesn't see the actual data.
+**Materialized views.** Results are written to a dataset in your data plane. The control plane is notified of completion but doesn't see the actual data. Materialized views can have custom retention policies and refresh schedules.
 
-**Data exports.** Results may be written to a designated destination within your data plane.
+**Data exports.** Results are written to a designated destination within your data plane.
 
-Throughout execution, status updates flow back to the control plane so you can monitor progress.
+Throughout execution, status updates flow back to the control plane so you can monitor progress. See [Data Flow](/concepts/architecture/data-flow) for details on how data moves through the platform.
 
 ## Why this architecture?
 

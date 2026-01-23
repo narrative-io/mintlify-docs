@@ -160,6 +160,13 @@ console.log('Summary:', summary);
 
 ## Sampling data
 
+Sampling provides a preview of dataset records without downloading the full dataset. When you run an [interactive query](/reference/glossary#interactive-query), results are stored as a dataset in your data plane. To view these results in the UI or API, a sample job retrieves up to 1,000 rows and stores them in the control plane for quick access.
+
+Samples are useful for:
+- **Viewing query results** — See what your query returned without downloading everything
+- **Validating data** — Check data quality before sharing with partners
+- **Quick inspection** — Preview dataset contents during development
+
 Request a sample of records:
 
 ```typescript
