@@ -1,0 +1,489 @@
+---
+title: 'Joining Datasets'
+description: 'Combine data from multiple datasets using JOINs'
+icon: 'link'
+---
+
+This guide covers how to combine data from multiple datasets using JOIN operations. JOINs are essential for enriching your data with information from other sources.
+
+## Prerequisites
+
+- A Narrative I/O account with access to multiple datasets
+- Understanding of [filtering and transforming data](/guides/nql/filtering-transforming)
+
+## What you'll learn
+
+- How to use INNER JOIN to match records across datasets
+- How to use LEFT JOIN for optional matches
+- How to chain multiple JOINs
+- How to use anti-joins to find unmatched records
+- How to join with Rosetta Stone for identity resolution
+- Performance considerations for large joins
+
+---
+
+## INNER JOIN
+
+An INNER JOIN returns only rows that have matching values in both datasets.
+
+### Basic syntax
+
+```sql
+SELECT
+  t1.column1,
+  t2.column2
+FROM company_data."123" t1
+INNER JOIN company_data."456" t2
+  ON t1.id = t2.id
+```
+
+### Example: Enriching customer data
+
+Combine customer information with their orders:
+
+```sql
+SELECT
+  customers.customer_id,
+  customers.email,
+  orders.order_id,
+  orders.order_date,
+  orders.total_amount
+FROM company_data."100" customers
+INNER JOIN company_data."200" orders
+  ON customers.customer_id = orders.customer_id
+WHERE
+  orders.order_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+<Note>
+Only customers who have orders (and orders with valid customers) appear in the results. Customers without orders are excluded.
+</Note>
+
+### Using table aliases
+
+Aliases make queries more readable and are required when referencing columns:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  o.order_total
+FROM company_data."100" AS c
+INNER JOIN company_data."200" AS o
+  ON c.customer_id = o.customer_id
+```
+
+---
+
+## LEFT JOIN
+
+A LEFT JOIN returns all rows from the left table, plus matching rows from the right table. Unmatched rows have NULL values for right-table columns.
+
+### Basic syntax
+
+```sql
+SELECT
+  t1.column1,
+  t2.column2
+FROM company_data."123" t1
+LEFT JOIN company_data."456" t2
+  ON t1.id = t2.id
+```
+
+### Example: Find customers with or without orders
+
+```sql
+SELECT
+  c.customer_id,
+  c.email,
+  COALESCE(o.order_count, 0) AS order_count
+FROM company_data."100" c
+LEFT JOIN (
+  SELECT customer_id, COUNT(*) AS order_count
+  FROM company_data."200"
+  GROUP BY customer_id
+) o ON c.customer_id = o.customer_id
+```
+
+This returns all customers. Those without orders show `order_count = 0`.
+
+### Filtering LEFT JOIN results
+
+To find records without matches, filter for NULL:
+
+```sql
+SELECT
+  c.customer_id,
+  c.email
+FROM company_data."100" c
+LEFT JOIN company_data."200" o
+  ON c.customer_id = o.customer_id
+WHERE o.customer_id IS NULL  -- No matching orders
+```
+
+---
+
+## Multiple JOINs
+
+Chain JOINs to combine data from three or more datasets:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  o.order_id,
+  p.product_name
+FROM company_data."100" c
+INNER JOIN company_data."200" o
+  ON c.customer_id = o.customer_id
+INNER JOIN company_data."300" p
+  ON o.product_id = p.product_id
+WHERE
+  o.order_date >= '2024-01-01'
+```
+
+### Mixing JOIN types
+
+You can mix INNER and LEFT JOINs:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  o.order_id,
+  r.rating
+FROM company_data."100" c
+INNER JOIN company_data."200" o
+  ON c.customer_id = o.customer_id
+LEFT JOIN company_data."300" r
+  ON o.order_id = r.order_id
+```
+
+This returns all customers with orders, optionally including ratings if they exist.
+
+---
+
+## Anti-joins with NOT EXISTS
+
+Find records in one dataset that don't have matches in another:
+
+### Basic anti-join
+
+```sql
+SELECT
+  c.customer_id,
+  c.email
+FROM company_data."100" c
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."200" o
+  WHERE c.customer_id = o.customer_id
+)
+```
+
+This returns customers who have never placed an order.
+
+### Example: Find inactive users
+
+Find users who haven't logged in recently:
+
+```sql
+SELECT
+  u.user_id,
+  u.email,
+  u.signup_date
+FROM company_data."100" u
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM company_data."200" logins
+  WHERE u.user_id = logins.user_id
+    AND logins.login_date >= CURRENT_DATE - INTERVAL '90' DAY
+)
+```
+
+---
+
+## Joining with Rosetta Stone
+
+Rosetta Stone enables identity resolution across datasets using normalized identifiers.
+
+### Access Rosetta Stone identifiers
+
+```sql
+SELECT
+  d.user_attribute,
+  d._rosetta_stone.unique_id
+FROM company_data."123" d
+```
+
+### Join datasets via Rosetta Stone
+
+Match records across datasets using resolved identities:
+
+```sql
+SELECT
+  d1.attribute1,
+  d2.attribute2
+FROM company_data."123" d1
+INNER JOIN company_data."456" d2
+  ON d1._rosetta_stone.unique_id = d2._rosetta_stone.unique_id
+```
+
+### Query Rosetta Stone directly
+
+```sql
+SELECT
+  unique_id,
+  event_timestamp
+FROM narrative.rosetta_stone
+WHERE
+  unique_id.b."type" = 'email'
+  AND event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+---
+
+## Join conditions
+
+### Multiple conditions
+
+Join on multiple columns:
+
+```sql
+SELECT
+  t1.value,
+  t2.related_value
+FROM company_data."123" t1
+INNER JOIN company_data."456" t2
+  ON t1.key1 = t2.key1
+  AND t1.key2 = t2.key2
+```
+
+### Complex conditions
+
+Use expressions in join conditions:
+
+```sql
+SELECT
+  events.event_id,
+  sessions.session_id
+FROM company_data."123" events
+INNER JOIN company_data."456" sessions
+  ON events.user_id = sessions.user_id
+  AND events.event_timestamp BETWEEN sessions.start_time AND sessions.end_time
+```
+
+### NULL-safe joins
+
+Use `IS NOT DISTINCT FROM` for NULL-safe equality:
+
+```sql
+SELECT t1.*, t2.*
+FROM company_data."123" t1
+INNER JOIN company_data."456" t2
+  ON t1.nullable_key IS NOT DISTINCT FROM t2.nullable_key
+```
+
+---
+
+## Self-joins
+
+Join a dataset to itself for comparisons:
+
+```sql
+SELECT
+  e1.employee_id,
+  e1.name AS employee_name,
+  e2.name AS manager_name
+FROM company_data."123" e1
+LEFT JOIN company_data."123" e2
+  ON e1.manager_id = e2.employee_id
+```
+
+---
+
+## Subqueries in JOINs
+
+Join with aggregated or transformed data:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  stats.total_spent,
+  stats.order_count
+FROM company_data."100" c
+INNER JOIN (
+  SELECT
+    customer_id,
+    SUM(total_amount) AS total_spent,
+    COUNT(*) AS order_count
+  FROM company_data."200"
+  GROUP BY customer_id
+) stats ON c.customer_id = stats.customer_id
+WHERE stats.total_spent > 1000
+```
+
+---
+
+## Performance considerations
+
+### Use fully qualified column names
+
+Always qualify column names in joins to avoid ambiguity and improve query parsing:
+
+```sql
+-- Good: Fully qualified
+SELECT
+  company_data."123".column1,
+  company_data."456".column2
+FROM company_data."123"
+INNER JOIN company_data."456"
+  ON company_data."123".id = company_data."456".id
+
+-- Also good: With aliases
+SELECT
+  t1.column1,
+  t2.column2
+FROM company_data."123" t1
+INNER JOIN company_data."456" t2
+  ON t1.id = t2.id
+```
+
+### Filter before joining
+
+Apply filters as early as possible to reduce the data being joined:
+
+```sql
+-- Better: Filter in subqueries
+SELECT
+  c.customer_id,
+  o.order_id
+FROM (
+  SELECT * FROM company_data."100"
+  WHERE status = 'active'
+) c
+INNER JOIN (
+  SELECT * FROM company_data."200"
+  WHERE order_date >= '2024-01-01'
+) o ON c.customer_id = o.customer_id
+
+-- Or use CTEs for clarity
+WITH active_customers AS (
+  SELECT * FROM company_data."100"
+  WHERE status = 'active'
+),
+recent_orders AS (
+  SELECT * FROM company_data."200"
+  WHERE order_date >= '2024-01-01'
+)
+SELECT
+  c.customer_id,
+  o.order_id
+FROM active_customers c
+INNER JOIN recent_orders o
+  ON c.customer_id = o.customer_id
+```
+
+### Avoid OR in join conditions
+
+OR conditions in joins can cause performance issues:
+
+```sql
+-- Avoid
+ON t1.id = t2.id OR t1.alt_id = t2.alt_id
+
+-- Better: Use COALESCE or separate queries
+ON COALESCE(t1.id, t1.alt_id) = COALESCE(t2.id, t2.alt_id)
+```
+
+See [Query Optimization](/guides/nql/query-optimization) for more performance tips.
+
+### Include budget controls
+
+Always include budget controls when joining datasets in materialized views:
+
+```sql
+CREATE MATERIALIZED VIEW "enriched_customers"
+AS (
+  SELECT
+    c.customer_id,
+    c.email,
+    o.total_orders
+  FROM company_data."100" c
+  INNER JOIN (
+    SELECT customer_id, COUNT(*) AS total_orders
+    FROM company_data."200"
+    GROUP BY customer_id
+  ) o ON c.customer_id = o.customer_id
+)
+BUDGET 50 USD
+```
+
+---
+
+## Common patterns
+
+### Enrich with latest record
+
+Get the most recent related record for each row:
+
+```sql
+SELECT
+  c.customer_id,
+  c.name,
+  latest.last_order_date,
+  latest.last_order_amount
+FROM company_data."100" c
+INNER JOIN (
+  SELECT
+    customer_id,
+    order_date AS last_order_date,
+    total_amount AS last_order_amount
+  FROM company_data."200"
+  QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY customer_id
+    ORDER BY order_date DESC
+  ) = 1
+) latest ON c.customer_id = latest.customer_id
+```
+
+### Aggregate before joining
+
+Pre-aggregate to reduce join complexity:
+
+```sql
+SELECT
+  c.customer_id,
+  c.segment,
+  metrics.total_value,
+  metrics.avg_order
+FROM company_data."100" c
+INNER JOIN (
+  SELECT
+    customer_id,
+    SUM(amount) AS total_value,
+    AVG(amount) AS avg_order
+  FROM company_data."200"
+  GROUP BY customer_id
+) metrics ON c.customer_id = metrics.customer_id
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Join Performance" icon="gauge-high" href="/concepts/nql/join-performance">
+    Understanding performance implications
+  </Card>
+  <Card title="Query Optimization" icon="bolt" href="/guides/nql/query-optimization">
+    Tips for faster queries
+  </Card>
+  <Card title="Complex Joins Cookbook" icon="book" href="/cookbooks/nql/complex-joins">
+    Advanced join patterns and examples
+  </Card>
+  <Card title="Rosetta Stone" icon="language" href="/concepts/rosetta-stone/overview">
+    Identity resolution for cross-dataset matching
+  </Card>
+</CardGroup>
