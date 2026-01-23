@@ -1,0 +1,113 @@
+---
+title: 'NQL Design Philosophy'
+description: 'Why Narrative created a purpose-built query language for data collaboration'
+icon: 'compass-drafting'
+---
+
+NQL (Narrative Query Language) is an interpreted language designed specifically for data collaboration. Rather than running directly against a database, NQL is parsed by the [control plane](/concepts/primitives/control-plane) and transpiled into native SQL for whatever database powers your [data plane](/concepts/primitives/data-planes)—whether that's Snowflake, Spark, or another supported engine.
+
+## Why not just use SQL?
+
+SQL was designed for querying a single database. Data collaboration introduces challenges that standard SQL doesn't address:
+
+**Multiple database dialects.** Organizations store data in different systems—Snowflake, Spark, BigQuery, and others. Each has its own SQL dialect with subtle differences in date functions, string handling, NULL semantics, and syntax. A query written for Snowflake won't run on Spark without modification.
+
+**Cross-organization permissions.** When querying data from multiple organizations, permissions must be checked before execution. Standard SQL has no concept of cross-organization access grants or field-level controls.
+
+**Schema normalization.** Data from different sources uses different column names and formats. [Rosetta Stone](/concepts/rosetta-stone/overview) handles this normalization, but it requires a layer between your query and the underlying database.
+
+**Optimization across data planes.** Queries that span multiple data planes need coordination that a single-database SQL engine can't provide.
+
+NQL addresses these challenges by providing an abstraction layer that handles dialect differences, permission enforcement, and schema normalization transparently.
+
+## NQL as an interpreted language
+
+When you submit an NQL query, it doesn't execute directly. Instead, the control plane:
+
+1. **Parses** the NQL syntax and validates the query structure
+2. **Resolves** dataset references and applies Rosetta Stone mappings
+3. **Checks** your permissions against access grants and field-level controls
+4. **Optimizes** the execution plan for your target data plane(s)
+5. **Transpiles** the query into the native SQL dialect of your data plane
+
+This interpretation happens at query time, which means the same NQL query can run against different database systems without modification.
+
+## Transpilation: One query, many dialects
+
+Transpilation is the process of converting NQL into equivalent SQL for a specific database. Consider a simple date comparison:
+
+<CodeGroup>
+
+```sql NQL
+SELECT *
+FROM my_dataset
+WHERE event_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+```
+
+```sql Snowflake SQL
+SELECT *
+FROM my_dataset
+WHERE event_date >= DATEADD(DAY, -7, CURRENT_DATE())
+```
+
+```sql Spark SQL
+SELECT *
+FROM my_dataset
+WHERE event_date >= DATE_SUB(CURRENT_DATE(), 7)
+```
+
+</CodeGroup>
+
+The NQL query is identical regardless of where your data lives. The control plane transpiles it to the correct syntax for your data plane's database engine.
+
+This abstraction extends beyond date functions to:
+
+- **String operations** — Functions like `CONCAT`, `SUBSTRING`, and `TRIM` have different syntax across databases
+- **NULL handling** — How NULLs behave in comparisons and aggregations varies by dialect
+- **Type casting** — Explicit and implicit type conversions differ between systems
+- **Window functions** — Partitioning and ordering syntax has dialect-specific nuances
+
+## Benefits of the abstraction layer
+
+Building NQL as an interpreted, transpiled language provides several advantages:
+
+**Portability.** Your queries work regardless of which database powers your data plane. If you migrate from Snowflake to Spark, your NQL queries continue to work without modification.
+
+**Governance at compile time.** Permissions are checked before the query reaches your data. If you don't have access to a dataset or field, the query fails at compilation—not after scanning millions of rows.
+
+**Rosetta Stone integration.** Schema normalization happens during query compilation. You query standardized attribute names, and the transpiler maps them to the actual column names in each dataset.
+
+**Cross-organization coordination.** For queries that span multiple data planes, the control plane can coordinate execution and optimize data movement.
+
+**Consistent behavior.** NQL provides consistent semantics regardless of the underlying database. A query behaves the same way whether it runs on Snowflake or Spark.
+
+## Trade-offs
+
+Every abstraction has costs. NQL's design involves these trade-offs:
+
+**Dialect-specific features unavailable.** Some database-specific features and optimizations aren't exposed through NQL. If you need a Snowflake-specific function that NQL doesn't support, you can't use it directly.
+
+**Compilation overhead.** Query interpretation adds latency before execution begins. For very simple queries, this overhead may be noticeable—though for most analytical workloads, execution time dominates.
+
+**Debugging complexity.** When a query fails, you're working with NQL syntax while the underlying error may come from the transpiled SQL. Error messages bridge this gap, but the indirection adds complexity.
+
+For most data collaboration use cases, these trade-offs are worthwhile. The ability to query across organizations, databases, and schemas with a consistent language outweighs the loss of dialect-specific features.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How NQL queries are compiled, dispatched, and executed across data planes
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    The orchestration layer that handles NQL compilation and coordination
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Where your data lives and where transpiled queries execute
+  </Card>
+  <Card title="Rosetta Stone" icon="language" href="/concepts/rosetta-stone/overview">
+    How Narrative normalizes schemas across organizations
+  </Card>
+</CardGroup>

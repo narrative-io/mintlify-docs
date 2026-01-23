@@ -22,12 +22,13 @@ The [control plane](/concepts/primitives/control-plane) is Narrative's centraliz
 
 When you execute a query:
 
-1. The control plane validates your permissions and compiles the query
-2. The control plane dispatches the query to the appropriate data plane(s)
-3. The data plane executes the query against the actual data
-4. Results flow back through the control plane to you
+1. The control plane validates your permissions and [transpiles](/reference/glossary#transpilation) your NQL to the native SQL dialect for the target data plane
+2. The control plane creates a job containing the compiled SQL and adds it to a [job queue](/reference/glossary#job-queue)
+3. The data plane's [operator](#the-operator-component) polls the job queue and picks up the compiled query
+4. The operator executes the native SQL against the data plane's query engine (Snowflake, Spark, etc.)
+5. Results flow back through the control plane to you
 
-This architecture means you can collaborate with organizations whose data lives in completely different data planes—the control plane handles the coordination.
+This architecture means you can collaborate with organizations whose data lives in completely different data planes—the control plane handles the coordination. See [Query Processing](/concepts/architecture/query-processing) for a detailed breakdown of this flow.
 
 ## Hosting options
 
@@ -66,11 +67,33 @@ Several objects in Narrative are scoped to a specific data plane:
 
 When working in the Narrative platform, you'll see a data plane selector that filters these objects to show only those belonging to the selected data plane.
 
+## The operator component
+
+Customer-hosted data planes include an operator—a software component that bridges the control plane and your data infrastructure. The operator:
+
+- **Polls the control plane's job queue** for work targeting your data plane
+- **Executes compiled SQL** against your native database engine (Snowflake, Spark, etc.)
+- **Reports results and status** back to the control plane
+
+The operator runs within your infrastructure, meaning it has access to your data but the control plane does not. This **pull-based design** ensures:
+
+- Your data plane can be behind a firewall with no inbound connections
+- The control plane never needs database credentials or direct access
+- You control the compute resources allocated to query execution
+
+The operator handles various types of jobs beyond queries, including materialized view refreshes and dataset operations. See [Job Types](/reference/architecture/job-types) for a complete reference.
+
 ## Related content
 
 <CardGroup cols={2}>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries flow from submission through execution
+  </Card>
   <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
     Learn how Narrative orchestrates data collaboration across data planes
+  </Card>
+  <Card title="Job Types" icon="list-check" href="/reference/architecture/job-types">
+    Reference for the different types of jobs operators execute
   </Card>
   <Card title="Data Planes API" icon="code" href="/api-reference/openapi/data-planes/list-data-planes">
     Manage data planes programmatically

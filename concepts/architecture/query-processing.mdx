@@ -1,0 +1,129 @@
+---
+title: 'Query Processing'
+description: 'How NQL queries are compiled, dispatched, and executed across the platform'
+icon: 'microchip'
+---
+
+When you run an NQL query, it passes through several stages before returning results. The [control plane](/concepts/primitives/control-plane) compiles and coordinates the query, while [data plane](/concepts/primitives/data-planes) operators execute it against your actual data. This separation ensures your data stays in your infrastructure while enabling cross-organization collaboration.
+
+## The query lifecycle
+
+A query moves through six stages from submission to results:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Control Plane                             │
+│                                                                  │
+│  ┌──────────┐   ┌──────────────┐   ┌────────────────────────┐   │
+│  │  Parse   │ → │  Transpile   │ → │      Job Queue         │   │
+│  │   NQL    │   │  to SQL      │   │   (awaiting pickup)    │   │
+│  └──────────┘   └──────────────┘   └───────────┬────────────┘   │
+│                                                 │                │
+└─────────────────────────────────────────────────┼────────────────┘
+                                                  │ poll
+                                                  ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Data Plane (Your Infrastructure)              │
+│                                                                  │
+│  ┌──────────┐   ┌──────────────┐   ┌────────────────────────┐   │
+│  │ Operator │ → │   Execute    │ → │       Results          │   │
+│  │  (polls) │   │  Native SQL  │   │                        │   │
+│  └──────────┘   └──────────────┘   └────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Stage 1: Query submission
+
+You submit an NQL query to the control plane through:
+
+- The **Query Editor** in the Narrative I/O interface
+- The **NQL API** for programmatic access
+- **Materialized view definitions** that run on a schedule
+
+The control plane receives your query and begins processing.
+
+## Stage 2: Compilation and transpilation
+
+The control plane transforms your NQL into executable SQL through several steps:
+
+**Parsing.** The NQL syntax is parsed and validated. Malformed queries fail here with syntax errors.
+
+**Resolution.** Dataset references are resolved to their actual locations. [Rosetta Stone](/concepts/rosetta-stone/overview) mappings translate standardized attribute names to physical column names.
+
+**Permission verification.** Your access grants are checked for every dataset and field in the query. If you lack permission to access any referenced data, the query fails before execution.
+
+**Optimization.** The query planner analyzes the query structure to determine an efficient execution strategy.
+
+**Transpilation.** The NQL is converted to native SQL for your target data plane's database engine. A Snowflake data plane receives Snowflake SQL; a Spark data plane receives Spark SQL. See [NQL Design Philosophy](/concepts/nql/design-philosophy) for details on transpilation.
+
+At the end of this stage, the control plane has a compiled query ready for execution.
+
+## Stage 3: Job enqueueing
+
+The control plane creates a job containing the compiled SQL and adds it to the job queue. The job queue is a coordination mechanism between the control plane and data planes—it holds work waiting for execution.
+
+Query execution is one type of job. The job queue also handles other operations like dataset management and system tasks. See [Job Types](/reference/architecture/job-types) for a complete list.
+
+## Stage 4: Operator polling
+
+Each data plane runs an operator component that bridges the control plane and your data infrastructure. The operator:
+
+- **Polls** the control plane's job queue for work targeting its data plane
+- **Authenticates** to ensure only authorized operators can pick up jobs
+- **Claims** jobs for execution
+
+This is a **pull-based architecture**. The control plane never connects directly to your database—it only makes jobs available. Your operator reaches out to claim them. This design means:
+
+- Your data plane can be behind a firewall
+- The control plane never needs credentials to your database
+- You control when and how jobs are executed
+
+## Stage 5: Query execution
+
+Once the operator picks up a job, it executes the compiled SQL against your data plane's native query engine—Snowflake, Spark, or another supported system.
+
+The query runs entirely within your infrastructure. Your data never leaves the data plane; only query instructions enter and results exit.
+
+## Stage 6: Result handling
+
+After execution completes, results are handled based on the query type:
+
+**Interactive queries.** Results flow back through the control plane to the user interface or API caller. For large result sets, pagination or streaming may apply.
+
+**Materialized views.** Results are written to a dataset in your data plane. The control plane is notified of completion but doesn't see the actual data.
+
+**Data exports.** Results may be written to a designated destination within your data plane.
+
+Throughout execution, status updates flow back to the control plane so you can monitor progress.
+
+## Why this architecture?
+
+The separation between control plane and data plane is deliberate:
+
+**Security.** Your data stays in your infrastructure. The control plane coordinates work without accessing raw data. This enables collaboration while maintaining data residency requirements.
+
+**Flexibility.** Each organization can use their preferred database system. The control plane transpiles NQL to whatever dialect your data plane requires.
+
+**Scalability.** Operators scale with your data plane's capacity. You can run multiple operators for high-throughput workloads or share capacity across fewer operators.
+
+**Reliability.** The pull-based job queue provides resilience. If an operator is temporarily unavailable, jobs wait in the queue until capacity returns.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Design Philosophy" icon="compass-drafting" href="/concepts/nql/design-philosophy">
+    Why NQL is an interpreted language with transpilation
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    The orchestration layer that compiles queries and coordinates jobs
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Where your data lives and queries execute
+  </Card>
+  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
+    How the architecture protects your data
+  </Card>
+</CardGroup>

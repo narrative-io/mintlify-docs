@@ -160,6 +160,12 @@ An optimization technique that updates materialized views by processing only cha
 
 ## J
 
+### Job queue
+
+A [control plane](#control-plane) component that coordinates work between the control plane and [data planes](#data-plane). The job queue holds various types of jobs—including compiled queries, dataset operations, and system tasks—that data plane [operators](#operator-data-plane) poll and execute. This pull-based architecture ensures the control plane never needs direct access to data plane infrastructure.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Operator](#operator-data-plane), [Job Types](/reference/architecture/job-types)
+
 ### Just-in-time provisioning (JIT)
 
 The automatic creation of user accounts on first login, eliminating the need for manual account creation before SSO access. When enabled, Narrative creates user accounts automatically when users authenticate through SSO for the first time.
@@ -214,7 +220,19 @@ A join algorithm that iterates through each row of one table and, for each row, 
 
 ### NQL (Narrative Query Language)
 
-Narrative's proprietary query language designed specifically for data collaboration and normalization. NQL is distinct from SQL and includes unique features for cross-organization queries, automatic schema mapping, and data governance enforcement.
+Narrative's proprietary query language designed specifically for data collaboration and normalization. NQL is an interpreted language—queries are parsed by the [control plane](#control-plane) and transpiled to native SQL dialects (Snowflake SQL, Spark SQL, etc.) depending on the target [data plane](#data-plane). This abstraction enables a single query to run against data in different database systems while enforcing permissions and integrating [Rosetta Stone](#rosetta-stone) normalization.
+
+**Related:** [NQL Design Philosophy](/concepts/nql/design-philosophy), [Query Processing](/concepts/architecture/query-processing)
+
+---
+
+## O
+
+### Operator (data plane)
+
+A software component running within a customer-hosted [data plane](#data-plane) that bridges the [control plane](#control-plane) and the customer's data infrastructure. The operator polls the control plane's [job queue](#job-queue) for compiled queries, executes them against the local database engine (Snowflake, Spark, etc.), and reports results back. Because the operator runs in the customer's infrastructure, raw data never leaves the data plane.
+
+**Related:** [Data Planes](/concepts/primitives/data-planes), [Query Processing](/concepts/architecture/query-processing)
 
 ---
 
@@ -231,6 +249,16 @@ Data that can be used to identify a specific individual, either directly or in c
 A data protection technique that replaces directly identifying information with artificial identifiers (pseudonyms). In Narrative's context, pseudonymization is achieved by hashing PII such as email addresses and phone numbers. Unlike anonymization, pseudonymized data can still be matched across datasets (same input produces same hash) while protecting individual privacy.
 
 **Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+---
+
+## Q
+
+### Query compilation
+
+The process by which the [control plane](#control-plane) transforms an [NQL](#nql-narrative-query-language) query into executable SQL for a target [data plane](#data-plane). Query compilation includes parsing, permission validation, optimization, and [transpilation](#transpilation) to the target database's SQL dialect.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Transpilation](#transpilation)
 
 ---
 
@@ -309,6 +337,12 @@ An authentication method that allows users to access Narrative using their organ
 ---
 
 ## T
+
+### Transpilation
+
+The process of converting [NQL](#nql-narrative-query-language) code to equivalent native SQL code for a specific database system. The [control plane](#control-plane) transpiles NQL to Snowflake SQL, Spark SQL, or other dialects depending on where the target [data plane](#data-plane) stores its data. Transpilation is distinct from compilation in that it produces human-readable code in another query language rather than machine code.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Query compilation](#query-compilation)
 
 ### Transformation expression
 

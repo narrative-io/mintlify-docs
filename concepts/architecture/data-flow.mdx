@@ -1,0 +1,138 @@
+---
+title: 'Data Flow'
+description: 'How data moves through the Narrative platform during queries and collaboration'
+icon: 'arrows-split-up-and-left'
+---
+
+Narrative's architecture is designed around a core principle: data stays in place. Rather than moving data to queries, queries move to data. This approach enables collaboration across organizations while maintaining data residency and security requirements.
+
+## The principle: Queries go to data
+
+Traditional data sharing requires copying data between systems. Narrative inverts this model:
+
+| Traditional approach | Narrative approach |
+|---------------------|-------------------|
+| Copy data to a shared location | Leave data in place |
+| Queries run against copies | Queries run against source data |
+| Data freshness depends on sync frequency | Data is always current |
+| Multiple copies increase security surface | Single source reduces exposure |
+
+When you query data through Narrative, the [control plane](/concepts/primitives/control-plane) sends query instructions to your [data plane](/concepts/primitives/data-planes). The data plane executes the query locally and returns only the results.
+
+## What flows where
+
+Understanding what crosses boundaries helps clarify the architecture:
+
+### From user to control plane
+
+- NQL query text
+- Authentication credentials
+- Request metadata
+
+### From control plane to data plane
+
+- Compiled SQL (transpiled for the target database)
+- Job metadata and parameters
+- Execution instructions
+
+### From data plane to control plane
+
+- Query results (for interactive queries)
+- Status updates and completion signals
+- Error messages and diagnostics
+
+### What never leaves the data plane
+
+- Raw source data
+- Intermediate query results
+- Materialized view contents (stored locally)
+
+## Query data flow
+
+A typical query follows this path:
+
+```
+User                Control Plane              Data Plane
+  │                      │                         │
+  │──── NQL Query ──────>│                         │
+  │                      │                         │
+  │                      │──── Compiled SQL ──────>│
+  │                      │                         │
+  │                      │                    ┌────┴────┐
+  │                      │                    │ Execute │
+  │                      │                    │  Query  │
+  │                      │                    └────┬────┘
+  │                      │                         │
+  │                      │<──── Results ───────────│
+  │                      │                         │
+  │<──── Results ────────│                         │
+  │                      │                         │
+```
+
+For interactive queries, results flow back through the control plane to the user. The control plane acts as a relay but doesn't store or analyze the raw results.
+
+## Materialized view data flow
+
+[Materialized views](/concepts/nql/materialized-views) follow a different pattern. Results stay in the data plane:
+
+```
+Control Plane              Data Plane
+     │                         │
+     │──── Refresh Job ───────>│
+     │                         │
+     │                    ┌────┴────┐
+     │                    │ Execute │
+     │                    │  Query  │
+     │                    └────┬────┘
+     │                         │
+     │                    ┌────┴────┐
+     │                    │  Store  │
+     │                    │ Results │
+     │                    └────┬────┘
+     │                         │
+     │<──── Status ────────────│
+     │                         │
+```
+
+The control plane receives only a completion status—never the actual data. Results are stored as a dataset within your data plane.
+
+## Cross-data-plane queries
+
+When a query references data in multiple data planes, the control plane coordinates execution:
+
+1. **Query decomposition** — The control plane breaks the query into subqueries, one per data plane
+2. **Parallel execution** — Subqueries execute independently in each data plane
+3. **Result coordination** — Results are combined as needed, with the control plane coordinating data movement between planes
+
+The specific data movement depends on the query. For joins across data planes, some data may need to move between planes for the join to complete. The control plane optimizes this movement to minimize data transfer.
+
+## Data collaboration flow
+
+When you share data with a partner organization, they query your data through the same architecture:
+
+1. Partner submits NQL query referencing your dataset
+2. Control plane verifies their access grants
+3. Compiled query is sent to your data plane
+4. Your data plane executes and returns results
+5. Partner receives results through the control plane
+
+Your raw data never leaves your data plane—only the query results authorized by your access grants.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    The complete query lifecycle from submission to results
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Where your data lives and queries execute
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    How queries are compiled and coordinated
+  </Card>
+  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
+    How this architecture protects your data
+  </Card>
+</CardGroup>

@@ -197,6 +197,12 @@
             ]
           },
           {
+            "group": "Architecture Reference",
+            "pages": [
+              "reference/architecture/job-types"
+            ]
+          },
+          {
             "group": "Rosetta Stone Reference",
             "pages": [
               "reference/rosetta-stone/attribute-types",

@@ -1,0 +1,64 @@
+---
+title: 'Job Types'
+description: 'Reference for the different types of jobs coordinated between control plane and data planes'
+icon: 'list-check'
+---
+
+The [job queue](/reference/glossary#job-queue) coordinates work between the [control plane](/concepts/primitives/control-plane) and [data planes](/concepts/primitives/data-planes). This reference describes the different types of jobs that flow through the queue.
+
+## Overview
+
+Jobs are the unit of work exchanged between the control plane and data plane operators. When the control plane needs something executed in a data plane, it creates a job and enqueues it. Data plane [operators](/reference/glossary#operator-data-plane) poll the queue, claim jobs, execute them, and report results.
+
+## Job categories
+
+{/* TODO: Document the specific job types that exist in the system */}
+
+### Query jobs
+
+Jobs that execute compiled SQL queries against the data plane's database engine.
+
+| Field | Description |
+|-------|-------------|
+| Type | `query` |
+| Payload | Transpiled SQL for the target database dialect |
+| Result | Query results or error details |
+
+**Related:** [Query Processing](/concepts/architecture/query-processing)
+
+### Materialized view jobs
+
+Jobs that refresh materialized views by executing their defining queries and storing results.
+
+| Field | Description |
+|-------|-------------|
+| Type | `materialized_view_refresh` |
+| Payload | View definition and refresh parameters |
+| Result | Completion status and row counts |
+
+**Related:** [Materialized Views](/concepts/nql/materialized-views)
+
+### Dataset operations
+
+{/* TODO: Document dataset-related job types (registration, schema updates, etc.) */}
+
+Jobs that manage datasets within the data plane.
+
+### System jobs
+
+{/* TODO: Document system/maintenance job types */}
+
+Administrative and maintenance jobs.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries flow through the job queue to execution
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Where jobs are executed by operators
+  </Card>
+</CardGroup>
