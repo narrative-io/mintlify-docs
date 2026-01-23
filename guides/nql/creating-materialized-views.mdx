@@ -199,6 +199,10 @@ WHERE event_timestamp > CURRENT_TIMESTAMP - INTERVAL 1 HOUR
 When using append mode, ensure your query includes filters to avoid inserting duplicate records on each refresh.
 </Warning>
 
+<Tip>
+Need to update existing records instead of just appending? Use [MERGE ON](/guides/nql/incremental-upserts) to match incoming rows against existing data and decide whether to update or insert.
+</Tip>
+
 ## Example: Complete materialized view
 
 Here's a complete example combining multiple options:

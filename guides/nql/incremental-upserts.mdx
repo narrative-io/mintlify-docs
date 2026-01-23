@@ -1,0 +1,203 @@
+---
+title: 'Incremental Upserts with MERGE ON'
+description: 'Update existing records and insert new ones during materialized view refreshes'
+icon: 'code-merge'
+---
+
+When building materialized views that refresh periodically, you often need to update existing records rather than simply appending new ones. The `MERGE ON` clause lets you match incoming rows against existing data and decide whether to update or insert—avoiding duplicates while keeping data fresh.
+
+## Prerequisites
+
+Before using MERGE ON, you should have:
+
+- Familiarity with [materialized views](/concepts/nql/materialized-views)
+- Understanding of [write modes](/reference/nql/materialized-view-syntax#write_mode) (append vs overwrite)
+- A dataset with stable keys suitable for matching
+
+## The problem
+
+Consider a view that refreshes monthly with recent activity data. With `WRITE_MODE = 'overwrite'`, each refresh replaces all data—losing historical records. With `WRITE_MODE = 'append'`, each refresh adds new rows—but if the same record appears in multiple refreshes, you get duplicates.
+
+MERGE ON solves this by matching rows between the query result and existing view data, then updating matches and inserting non-matches.
+
+## How MERGE ON works
+
+MERGE ON compares each row from your query (the **source**) against existing rows in the materialized view (the **target**). Based on the match condition, it either updates the existing row or inserts a new one.
+
+### Source and target aliases
+
+NQL automatically generates two aliases for use in MERGE ON clauses:
+
+| Alias | Description |
+|-------|-------------|
+| `source` | References columns from the incoming query result |
+| `target` | References columns from the existing materialized view |
+
+Use these aliases in your MERGE ON condition and in the WHEN MATCHED/WHEN NOT MATCHED clauses.
+
+## Use case 1: Incremental upsert with time-bounded matching
+
+This example maintains an audience feed that refreshes monthly. The MERGE ON condition restricts updates to rows considered "fresh" (modified within the last 20 days), which can help respect license refresh windows or avoid stale overwrites.
+
+```sql
+CREATE MATERIALIZED VIEW "ongoing_Feed"
+REFRESH_SCHEDULE = '@monthly'
+WRITE_MODE = 'append'
+AS
+SELECT
+    "ip_address" AS ip,
+    "sha256_hashed_email"."value" AS sha256,
+    "sha1_hashed_email"."value" AS sha1,
+    "md5_hashed_email"."value" AS md5,
+    "mobile_id_unique_identifier"."value" AS maid,
+    "mobile_id_unique_identifier"."type" AS maid_type,
+    CAST("event_timestamp" AS TIMESTAMP) AS "event_timestamp",
+    CURRENT_TIMESTAMP as last_modified_at
+FROM
+    company_data.audience_feed
+WHERE
+    "event_timestamp" >= CURRENT_TIMESTAMP - INTERVAL '30' DAY
+    AND "sha256_hashed_email"."value" IS NOT NULL
+    AND "ip_address" IS NOT NULL
+    AND "mobile_id_unique_identifier"."value" IS NOT NULL
+MERGE ON target.last_modified_at > CURRENT_TIMESTAMP - INTERVAL '20' DAY
+WHEN MATCHED THEN UPDATE SET
+  ip = source.ip,
+  sha256 = source.sha256,
+  sha1 = source.sha1,
+  md5 = source.md5,
+  maid = source.maid,
+  maid_type = source.maid_type,
+  event_timestamp = source.event_timestamp,
+  last_modified_at = source.last_modified_at
+WHEN NOT MATCHED THEN INSERT (
+  ip,
+  sha256,
+  sha1,
+  md5,
+  maid,
+  maid_type,
+  event_timestamp,
+  last_modified_at
+) VALUES (
+  source.ip,
+  source.sha256,
+  source.sha1,
+  source.md5,
+  source.maid,
+  source.maid_type,
+  source.event_timestamp,
+  source.last_modified_at
+);
+```
+
+**Key points:**
+- The time-bounded condition (`target.last_modified_at > CURRENT_TIMESTAMP - INTERVAL '20' DAY`) is optional but useful for limiting which rows are considered for updates
+- `WRITE_MODE = 'append'` is required for incremental merge semantics
+- The `last_modified_at` column tracks when each row was last updated
+
+## Use case 2: Enrichment with composite keys
+
+This example enriches internal user data with geographic information from Rosetta Stone. It uses a composite key (user_id + sha256) with `IS NOT DISTINCT FROM` to handle nullable values safely.
+
+```sql
+CREATE MATERIALIZED VIEW "email_geo_enrichment"
+WRITE_MODE = 'append'
+REFRESH_SCHEDULE = '@weekly'
+AS (
+  SELECT
+    ds.user_id,
+    rs."sha256_hashed_email"."value" AS sha256,
+    rs."geo_country_code" AS country_code,
+    rs."geo_region" AS region,
+    rs."nio_last_modified_at" AS rs_modified_at,
+    CURRENT_TIMESTAMP AS last_modified_at
+  FROM company_data."internal_users" ds
+  JOIN narrative."rosetta_stone" rs
+    ON rs."unique_id"."value" = ds.unique_id
+)
+MERGE ON
+  target.user_id IS NOT DISTINCT FROM source.user_id
+  AND target.sha256 IS NOT DISTINCT FROM source.sha256
+WHEN MATCHED THEN UPDATE SET
+  country_code = source.country_code,
+  region = source.region,
+  rs_modified_at = source.rs_modified_at,
+  last_modified_at = source.last_modified_at
+WHEN NOT MATCHED THEN INSERT (
+  user_id,
+  sha256,
+  country_code,
+  region,
+  rs_modified_at,
+  last_modified_at
+) VALUES (
+  source.user_id,
+  source.sha256,
+  source.country_code,
+  source.region,
+  source.rs_modified_at,
+  source.last_modified_at
+);
+```
+
+**Key points:**
+- `IS NOT DISTINCT FROM` treats two NULL values as equal, unlike `=` which returns NULL when comparing NULLs
+- Composite keys work well when no single column uniquely identifies a record
+- The enriched columns (country_code, region) update on match while the key columns remain stable
+
+## Best practices
+
+| Practice | Why |
+|----------|-----|
+| Use a stable, unique key for matching | Non-unique or changing keys cause repeated inserts or updates to wrong rows |
+| Use `IS NOT DISTINCT FROM` for nullable fields | Plain `=` on nullable fields can misclassify matches (NULL = NULL returns NULL, not true) |
+| Consider time-bounded conditions | Scoping to recent data respects license windows and improves performance |
+| Always use `WRITE_MODE = 'append'` | Required for incremental merge semantics; overwrite mode replaces all data |
+| Keep MERGE ON conditions minimal | Overly broad conditions cause frequent rewrites; scope to the minimum key set needed |
+
+## Common pitfalls
+
+<Warning>
+**Non-unique match keys**
+
+If your MERGE ON condition matches multiple target rows for a single source row, you may see unexpected updates or duplicate inserts. Ensure your match key (or composite key) uniquely identifies records.
+</Warning>
+
+<Warning>
+**Using = on nullable fields**
+
+Using plain `=` to compare nullable fields can cause matches to be missed:
+```sql
+-- Wrong: will not match when both values are NULL
+MERGE ON target.user_id = source.user_id
+
+-- Correct: treats NULL = NULL as a match
+MERGE ON target.user_id IS NOT DISTINCT FROM source.user_id
+```
+</Warning>
+
+<Warning>
+**MERGE ON only works in CREATE MATERIALIZED VIEW**
+
+MERGE ON is a clause within the `CREATE MATERIALIZED VIEW` statement. It cannot be used as a standalone MERGE command in Data Studio.
+</Warning>
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete reference for MERGE ON and other options
+  </Card>
+  <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
+    How NQL optimizes refreshes for large datasets
+  </Card>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    When and why to use materialized views
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Basic guide to creating materialized views
+  </Card>
+</CardGroup>

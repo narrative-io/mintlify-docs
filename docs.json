@@ -57,6 +57,7 @@
               "guides/nql/filtering-transforming",
               "guides/nql/joining-datasets",
               "guides/nql/creating-materialized-views",
+              "guides/nql/incremental-upserts",
               {
                 "group": "Query Optimization",
                 "pages": [

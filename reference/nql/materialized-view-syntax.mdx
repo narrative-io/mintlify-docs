@@ -20,6 +20,9 @@ CREATE MATERIALIZED VIEW "view_name"
 [PARTITIONED_BY <field> <transform>[, <field2> <transform2>]]
 AS
 <select_query>
+[MERGE ON <condition>
+WHEN MATCHED THEN UPDATE SET <column> = source.<column>, ...
+WHEN NOT MATCHED THEN INSERT (<columns>) VALUES (<values>)]
 ```
 
 ## Options summary
@@ -34,6 +37,7 @@ AS
 | `WRITE_MODE` | enum | No | How refresh operations write data |
 | `EXTENDED_STATS` | enum | No | Whether to compute additional statistics |
 | `PARTITIONED_BY` | field + transform | No | How to partition stored data |
+| `MERGE ON` | condition + clauses | No | Upsert logic for incremental updates |
 
 ---
 
@@ -216,6 +220,46 @@ Partitioning improves query performance when filtering on the partitioned field.
 
 ---
 
+## MERGE ON
+
+Defines upsert logic that matches incoming rows against existing data during refresh. Use MERGE ON to update existing records and insert new ones without creating duplicates.
+
+**Syntax:**
+```sql
+MERGE ON <condition>
+WHEN MATCHED THEN UPDATE SET
+  <column> = source.<column>,
+  ...
+WHEN NOT MATCHED THEN INSERT (<columns>) VALUES (<values>)
+```
+
+**Auto-generated aliases:**
+
+| Alias | Description |
+|-------|-------------|
+| `source` | References columns from the incoming query result |
+| `target` | References columns from the existing materialized view |
+
+**Example:**
+```sql
+MERGE ON target.user_id IS NOT DISTINCT FROM source.user_id
+WHEN MATCHED THEN UPDATE SET
+  email = source.email,
+  last_seen = source.last_seen
+WHEN NOT MATCHED THEN INSERT (user_id, email, last_seen)
+VALUES (source.user_id, source.email, source.last_seen)
+```
+
+<Warning>
+MERGE ON is only valid within `CREATE MATERIALIZED VIEW` statements. It cannot be used as a standalone command.
+</Warning>
+
+<Tip>
+For step-by-step guidance and practical examples, see [Incremental Upserts with MERGE ON](/guides/nql/incremental-upserts).
+</Tip>
+
+---
+
 ## Complete example
 
 ```sql
@@ -255,13 +299,13 @@ This example creates a materialized view that:
   <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
     Step-by-step guide to creating your first materialized view
   </Card>
+  <Card title="Incremental Upserts" icon="code-merge" href="/guides/nql/incremental-upserts">
+    Use MERGE ON for deduplication and incremental updates
+  </Card>
   <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
     Understand when and why to use materialized views
   </Card>
   <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
     Learn how NQL optimizes view refreshes
-  </Card>
-  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
-    General NQL syntax and query structure
   </Card>
 </CardGroup>
