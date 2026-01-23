@@ -18,6 +18,59 @@
 - Check existing patterns for consistency
 - Start by making the smallest reasonable changes
 
+## Information architecture principles
+
+### The four documentation types (Diátaxis framework)
+Keep these four types of documentation separate and distinct. Each serves a different purpose and requires a different writing approach:
+
+1. **Tutorials** (Getting Started tab)
+   - Learning-oriented, for newcomers
+   - Goal: Build confidence through hands-on experience
+   - Write as a lesson that takes the reader through a complete experience
+   - Don't explain concepts in depth—link to Concepts instead
+   - Must be tested end-to-end and work reliably
+
+2. **How-to Guides** (Guides tab)
+   - Task-oriented, for practitioners
+   - Goal: Help someone accomplish a specific task
+   - Assume the reader has basic knowledge
+   - Start with a clear problem and end with a solution
+   - Keep focused—don't explain why, link to Concepts instead
+
+3. **Explanation** (Concepts tab)
+   - Understanding-oriented, for deeper learning
+   - Goal: Help the reader understand why things work the way they do
+   - Discuss alternatives, history, and design decisions
+   - Connect ideas and provide context
+   - Don't include step-by-step instructions—link to Guides instead
+
+4. **Reference** (Reference + API Reference tabs)
+   - Information-oriented, for looking things up
+   - Goal: Describe the system accurately and completely
+   - Structure should mirror the codebase/system
+   - Be consistent in format, tone, and structure
+   - Don't explain concepts or provide tutorials—link elsewhere
+
+### Cookbooks
+- Solution-oriented, bridging guides and reference
+- Complete, working examples for real-world use cases
+- Include all necessary code and context
+- Explain what the recipe accomplishes upfront
+
+### Cross-linking rules
+- Tutorials → link to Concepts for deeper understanding
+- Guides → link to Concepts for why, Reference for specifics
+- Concepts → link to Guides for how-to, Reference for details
+- Reference → link to Guides for usage examples
+- Cookbooks → link to all relevant Guides, Concepts, and Reference pages
+
+### Content principles
+- Use layered content architecture: business context → technical details
+- Developers love code examples—include them liberally
+- Maintain a glossary for domain-specific terminology
+- Use consistent terminology throughout all documentation
+- Three-column layout works well for reference documentation
+
 ## Frontmatter requirements for pages
 - title: Clear, descriptive page title
 - description: Concise summary for SEO/navigation
@@ -44,3 +97,7 @@
 - Use absolute URLs for internal links
 - Include untested code examples
 - Make assumptions - always ask for clarification
+- Mix documentation types (e.g., don't put tutorials in reference pages)
+- Duplicate explanations across pages—link instead
+- Write reference docs that try to teach concepts
+- Write tutorials that assume prior knowledge of the system
