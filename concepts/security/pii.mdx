@@ -1,0 +1,168 @@
+---
+title: 'Personally Identifiable Information (PII)'
+description: 'Understanding PII, regulatory definitions, and how to handle it in data collaboration'
+icon: 'id-card'
+---
+
+Personally Identifiable Information (PII) is data that can be used to identify a specific individual, either on its own or when combined with other information. As data collection has become ubiquitous through digital technologies, understanding and properly handling PII has become essential for compliance and trust.
+
+## What is PII?
+
+The National Institute of Standards and Technology (NIST) defines PII as:
+
+> Information which can be used to distinguish or trace the identity of an individual (e.g., name, social security number, biometric records, etc.) alone, or when combined with other personal or identifying information which is linked or linkable to a specific individual (e.g., date and place of birth, mother's maiden name, etc.).
+
+The key concept is **identifiability**—whether data can be linked back to a specific person.
+
+---
+
+## Common examples of PII
+
+While no comprehensive list exists, these attributes are universally recognized as PII:
+
+### Direct identifiers
+Data that identifies an individual on its own:
+- Full name
+- Email address
+- Phone number
+- Social Security number
+- Passport or driver's license number
+- Physical address
+
+### Indirect identifiers
+Data that can identify individuals when combined:
+- Date of birth
+- Place of birth
+- Gender
+- Race or ethnicity
+- Employer
+- Job title
+
+### Digital identifiers
+Context-dependent identifiers from online activity:
+- IP addresses
+- Device identifiers (IDFA, GAID)
+- Cookie IDs
+- Precise geolocation
+
+<Note>
+Whether something constitutes PII can depend on context. An IP address might not identify an individual in isolation, but combined with other data, it could. Err on the side of caution when handling potentially identifying data.
+</Note>
+
+---
+
+## Regulatory definitions
+
+Privacy regulations worldwide define personal data similarly but with important nuances.
+
+### GDPR (European Union)
+
+The General Data Protection Regulation, effective since 2018, is the most comprehensive privacy framework globally:
+
+> 'Personal data' means **any information relating to an identified or identifiable natural person** ('data subject'); an identifiable natural person is one who can be identified, directly or indirectly, in particular by reference to an identifier such as a name, an identification number, location data, an online identifier or to one or more factors specific to the physical, physiological, genetic, mental, economic, cultural or social identity of that natural person.
+
+Key points:
+- Broad definition includes online identifiers
+- Covers indirect identification
+- Applies to EU residents regardless of where data is processed
+
+### CCPA (California)
+
+The California Consumer Privacy Act, effective 2020 and amended by CPRA:
+
+> "Personal information" means **information that identifies, relates to, describes, is capable of being associated with, or could reasonably be linked, directly or indirectly**, with a particular consumer or household.
+
+Key points:
+- Includes household-level data
+- Covers information "capable of being associated" with individuals
+- Applies to California residents
+
+### Other regulations
+
+Many jurisdictions have enacted similar laws:
+- Australia's Privacy Act of 1988
+- UK Data Protection Act / UK GDPR
+- Switzerland's Federal Act on Data Protection
+- Brazil's LGPD
+- Canada's PIPEDA
+
+Each law has nuances—consult legal counsel for specific requirements.
+
+---
+
+## PII in data collaboration
+
+### The challenge
+
+Data collaboration often requires matching records across organizations—finding common customers, enriching profiles, or measuring campaign effectiveness. These use cases typically need identifiers to match on, but sharing raw PII creates legal and reputational risk.
+
+### The solution: pseudonymization
+
+[Pseudonymization](/concepts/security/data-pseudonymization) transforms PII into non-identifying values while preserving the ability to match records. The most common technique is [hashing](/concepts/security/hashing), which creates a deterministic but irreversible transformation.
+
+| Original Record | Pseudonymized Record |
+|----------------|---------------------|
+| `email: john@example.com` | `hashed_email: 5ab6...` |
+| `phone: +14155551234` | `hashed_phone: 8f2a...` |
+| `age: 36` | `age: 36` |
+| `gender: male` | `gender: male` |
+
+The pseudonymized record:
+- Can still be matched to other datasets
+- Doesn't expose the underlying PII
+- Reduces compliance risk
+
+### Narrative's approach
+
+Narrative requires PII to be hashed before upload:
+- Email addresses must be hashed (MD5, SHA-1, or SHA-256)
+- Phone numbers must be hashed after E.164 normalization
+- Raw PII is not accepted in the platform
+
+This ensures that data collaboration can occur without PII exposure.
+
+---
+
+## Best practices
+
+### Minimize collection
+
+Only collect PII that's necessary for your specific use case. More data means more risk.
+
+### Pseudonymize early
+
+Hash identifiers as early as possible in your data pipeline—ideally at the point of collection.
+
+### Maintain consent records
+
+Document the legal basis for processing personal data, whether consent, legitimate interest, or contractual necessity.
+
+### Implement access controls
+
+Limit who can access PII and pseudonymized data within your organization.
+
+### Plan for data subject requests
+
+Be prepared to respond to access, deletion, and correction requests required by privacy regulations.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How pseudonymization protects PII
+  </Card>
+  <Card title="Hashing" icon="hashtag" href="/concepts/security/hashing">
+    Technical details of hash functions
+  </Card>
+  <Card title="GDPR" icon="globe-europe" href="/concepts/compliance/gdpr">
+    European data protection regulation
+  </Card>
+  <Card title="CCPA" icon="flag-usa" href="/concepts/compliance/ccpa">
+    California privacy law
+  </Card>
+  <Card title="Hashing PII for Upload" icon="upload" href="/guides/ingestion/hashing-pii">
+    Prepare your data for the platform
+  </Card>
+</CardGroup>

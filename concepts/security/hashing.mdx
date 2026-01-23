@@ -1,0 +1,157 @@
+---
+title: 'Hashing'
+description: 'Understanding cryptographic hash functions and their role in data protection'
+icon: 'hashtag'
+---
+
+Hashing is the process of transforming input data into a fixed-length output using a cryptographic hash function. In data collaboration, hashing enables organizations to share and match data without exposing sensitive information like email addresses or phone numbers.
+
+## Why hashing matters for data collaboration
+
+When organizations want to find overlapping customers or match records across datasets, they need a common key. But sharing raw email addresses or other personally identifiable information (PII) creates privacy and compliance risks.
+
+Hashing solves this by:
+- Converting PII into non-reversible pseudonyms
+- Enabling deterministic matching (same input = same output)
+- Allowing data collaboration without exposing underlying identifiers
+
+---
+
+## Properties of hash functions
+
+Hash functions have specific properties that make them useful for data protection:
+
+### Deterministic (consistent)
+
+The same input always produces the same output, regardless of when or where the hash is computed. This enables matching—if two organizations hash the same email address, they get identical hashes.
+
+```
+johndoe@gmail.com → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+johndoe@gmail.com → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3  (always same)
+```
+
+### One-way (irreversible)
+
+You cannot mathematically reverse a hash to recover the original input. There is no "unhash" function. This protects the underlying PII.
+
+```
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3 → ???  (cannot reverse)
+```
+
+### Collision-resistant
+
+Different inputs produce different outputs. While theoretical collisions exist (the output space is finite), well-designed hash functions make them computationally infeasible to find.
+
+### Computationally efficient
+
+Hashing billions of records is practical. The algorithms are designed to be fast while maintaining security properties.
+
+### Sensitive to input
+
+Even tiny changes produce completely different outputs. This is why input normalization matters—`johndoe@gmail.com` and `JohnDoe@Gmail.com` produce entirely different hashes.
+
+---
+
+## Common hash algorithms
+
+Three hash algorithms are commonly used for pseudonymization in data collaboration:
+
+| Algorithm | Output Length | Status | Example Output |
+|-----------|---------------|--------|----------------|
+| **MD5** | 32 hex chars | Legacy | `0c036b871e3c66c1724f68fd007c4718` |
+| **SHA-1** | 40 hex chars | Legacy | `fafe72dfca878eb2084fb7478a44d279f7895b9b` |
+| **SHA-256** | 64 hex chars | Recommended | `ed2e59c337d01185f388a4e9334d6f2e5cb29652f222afe4b692582d2e1c3fce` |
+
+<Tip>
+For maximum interoperability, generate all three hash formats when preparing data for collaboration. Different partners may have standardized on different algorithms.
+</Tip>
+
+### Algorithm considerations
+
+- **MD5 and SHA-1** are cryptographically broken for security purposes but remain acceptable for identifier matching where collision attacks aren't a concern
+- **SHA-256** (part of the SHA-2 family) is currently considered secure and is recommended for new implementations
+- All three produce deterministic outputs suitable for matching
+
+---
+
+## Input normalization
+
+Hash functions are sensitive to their input—any difference produces a completely different output. Before hashing, normalize your data:
+
+### Case sensitivity
+
+Standardize to lowercase for case-insensitive identifiers like email addresses:
+
+```
+MD5("narrative")  → a936fba0061bf85904722500de008e51
+MD5("NARRATIVE")  → 2402a932631e086f028721943b7350c8  (different!)
+MD5("Narrative")  → 0c036b871e3c66c1724f68fd007c4718  (different!)
+```
+
+### Whitespace
+
+Remove leading and trailing whitespace:
+
+```
+MD5(" johndoe@gmail.com ")  → different from MD5("johndoe@gmail.com")
+```
+
+### Phone number formatting
+
+Normalize to E.164 format before hashing:
+
+```
+Original: (415) 555-1234
+Normalized: +14155551234
+Then hash: SHA256("+14155551234")
+```
+
+---
+
+## Security considerations
+
+### Dictionary attacks
+
+While hash functions are irreversible, attackers can create dictionaries mapping common inputs to their hash outputs. If someone has a dictionary of all possible email hashes, they can look up your hash to find the original email.
+
+This is most concerning for inputs with limited possibilities:
+- **Phone numbers:** Only ~10 billion 10-digit numbers—feasible to hash them all
+- **Common emails:** Popular email patterns could be pre-computed
+- **Short strings:** Limited character combinations
+
+<Warning>
+Hashing alone may not provide sufficient protection for high-value identifiers with limited input spaces. Consider additional protections like Narrative ID for sensitive use cases.
+</Warning>
+
+### Mitigation strategies
+
+Narrative's platform adds protections beyond simple hashing:
+- Access controls limit who can query hashed identifiers
+- [Narrative ID](/concepts/security/narrative-id) provides per-partner encoding
+- Query logging enables auditing of data access
+
+### Not a substitute for access controls
+
+Hashing reduces risk but doesn't eliminate the need for proper data governance. Always combine hashing with:
+- Role-based access controls
+- Query logging and auditing
+- Data sharing agreements
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Broader context for pseudonymization techniques
+  </Card>
+  <Card title="PII" icon="id-card" href="/concepts/security/pii">
+    Understanding personally identifiable information
+  </Card>
+  <Card title="Narrative ID" icon="fingerprint" href="/concepts/security/narrative-id">
+    Enhanced identifier protection
+  </Card>
+  <Card title="Hashing PII for Upload" icon="upload" href="/guides/ingestion/hashing-pii">
+    Step-by-step hashing guide
+  </Card>
+</CardGroup>
