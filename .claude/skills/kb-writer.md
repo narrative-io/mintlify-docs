@@ -13,7 +13,7 @@ Full schema at [mintlify.com/docs.json](https://mintlify.com/docs.json).
 ### CLI commands
 
 * `bun i -g mint` - Install the Mintlify CLI
-* `mint dev` - Local preview at localhost:3000
+* `mint dev` - Local preview at localhost:3000. **Before starting a dev server, check if one is already running** (e.g., `lsof -i :3000` or `lsof -i :3001`)
 * `mint broken-links` - Check internal links
 * `mint a11y` - Check for accessibility issues in content
 * `mint rename` - Rename/move files and update references
