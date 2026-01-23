@@ -1,0 +1,212 @@
+---
+title: 'How Rosetta Stone Works'
+description: 'The mechanics of attributes, mappings, and automatic schema normalization'
+icon: 'gears'
+---
+
+Rosetta Stone normalizes data through two core primitives: **attributes** and **mappings**. Attributes define the common schema—what the normalized data looks like. Mappings translate each provider's native columns into that common schema.
+
+## The two core primitives
+
+### Attributes
+
+An attribute is a standardized field definition in the common schema. Each attribute specifies:
+
+| Property | Description |
+|----------|-------------|
+| **Name** | A unique identifier (e.g., `hl7_gender`, `event_timestamp`) |
+| **Description** | Human-readable explanation of what the attribute represents |
+| **Type** | The data type: `string`, `long`, `double`, `boolean`, `timestamptz`, `object`, or `array` |
+| **Validations** | Rules that data must satisfy (as an array of validation strings) |
+
+**Example: Unique Identifier**
+
+The `unique_identifier` attribute captures identity data from various sources. It's defined as an object with three properties:
+
+```json
+{
+  "id": 100,
+  "name": "unique_identifier",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    },
+    "context": {
+      "type": "string"
+    }
+  },
+  "required": ["type", "value"]
+}
+```
+
+This structure allows different identity types to be represented consistently, whether the source data contains mobile advertising IDs, hashed emails, or cookie identifiers.
+
+**Example: Gender**
+
+The `hl7_gender` attribute normalizes gender data using the HL7 standard. It's a string type with restricted enum values:
+
+```json
+{
+  "id": 200,
+  "name": "hl7_gender",
+  "type": "string",
+  "enum": ["male", "female", "other", "unknown"],
+  "description": "Gender using HL7 administrative gender codes"
+}
+```
+
+### Mappings
+
+A mapping connects a specific column in a dataset to an attribute. Each mapping includes:
+
+| Property | Description |
+|----------|-------------|
+| **Source column** | The column in the provider's dataset |
+| **Target attribute** | The Rosetta Stone attribute to map to |
+| **Transformation** | An optional expression to convert the data |
+| **Dataset** | The specific dataset this mapping applies to |
+
+**Example: Gender mapping**
+
+A provider stores gender as `"M"` or `"F"` in a column called `sex`. The mapping would be:
+
+```json
+{
+  "source_column": "sex",
+  "target_attribute": "hl7_gender",
+  "transformation": "CASE WHEN sex = 'M' THEN 'male' WHEN sex = 'F' THEN 'female' ELSE 'unknown' END"
+}
+```
+
+The transformation expression converts the provider's format to the standard enum values.
+
+## The normalization pipeline
+
+Rosetta Stone normalizes data through a three-stage pipeline:
+
+### Stage 1: Schema inference
+
+When data is uploaded to Narrative, the system analyzes it to understand its structure:
+
+1. **Column detection**: Identifies column names and data types
+2. **Pattern recognition**: Detects common patterns (dates, identifiers, categorical data)
+3. **Attribute suggestion**: Uses machine learning to suggest which attributes each column maps to
+
+This automated analysis provides a starting point—suggestions that can be accepted, modified, or rejected.
+
+### Stage 2: Mapping creation
+
+Mappings are created through a combination of machine learning and human curation:
+
+1. **Auto-generated mappings**: The system proposes mappings based on schema inference
+2. **Human review**: Data owners review suggestions and refine as needed
+3. **Transformation definition**: Complex mappings include transformation expressions
+
+This iterative process ensures accuracy while minimizing manual effort. As more data flows through the system, the ML models improve their suggestions.
+
+### Stage 3: Query-time translation
+
+When you query the `narrative.rosetta_stone` table:
+
+1. **Query analysis**: The system identifies which attributes you're requesting
+2. **Dataset discovery**: Finds all datasets with mappings for those attributes
+3. **Query translation**: Rewrites your query for each dataset's native schema
+4. **Execution**: Runs the translated queries against source data
+5. **Normalization**: Applies transformations and unions results
+6. **Return**: Delivers data in the consistent, normalized format
+
+This happens transparently—you write one query, and the platform handles the complexity of accessing multiple heterogeneous sources.
+
+## Normalization examples
+
+### Date normalization
+
+Different providers store dates in various formats:
+
+| Provider | Column | Sample value |
+|----------|--------|--------------|
+| Provider A | `event_date` | `01/15/2024` |
+| Provider B | `timestamp` | `2024-01-15T14:30:00Z` |
+| Provider C | `dt` | `15-Jan-2024` |
+
+All three map to the `event_timestamp` attribute. The mappings include transformations that parse each format and output ISO 8601:
+
+```sql
+-- Provider A mapping transformation
+TO_TIMESTAMP(event_date, 'MM/DD/YYYY')
+
+-- Provider B mapping transformation
+timestamp  -- Already ISO 8601, no transformation needed
+
+-- Provider C mapping transformation
+TO_TIMESTAMP(dt, 'DD-Mon-YYYY')
+```
+
+When you query `event_timestamp`, you receive consistent ISO 8601 timestamps regardless of source.
+
+### Gender normalization
+
+Providers represent gender in many ways:
+
+| Provider | Column | Values |
+|----------|--------|--------|
+| Provider A | `gender` | `"male"`, `"female"` |
+| Provider B | `sex` | `"M"`, `"F"` |
+| Provider C | `gender_code` | `1`, `2`, `0` |
+| Provider D | `gndr` | `"m"`, `"f"`, `"nb"` |
+
+Each mapping includes a transformation to the `hl7_gender` enum:
+
+```sql
+-- Provider A: Already matches, minimal transformation
+LOWER(gender)
+
+-- Provider B: Letter codes to words
+CASE sex WHEN 'M' THEN 'male' WHEN 'F' THEN 'female' ELSE 'unknown' END
+
+-- Provider C: Numeric codes to words
+CASE gender_code WHEN 1 THEN 'male' WHEN 2 THEN 'female' ELSE 'unknown' END
+
+-- Provider D: Handle non-binary
+CASE LOWER(gndr) WHEN 'm' THEN 'male' WHEN 'f' THEN 'female' WHEN 'nb' THEN 'other' ELSE 'unknown' END
+```
+
+## Validation and quality
+
+Mappings aren't just translations—they're quality gates. Each mapping can enforce validations:
+
+**Type checking**: Ensures values can be cast to the target type
+
+**Enum validation**: Confirms values match allowed enum members
+
+**Range checking**: Verifies numeric values fall within acceptable bounds
+
+**Pattern matching**: Validates strings match expected formats (e.g., email patterns)
+
+When data fails validation, the system can:
+- Reject the record
+- Map to a default value (like `unknown` for invalid gender)
+- Flag the record for review
+
+This ensures the normalized view contains clean, consistent data.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Rosetta Stone Overview" icon="language" href="/concepts/rosetta-stone/overview">
+    Understand the business problem Rosetta Stone solves
+  </Card>
+  <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
+    Deep dive into the type system and attribute hierarchy
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Step-by-step guide to creating mappings
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Test and verify your mappings
+  </Card>
+</CardGroup>

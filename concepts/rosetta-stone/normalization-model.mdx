@@ -1,0 +1,354 @@
+---
+title: 'The Normalization Model'
+description: 'How Rosetta Stone structures attributes, types, and validations'
+icon: 'layer-group'
+---
+
+Rosetta Stone's normalization model defines how data is structured, typed, and validated across the platform. Understanding this model helps you work effectively with attributes and create accurate mappings.
+
+## The attribute hierarchy
+
+Attributes exist at different scopes within the platform:
+
+### Global attributes
+
+Global attributes are available to all organizations on the platform. They represent standardized concepts that are commonly used across data collaboration scenarios:
+
+- **Identity attributes**: `email_sha256`, `phone_sha256`, `unique_identifier`
+- **Demographic attributes**: `hl7_gender`, `age`, `birth_year`
+- **Temporal attributes**: `event_timestamp`, `nio_last_modified`
+- **Geographic attributes**: `country_code`, `postal_code`, `geo_coordinates`
+
+Global attributes are maintained by Narrative and follow industry standards where applicable (e.g., HL7 for healthcare, ISO for country codes).
+
+### Organization attributes
+
+Organizations can create custom attributes for concepts specific to their domain or use case. Organization attributes:
+
+- Are visible only within your organization (and to partners you explicitly share with)
+- Can extend or specialize global attributes
+- Follow the same type system and validation rules
+
+### Attribute composition
+
+Attributes can reference other attributes, enabling complex data structures:
+
+```json
+{
+  "id": 150,
+  "name": "hashed_identity",
+  "type": "object",
+  "properties": {
+    "identifier": {
+      "$ref": 100
+    },
+    "hash_algorithm": {
+      "type": "string",
+      "enum": ["sha256", "md5", "sha1"]
+    }
+  },
+  "required": ["identifier", "hash_algorithm"]
+}
+```
+
+In this example, `"$ref": 100` references the `unique_identifier` attribute (ID 100). This allows reuse of standardized definitions while building domain-specific structures.
+
+## The type system
+
+Attributes use a type system that supports both primitive and complex data.
+
+### Primitive types
+
+| Type | Description | Example values |
+|------|-------------|----------------|
+| `string` | Text data of variable length | `"hello"`, `"user@example.com"` |
+| `long` | Whole numbers (64-bit integer) | `42`, `-17`, `0` |
+| `double` | Decimal numbers (64-bit float) | `3.14`, `-0.001`, `1000.0` |
+| `boolean` | True/false values | `true`, `false` |
+| `timestamptz` | Date and time with timezone (ISO 8601) | `2024-01-15T14:30:00Z` |
+
+### Enum type
+
+Enums restrict string values to a predefined set. An enum is a `string` type with an `enum` property:
+
+```json
+{
+  "id": 200,
+  "name": "hl7_gender",
+  "type": "string",
+  "enum": ["male", "female", "other", "unknown"],
+  "description": "Gender using HL7 administrative gender codes"
+}
+```
+
+When mapping to an enum attribute, transformations must produce one of the allowed values. Unrecognized values typically map to a fallback like `unknown`.
+
+### Object type
+
+Objects group related fields into a single attribute using `properties`:
+
+```json
+{
+  "id": 401,
+  "name": "geo_coordinates",
+  "type": "object",
+  "properties": {
+    "latitude": {
+      "type": "double"
+    },
+    "longitude": {
+      "type": "double"
+    },
+    "accuracy_meters": {
+      "type": "double"
+    }
+  },
+  "required": ["latitude", "longitude"]
+}
+```
+
+The `required` array specifies which properties must be present. When mapping to an object, the transformation must produce all required fields:
+
+```sql
+STRUCT(
+  CAST(lat AS DOUBLE) AS latitude,
+  CAST(lon AS DOUBLE) AS longitude,
+  CAST(accuracy AS DOUBLE) AS accuracy_meters
+)
+```
+
+### Array type
+
+Arrays contain multiple values of the same type, specified with `items`:
+
+```json
+{
+  "id": 500,
+  "name": "interest_categories",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "description": "Categories of user interests"
+}
+```
+
+Source data might be comma-separated:
+
+```sql
+SPLIT(interests, ',')
+```
+
+### Reference type
+
+References link to other attribute definitions using `$ref` with the numeric attribute ID:
+
+```json
+{
+  "id": 600,
+  "name": "purchase_event",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "$ref": 300
+    },
+    "user": {
+      "$ref": 100
+    },
+    "amount": {
+      "type": "double"
+    }
+  },
+  "required": ["timestamp", "user", "amount"]
+}
+```
+
+In this example, `$ref: 300` references the `event_timestamp` attribute and `$ref: 100` references the `unique_identifier` attribute. References inherit the type, validations, and semantics of the referenced attribute.
+
+## Validations
+
+Validations enforce data quality at the attribute level. Validations are specified as an array of strings.
+
+### Required fields in objects
+
+For object types, the `required` array specifies which properties must be present:
+
+```json
+{
+  "id": 700,
+  "name": "person",
+  "type": "object",
+  "properties": {
+    "first_name": { "type": "string" },
+    "middle_name": { "type": "string" },
+    "last_name": { "type": "string" }
+  },
+  "required": ["first_name", "last_name"]
+}
+```
+
+In this example, `middle_name` is optional because it's not in the `required` array.
+
+### Range constraints
+
+Numeric fields can have minimum and maximum bounds using the `validations` array:
+
+```json
+{
+  "id": 201,
+  "name": "age",
+  "type": "long",
+  "validations": ["min:0", "max:150"]
+}
+```
+
+Values outside the range are rejected.
+
+### String length
+
+Constrain string length:
+
+```json
+{
+  "id": 400,
+  "name": "country_code",
+  "type": "string",
+  "validations": ["min_length:2", "max_length:2"]
+}
+```
+
+### Pattern matching
+
+Validate strings against regular expressions:
+
+```json
+{
+  "id": 101,
+  "name": "email_sha256",
+  "type": "string",
+  "is_join_key": true,
+  "validations": ["min_length:64", "max_length:64", "pattern:^[a-f0-9]{64}$"]
+}
+```
+
+### Combining validations
+
+Multiple validations can be combined in a single array:
+
+```json
+{
+  "id": 800,
+  "name": "date_range",
+  "type": "object",
+  "properties": {
+    "start_date": { "type": "timestamptz" },
+    "end_date": { "type": "timestamptz" }
+  },
+  "required": ["start_date", "end_date"],
+  "validations": ["custom:end_date >= start_date"]
+}
+```
+
+## Schema presets
+
+Schema presets are curated collections of attributes designed for common use cases.
+
+### Available presets
+
+| Preset | Description | Key attributes |
+|--------|-------------|----------------|
+| Demographics | Consumer demographic data | `hl7_gender`, `age`, `birth_year`, `country_code` |
+| Identity | User identification | `unique_identifier`, `email_sha256`, `phone_sha256` |
+| Events | Timestamped occurrences | `event_timestamp`, `event_type`, `event_properties` |
+| Location | Geographic data | `geo_coordinates`, `country_code`, `postal_code` |
+| Marketing | Campaign and engagement | `campaign_id`, `channel`, `conversion_timestamp` |
+
+### Using a preset
+
+When configuring a new dataset, you can select a preset to automatically suggest mappings for standard attributes. This accelerates the mapping process for common data types.
+
+### Creating custom presets
+
+Organizations can create private presets that bundle:
+- A set of attributes (global or organization-specific)
+- Default transformation templates
+- Validation rules
+
+Custom presets standardize mapping across teams and datasets.
+
+## The narrative.rosetta_stone table
+
+The `narrative.rosetta_stone` table is a virtual table that provides unified access to all normalized data.
+
+### How it works
+
+When you query `narrative.rosetta_stone`:
+
+1. The query planner identifies which attributes you're selecting
+2. It finds all datasets with active mappings for those attributes
+3. It rewrites queries for each dataset using the mapping transformations
+4. Results are unioned and returned in the normalized format
+
+### Querying the table
+
+```sql
+SELECT
+    unique_identifier,
+    hl7_gender,
+    event_timestamp
+FROM narrative.rosetta_stone
+WHERE
+    event_timestamp > CURRENT_TIMESTAMP - INTERVAL '30' DAY
+    AND hl7_gender.gender = 'female'
+```
+
+This query automatically accesses all datasets with mappings for these three attributes, regardless of how the source data is structured.
+
+### System columns
+
+The table includes system columns for traceability:
+
+| Column | Description |
+|--------|-------------|
+| `_nio_source_dataset_id` | ID of the source dataset |
+| `_nio_source_row_id` | Original row identifier |
+| `_nio_mapping_version` | Version of the mapping used |
+
+## Data quality implications
+
+Normalization through Rosetta Stone improves data quality in several ways:
+
+**Consistency**: All data adheres to the same type system and validations, regardless of source.
+
+**Completeness**: Missing or malformed data is flagged during mapping, enabling targeted data quality improvements.
+
+**Comparability**: Data from different sources can be meaningfully combined because it shares a common semantic model.
+
+**Traceability**: System columns maintain lineage back to source data.
+
+### Handling validation failures
+
+When data fails validation during mapping, the system can:
+
+1. **Reject**: Exclude the record from the normalized view
+2. **Default**: Map to a default value (e.g., `unknown` for invalid enums)
+3. **Flag**: Include the record but mark it for review
+
+The behavior is configured per mapping.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand the normalization pipeline
+  </Card>
+  <Card title="Attribute Types Reference" icon="shapes" href="/reference/rosetta-stone/attribute-types">
+    Complete type system documentation
+  </Card>
+  <Card title="Built-in Attributes" icon="list" href="/reference/rosetta-stone/built-in-attributes">
+    Catalog of global attributes
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Create mappings for your data
+  </Card>
+</CardGroup>

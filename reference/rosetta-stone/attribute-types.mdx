@@ -1,0 +1,419 @@
+---
+title: 'Attribute Types'
+description: 'Complete reference for Rosetta Stone attribute type definitions'
+icon: 'shapes'
+---
+
+This reference documents all attribute types available in Rosetta Stone, including their properties, validations, and usage examples.
+
+## Attribute structure
+
+All attributes share a common structure based on the platform's type system:
+
+```json
+{
+  "id": 123,
+  "name": "attribute_name",
+  "display_name": "Human Readable Name",
+  "description": "Description of the attribute",
+  "type": "string",
+  "validations": ["min:1", "max:255"]
+}
+```
+
+**Required properties:**
+- `id` (number): Unique identifier for the attribute
+- `name` (string): Machine-readable name
+- `type` (string): One of the supported types
+
+**Optional properties:**
+- `display_name` (string): Human-readable name for UI display
+- `description` (string): Explanation of the attribute's purpose
+- `validations` (string[]): Array of validation rules
+- `metadata` (object): Additional metadata including co-occurrence data
+
+## Primitive types
+
+Primitive types represent basic data values.
+
+| Type | Description | NQL equivalent | Example values |
+|------|-------------|----------------|----------------|
+| `string` | Variable-length text | `VARCHAR` | `"hello"`, `"user@example.com"` |
+| `long` | Whole numbers (64-bit signed) | `BIGINT` | `42`, `-17`, `0` |
+| `double` | Double-precision decimal | `DOUBLE` | `3.14159`, `-0.001` |
+| `boolean` | True or false | `BOOLEAN` | `true`, `false` |
+| `timestamptz` | Date and time with timezone | `TIMESTAMP` | `2024-01-15T14:30:00Z` |
+
+### String
+
+Variable-length Unicode text. Can optionally include an `enum` property to restrict allowed values.
+
+**Basic definition:**
+```json
+{
+  "id": 1001,
+  "name": "customer_name",
+  "type": "string",
+  "description": "Full name of the customer"
+}
+```
+
+**With validations:**
+```json
+{
+  "id": 1002,
+  "name": "email_sha256",
+  "type": "string",
+  "description": "SHA-256 hash of email address",
+  "validations": ["min_length:64", "max_length:64", "pattern:^[a-f0-9]{64}$"]
+}
+```
+
+**With enum (restricted values):**
+```json
+{
+  "id": 1003,
+  "name": "hl7_gender",
+  "type": "string",
+  "enum": ["male", "female", "other", "unknown"],
+  "description": "Gender using HL7 administrative gender codes"
+}
+```
+
+When a string attribute has an `enum` property, only those values are allowed. Values are case-sensitive.
+
+### Long
+
+64-bit signed whole numbers. Range: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807.
+
+**Definition:**
+```json
+{
+  "id": 1004,
+  "name": "age",
+  "type": "long",
+  "description": "Age in years",
+  "validations": ["min:0", "max:150"]
+}
+```
+
+### Double
+
+Double-precision (64-bit) floating-point numbers.
+
+**Definition:**
+```json
+{
+  "id": 1005,
+  "name": "latitude",
+  "type": "double",
+  "description": "Geographic latitude",
+  "validations": ["min:-90", "max:90"]
+}
+```
+
+### Boolean
+
+True or false values.
+
+**Definition:**
+```json
+{
+  "id": 1006,
+  "name": "opted_in",
+  "type": "boolean",
+  "description": "Whether the user has opted in to marketing"
+}
+```
+
+**Mapping from source data:**
+```sql
+-- From string values
+CASE UPPER(opt_in_col)
+  WHEN 'Y' THEN true
+  WHEN 'YES' THEN true
+  WHEN 'TRUE' THEN true
+  WHEN '1' THEN true
+  ELSE false
+END
+```
+
+### Timestamptz
+
+Date and time with timezone, stored in UTC. Follows ISO 8601 format.
+
+**Definition:**
+```json
+{
+  "id": 1007,
+  "name": "event_timestamp",
+  "type": "timestamptz",
+  "description": "When the event occurred"
+}
+```
+
+**Mapping from source data:**
+```sql
+-- From various formats
+TO_TIMESTAMP(date_col, 'YYYY-MM-DD HH24:MI:SS')
+TO_TIMESTAMP(date_col, 'MM/DD/YYYY')
+```
+
+---
+
+## Object type
+
+Objects group related fields into a single composite value. Use `properties` to define the fields and `required` to specify which fields are mandatory.
+
+**Definition:**
+```json
+{
+  "id": 2001,
+  "name": "geo_coordinates",
+  "type": "object",
+  "description": "Geographic coordinates",
+  "properties": {
+    "latitude": {
+      "type": "double"
+    },
+    "longitude": {
+      "type": "double"
+    },
+    "accuracy_meters": {
+      "type": "double"
+    }
+  },
+  "required": ["latitude", "longitude"]
+}
+```
+
+**Properties:**
+- `properties`: Object mapping field names to field definitions
+- `required`: Array of field names that must be present
+
+**Nested objects:**
+
+Objects can contain other objects:
+
+```json
+{
+  "id": 2002,
+  "name": "address",
+  "type": "object",
+  "properties": {
+    "street": { "type": "string" },
+    "city": { "type": "string" },
+    "state": { "type": "string" },
+    "postal_code": { "type": "string" },
+    "coordinates": {
+      "type": "object",
+      "properties": {
+        "latitude": { "type": "double" },
+        "longitude": { "type": "double" }
+      }
+    }
+  },
+  "required": ["street", "city"]
+}
+```
+
+**Mapping example:**
+```sql
+STRUCT(
+  CAST(lat AS DOUBLE) AS latitude,
+  CAST(lon AS DOUBLE) AS longitude,
+  CAST(acc AS DOUBLE) AS accuracy_meters
+)
+```
+
+**Accessing object fields in queries:**
+```sql
+SELECT
+  geo_coordinates.latitude,
+  geo_coordinates.longitude
+FROM narrative.rosetta_stone
+WHERE geo_coordinates.accuracy_meters < 100
+```
+
+---
+
+## Array type
+
+Arrays contain multiple values of the same type.
+
+**Definition:**
+```json
+{
+  "id": 3001,
+  "name": "interest_categories",
+  "type": "array",
+  "items": {
+    "type": "string"
+  },
+  "description": "List of interest categories"
+}
+```
+
+**Properties:**
+- `items`: Definition of the element type
+
+**Array of objects:**
+```json
+{
+  "id": 3002,
+  "name": "identifiers",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "type": { "type": "string" },
+      "value": { "type": "string" }
+    }
+  }
+}
+```
+
+**Mapping examples:**
+```sql
+-- From comma-separated string
+SPLIT(interests, ',')
+
+-- From JSON array
+JSON_PARSE(json_array_col)
+
+-- Building an array from multiple columns
+ARRAY(email_sha256, phone_sha256)
+```
+
+**Querying arrays:**
+```sql
+-- Check if array contains a value
+SELECT *
+FROM narrative.rosetta_stone
+WHERE ARRAY_CONTAINS(interest_categories, 'sports')
+
+-- Unnest array for row-level operations
+SELECT
+  id,
+  interest
+FROM narrative.rosetta_stone
+CROSS JOIN UNNEST(interest_categories) AS t(interest)
+```
+
+---
+
+## Reference type
+
+References link to other attribute definitions using their numeric ID. This enables reuse of standardized definitions.
+
+**Definition:**
+```json
+{
+  "id": 4001,
+  "name": "purchase_event",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "$ref": 1007
+    },
+    "user": {
+      "$ref": 5001
+    },
+    "amount": {
+      "type": "double"
+    }
+  },
+  "required": ["timestamp", "user", "amount"]
+}
+```
+
+**Properties:**
+- `$ref`: The numeric ID of the referenced attribute
+
+**Behavior:**
+- The field inherits the full type definition of the referenced attribute
+- Validations from the referenced attribute apply
+- Changes to the referenced attribute automatically propagate
+
+**Use cases:**
+- Reusing standardized definitions (like `event_timestamp`)
+- Ensuring consistency across attributes
+- Building complex schemas from well-defined components
+
+---
+
+## Validation strings
+
+Validations are specified as an array of strings. Common validation patterns:
+
+### String validations
+
+| Validation | Description | Example |
+|------------|-------------|---------|
+| `min_length:N` | Minimum character count | `"min_length:1"` |
+| `max_length:N` | Maximum character count | `"max_length:255"` |
+| `pattern:REGEX` | Regex the value must match | `"pattern:^[a-z]+$"` |
+
+### Numeric validations
+
+| Validation | Description | Example |
+|------------|-------------|---------|
+| `min:N` | Minimum value (inclusive) | `"min:0"` |
+| `max:N` | Maximum value (inclusive) | `"max:100"` |
+
+### Examples
+
+```json
+{
+  "id": 5001,
+  "name": "age",
+  "type": "long",
+  "validations": ["min:0", "max:150"]
+}
+```
+
+```json
+{
+  "id": 5002,
+  "name": "country_code",
+  "type": "string",
+  "validations": ["min_length:2", "max_length:2", "pattern:^[A-Z]{2}$"]
+}
+```
+
+---
+
+## Join key attributes
+
+Primitive attributes can be marked as join keys using the `is_join_key` property:
+
+```json
+{
+  "id": 6001,
+  "name": "email_sha256",
+  "type": "string",
+  "is_join_key": true,
+  "description": "SHA-256 hash of email for identity matching"
+}
+```
+
+Join key attributes are optimized for use in JOIN operations across datasets.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Built-in Attributes" icon="list" href="/reference/rosetta-stone/built-in-attributes">
+    Catalog of standard platform attributes
+  </Card>
+  <Card title="Transformation Functions" icon="function" href="/reference/rosetta-stone/transformation-functions">
+    Functions for mapping transformations
+  </Card>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand attributes and mappings
+  </Card>
+  <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
+    Type system and validation concepts
+  </Card>
+</CardGroup>

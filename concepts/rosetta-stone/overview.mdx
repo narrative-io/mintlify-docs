@@ -1,0 +1,107 @@
+---
+title: 'Rosetta Stone Overview'
+description: 'How Narrative enables data collaboration across organizations with different schemas'
+icon: 'language'
+---
+
+In the landscape of data management, every organization collects and stores data in its own "language"—a format shaped by internal systems, legacy decisions, and unique business requirements. This diversity creates a significant barrier to data collaboration: before two organizations can work together, someone must decode and translate each party's data into a common format.
+
+Rosetta Stone eliminates this barrier.
+
+## The data collaboration problem
+
+Consider a simple field like gender. Three different data providers might store this information as:
+
+| Provider | Column name | Values |
+|----------|-------------|--------|
+| Provider A | `gender` | `"male"`, `"female"` |
+| Provider B | `sex` | `"M"`, `"F"` |
+| Provider C | `gender_code` | `1`, `2` |
+
+Without normalization, consuming data from all three providers requires:
+- Understanding each provider's schema
+- Writing custom ETL logic for each integration
+- Maintaining these transformations as schemas evolve
+- Repeating this work for every new partnership
+
+This approach doesn't scale. As organizations add more data partners, the complexity grows exponentially.
+
+## What Rosetta Stone is
+
+Rosetta Stone is Narrative's universal translator for data collaboration. It takes data from providers in their native format and normalizes it to a common schema—enabling you to query, combine, and analyze data from multiple sources without writing custom integrations.
+
+The system works through two core primitives:
+
+- **Attributes**: Standardized field definitions that form the common schema (like `hl7_gender` with values `male`, `female`, `other`, `unknown`)
+- **Mappings**: Translations that connect each provider's columns to the appropriate attributes, including any necessary transformations
+
+When you query through Rosetta Stone, the platform automatically translates your request to each provider's native schema, executes the query, and returns normalized results.
+
+## Real-world example: Weather data
+
+Imagine you need weather data from multiple providers for a logistics optimization project. Each provider structures their data differently:
+
+**Provider A (European):**
+- Temperature in Celsius
+- Timestamps in `DD/MM/YYYY HH:mm` format
+- Wind speed in kilometers per hour
+
+**Provider B (US-based):**
+- Temperature in Fahrenheit
+- Timestamps in `MM-DD-YYYY h:mm AM/PM` format
+- Wind speed in miles per hour
+
+**Provider C (Scientific):**
+- Temperature in Kelvin
+- Timestamps in ISO 8601 format
+- Wind speed in meters per second
+
+Without Rosetta Stone, you'd need to:
+1. Learn each provider's schema
+2. Write conversion logic for each field
+3. Handle edge cases (what does Provider A do with negative temperatures?)
+4. Maintain this code as providers update their formats
+
+With Rosetta Stone, you simply query the normalized attributes (`temperature_celsius`, `event_timestamp`, `wind_speed_kph`), and the platform handles all translations automatically.
+
+## The query planner analogy
+
+Rosetta Stone functions like a sophisticated query planner that operates across organizational boundaries. When you request data:
+
+1. You specify what you need using standardized attribute names
+2. Rosetta Stone identifies which providers have the relevant data
+3. The system translates your query to each provider's native format
+4. Results are normalized and returned in a consistent structure
+
+This abstraction means you can add new data providers without changing your queries—the platform handles the translation layer.
+
+## Key benefits
+
+**No ETL pipelines per partnership**
+Traditional data collaboration requires building custom integrations for each partner. Rosetta Stone eliminates this by providing a universal translation layer.
+
+**Schema changes handled transparently**
+When a provider updates their schema, Narrative updates the mappings. Your queries continue working without modification.
+
+**Query once, access many**
+A single query against Rosetta Stone can retrieve and combine data from dozens of providers, each with their own schemas.
+
+**Data quality enforcement**
+Mappings include validations that ensure data meets quality standards before it enters the normalized view—catching issues like out-of-range values or malformed dates.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand attributes, mappings, and the normalization pipeline
+  </Card>
+  <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
+    Explore the type system and data quality enforcement
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Learn how to create mappings for your data
+  </Card>
+  <Card title="Normalize Your Data" icon="graduation-cap" href="/getting-started/normalize-data">
+    Hands-on tutorial for normalizing your first dataset
+  </Card>
+</CardGroup>

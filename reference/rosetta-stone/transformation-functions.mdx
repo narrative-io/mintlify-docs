@@ -1,0 +1,628 @@
+---
+title: 'Transformation Functions'
+description: 'Functions available for mapping transformation expressions'
+icon: 'function'
+---
+
+This reference documents the functions available in Rosetta Stone mapping transformation expressions. Transformation expressions use NQL syntax.
+
+## String functions
+
+Functions for manipulating text values.
+
+### LOWER
+
+Converts a string to lowercase.
+
+**Syntax:** `LOWER(string)`
+
+**Example:**
+```sql
+LOWER(gender)  -- 'MALE' → 'male'
+```
+
+### UPPER
+
+Converts a string to uppercase.
+
+**Syntax:** `UPPER(string)`
+
+**Example:**
+```sql
+UPPER(country_code)  -- 'us' → 'US'
+```
+
+### TRIM
+
+Removes leading and trailing whitespace.
+
+**Syntax:** `TRIM(string)`
+
+**Example:**
+```sql
+TRIM(email)  -- '  user@example.com  ' → 'user@example.com'
+```
+
+### LTRIM / RTRIM
+
+Removes leading (LTRIM) or trailing (RTRIM) whitespace.
+
+**Syntax:** `LTRIM(string)`, `RTRIM(string)`
+
+### SUBSTRING
+
+Extracts a portion of a string.
+
+**Syntax:** `SUBSTRING(string, start, length)`
+
+- `start`: 1-based starting position
+- `length`: number of characters to extract
+
+**Example:**
+```sql
+SUBSTRING(zip_code, 1, 5)  -- '12345-6789' → '12345'
+```
+
+### CONCAT
+
+Concatenates multiple strings.
+
+**Syntax:** `CONCAT(string1, string2, ...)`
+
+**Example:**
+```sql
+CONCAT(first_name, ' ', last_name)  -- 'John', 'Doe' → 'John Doe'
+```
+
+### LENGTH
+
+Returns the length of a string.
+
+**Syntax:** `LENGTH(string)`
+
+**Example:**
+```sql
+LENGTH(country_code)  -- 'US' → 2
+```
+
+### REPLACE
+
+Replaces occurrences of a substring.
+
+**Syntax:** `REPLACE(string, search, replacement)`
+
+**Example:**
+```sql
+REPLACE(phone, '-', '')  -- '555-123-4567' → '5551234567'
+```
+
+### SPLIT
+
+Splits a string into an array by delimiter.
+
+**Syntax:** `SPLIT(string, delimiter)`
+
+**Example:**
+```sql
+SPLIT(interests, ',')  -- 'sports,music,travel' → ['sports', 'music', 'travel']
+```
+
+### SPLIT_PART
+
+Extracts a specific part from a delimited string.
+
+**Syntax:** `SPLIT_PART(string, delimiter, index)`
+
+- `index`: 1-based position of the part to extract
+
+**Example:**
+```sql
+SPLIT_PART(full_name, ' ', 1)  -- 'John Doe' → 'John'
+```
+
+### POSITION
+
+Returns the position of a substring (1-based), or 0 if not found.
+
+**Syntax:** `POSITION(substring IN string)`
+
+**Example:**
+```sql
+POSITION('@' IN email)  -- 'user@example.com' → 5
+```
+
+### REGEXP_REPLACE
+
+Replaces text matching a regular expression.
+
+**Syntax:** `REGEXP_REPLACE(string, pattern, replacement)`
+
+**Example:**
+```sql
+REGEXP_REPLACE(phone, '[^0-9]', '')  -- '(555) 123-4567' → '5551234567'
+```
+
+### REGEXP_EXTRACT
+
+Extracts text matching a regular expression.
+
+**Syntax:** `REGEXP_EXTRACT(string, pattern)`
+
+**Example:**
+```sql
+REGEXP_EXTRACT(email, '@(.+)$')  -- 'user@example.com' → 'example.com'
+```
+
+---
+
+## Date and time functions
+
+Functions for working with dates and timestamps.
+
+### TO_TIMESTAMP
+
+Parses a string into a timestamp.
+
+**Syntax:** `TO_TIMESTAMP(string, format)`
+
+**Common format patterns:**
+
+| Pattern | Description | Example |
+|---------|-------------|---------|
+| `YYYY` | 4-digit year | `2024` |
+| `MM` | 2-digit month | `01`-`12` |
+| `DD` | 2-digit day | `01`-`31` |
+| `HH24` | 24-hour hour | `00`-`23` |
+| `HH12` | 12-hour hour | `01`-`12` |
+| `MI` | Minutes | `00`-`59` |
+| `SS` | Seconds | `00`-`59` |
+| `AM`/`PM` | AM/PM indicator | `AM`, `PM` |
+
+**Examples:**
+```sql
+TO_TIMESTAMP(date_col, 'YYYY-MM-DD')
+TO_TIMESTAMP(datetime_col, 'MM/DD/YYYY HH24:MI:SS')
+TO_TIMESTAMP(datetime_col, 'YYYY-MM-DD"T"HH24:MI:SS')
+```
+
+### TRY_TO_TIMESTAMP
+
+Like TO_TIMESTAMP, but returns NULL instead of error on parse failure.
+
+**Syntax:** `TRY_TO_TIMESTAMP(string, format)`
+
+**Example:**
+```sql
+COALESCE(
+  TRY_TO_TIMESTAMP(date_col, 'YYYY-MM-DD'),
+  TRY_TO_TIMESTAMP(date_col, 'MM/DD/YYYY')
+)
+```
+
+### TO_DATE
+
+Parses a string into a date (without time component).
+
+**Syntax:** `TO_DATE(string, format)`
+
+**Example:**
+```sql
+TO_DATE(birth_date, 'YYYY-MM-DD')
+```
+
+### CURRENT_TIMESTAMP
+
+Returns the current timestamp in UTC.
+
+**Syntax:** `CURRENT_TIMESTAMP`
+
+### CURRENT_DATE
+
+Returns the current date.
+
+**Syntax:** `CURRENT_DATE`
+
+### DATE_DIFF
+
+Calculates the difference between two dates.
+
+**Syntax:** `DATE_DIFF(unit, start, end)`
+
+**Units:** `'year'`, `'month'`, `'day'`, `'hour'`, `'minute'`, `'second'`
+
+**Example:**
+```sql
+DATE_DIFF('year', birth_date, CURRENT_DATE)  -- Calculate age
+```
+
+### DATE_ADD / DATE_SUB
+
+Adds or subtracts an interval from a date.
+
+**Syntax:** `DATE_ADD(date, interval)`, `DATE_SUB(date, interval)`
+
+**Example:**
+```sql
+DATE_ADD(timestamp_col, INTERVAL '30' DAY)
+DATE_SUB(timestamp_col, INTERVAL '1' HOUR)
+```
+
+### YEAR / MONTH / DAY
+
+Extracts components from a date or timestamp.
+
+**Syntax:** `YEAR(date)`, `MONTH(date)`, `DAY(date)`
+
+**Example:**
+```sql
+YEAR(birth_date)  -- 1990
+MONTH(event_timestamp)  -- 6
+```
+
+### HOUR / MINUTE / SECOND
+
+Extracts time components from a timestamp.
+
+**Syntax:** `HOUR(timestamp)`, `MINUTE(timestamp)`, `SECOND(timestamp)`
+
+---
+
+## Type conversion functions
+
+Functions for converting between data types.
+
+### CAST
+
+Converts a value to a specified type.
+
+**Syntax:** `CAST(expression AS type)`
+
+**Supported types:** `INTEGER`, `BIGINT`, `FLOAT`, `DOUBLE`, `VARCHAR`, `BOOLEAN`, `TIMESTAMP`, `DATE`
+
+**Examples:**
+```sql
+CAST(string_number AS INTEGER)  -- '42' → 42
+CAST(timestamp_col AS DATE)     -- 2024-01-15T14:30:00Z → 2024-01-15
+CAST(integer_col AS VARCHAR)    -- 42 → '42'
+```
+
+### TRY_CAST
+
+Like CAST, but returns NULL instead of error on conversion failure.
+
+**Syntax:** `TRY_CAST(expression AS type)`
+
+**Example:**
+```sql
+TRY_CAST(maybe_number AS INTEGER)  -- 'abc' → NULL instead of error
+```
+
+---
+
+## Conditional functions
+
+Functions for conditional logic.
+
+### CASE
+
+Evaluates conditions and returns a result.
+
+**Simple CASE syntax:**
+```sql
+CASE expression
+  WHEN value1 THEN result1
+  WHEN value2 THEN result2
+  ELSE default_result
+END
+```
+
+**Searched CASE syntax:**
+```sql
+CASE
+  WHEN condition1 THEN result1
+  WHEN condition2 THEN result2
+  ELSE default_result
+END
+```
+
+**Examples:**
+```sql
+-- Simple CASE
+CASE gender
+  WHEN 'M' THEN 'male'
+  WHEN 'F' THEN 'female'
+  ELSE 'unknown'
+END
+
+-- Searched CASE
+CASE
+  WHEN age < 18 THEN 'minor'
+  WHEN age < 65 THEN 'adult'
+  ELSE 'senior'
+END
+```
+
+### COALESCE
+
+Returns the first non-null argument.
+
+**Syntax:** `COALESCE(expr1, expr2, ...)`
+
+**Example:**
+```sql
+COALESCE(primary_email, secondary_email, 'unknown')
+```
+
+### NULLIF
+
+Returns NULL if two expressions are equal, otherwise returns the first expression.
+
+**Syntax:** `NULLIF(expr1, expr2)`
+
+**Example:**
+```sql
+NULLIF(value, '')  -- Treat empty string as NULL
+NULLIF(value, 'N/A')  -- Treat 'N/A' as NULL
+```
+
+### IF
+
+Simple conditional expression (shorthand for CASE).
+
+**Syntax:** `IF(condition, true_result, false_result)`
+
+**Example:**
+```sql
+IF(age >= 18, 'adult', 'minor')
+```
+
+---
+
+## Null handling functions
+
+Functions for working with NULL values.
+
+### COALESCE
+
+(See Conditional functions above)
+
+### NULLIF
+
+(See Conditional functions above)
+
+### IFNULL
+
+Returns the second argument if the first is NULL.
+
+**Syntax:** `IFNULL(expr, default_value)`
+
+**Example:**
+```sql
+IFNULL(middle_name, '')
+```
+
+### IS NULL / IS NOT NULL
+
+Tests for NULL values.
+
+**Example:**
+```sql
+CASE WHEN value IS NULL THEN 'missing' ELSE value END
+```
+
+---
+
+## Array functions
+
+Functions for working with arrays.
+
+### ARRAY
+
+Creates an array from values.
+
+**Syntax:** `ARRAY(value1, value2, ...)`
+
+**Example:**
+```sql
+ARRAY(email_sha256, phone_sha256)
+```
+
+### ARRAY_CONTAINS
+
+Checks if an array contains a value.
+
+**Syntax:** `ARRAY_CONTAINS(array, value)`
+
+**Example:**
+```sql
+ARRAY_CONTAINS(tags, 'premium')
+```
+
+### TRANSFORM
+
+Applies a function to each array element.
+
+**Syntax:** `TRANSFORM(array, element -> expression)`
+
+**Example:**
+```sql
+TRANSFORM(categories, x -> LOWER(TRIM(x)))
+```
+
+### FILTER
+
+Filters array elements based on a condition.
+
+**Syntax:** `FILTER(array, element -> condition)`
+
+**Example:**
+```sql
+FILTER(values, x -> x IS NOT NULL)
+FILTER(numbers, x -> x > 0)
+```
+
+### ARRAY_JOIN
+
+Joins array elements into a string.
+
+**Syntax:** `ARRAY_JOIN(array, delimiter)`
+
+**Example:**
+```sql
+ARRAY_JOIN(tags, ', ')  -- ['a', 'b', 'c'] → 'a, b, c'
+```
+
+---
+
+## Struct functions
+
+Functions for working with structs.
+
+### STRUCT
+
+Creates a struct from named values.
+
+**Syntax:** `STRUCT(expr1 AS name1, expr2 AS name2, ...)`
+
+**Example:**
+```sql
+STRUCT(
+  'email_sha256' AS type,
+  hash_value AS value,
+  'hashed_email' AS context
+)
+```
+
+### Accessing struct fields
+
+Use dot notation to access struct fields.
+
+**Example:**
+```sql
+unique_identifier.type
+geo_coordinates.latitude
+```
+
+---
+
+## JSON functions
+
+Functions for parsing and working with JSON data.
+
+### JSON_PARSE
+
+Parses a JSON string into a structured value.
+
+**Syntax:** `JSON_PARSE(json_string)`
+
+**Example:**
+```sql
+JSON_PARSE(properties_json)
+```
+
+### JSON_EXTRACT
+
+Extracts a value from JSON using a path.
+
+**Syntax:** `JSON_EXTRACT(json, path)`
+
+**Example:**
+```sql
+JSON_EXTRACT(data, '$.user.email')
+```
+
+### JSON_EXTRACT_SCALAR
+
+Extracts a scalar value from JSON.
+
+**Syntax:** `JSON_EXTRACT_SCALAR(json, path)`
+
+**Example:**
+```sql
+JSON_EXTRACT_SCALAR(data, '$.count')
+```
+
+---
+
+## Hash functions
+
+Functions for hashing values.
+
+### SHA256
+
+Computes SHA-256 hash.
+
+**Syntax:** `SHA256(string)`
+
+**Returns:** 64-character hexadecimal string
+
+**Example:**
+```sql
+SHA256(LOWER(TRIM(email)))
+```
+
+### MD5
+
+Computes MD5 hash.
+
+**Syntax:** `MD5(string)`
+
+**Returns:** 32-character hexadecimal string
+
+<Warning>
+Hash functions are available but it's recommended to hash PII before uploading to Narrative. See [Hashing PII for Upload](/guides/ingestion/hashing-pii).
+</Warning>
+
+---
+
+## Mathematical functions
+
+Functions for numeric operations.
+
+### ABS
+
+Returns absolute value.
+
+**Syntax:** `ABS(number)`
+
+### ROUND
+
+Rounds to specified decimal places.
+
+**Syntax:** `ROUND(number, decimals)`
+
+**Example:**
+```sql
+ROUND(price, 2)  -- 19.999 → 20.00
+```
+
+### FLOOR / CEIL
+
+Rounds down (FLOOR) or up (CEIL) to nearest integer.
+
+**Syntax:** `FLOOR(number)`, `CEIL(number)`
+
+### MOD
+
+Returns remainder of division.
+
+**Syntax:** `MOD(dividend, divisor)`
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Use these functions in your mappings
+  </Card>
+  <Card title="Edge Cases" icon="triangle-exclamation" href="/guides/rosetta-stone/edge-cases">
+    Complex transformation patterns
+  </Card>
+  <Card title="Attribute Types" icon="shapes" href="/reference/rosetta-stone/attribute-types">
+    Target types for transformations
+  </Card>
+  <Card title="NQL Functions Reference" icon="code" href="/reference/nql/functions">
+    Complete NQL function documentation
+  </Card>
+</CardGroup>

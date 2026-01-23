@@ -1,0 +1,390 @@
+---
+title: 'Handling Edge Cases'
+description: 'Solutions for complex mapping scenarios and unusual data patterns'
+icon: 'triangle-exclamation'
+---
+
+This guide covers solutions for complex mapping scenarios that go beyond simple column-to-attribute translations. Use these patterns when your data doesn't fit neatly into the standard mapping model.
+
+<Note>
+Familiarize yourself with [basic mapping](/guides/rosetta-stone/mapping-schemas) before tackling these advanced scenarios.
+</Note>
+
+## Multi-value fields
+
+When a single source column contains multiple values (often comma-separated or delimited).
+
+### Scenario
+
+Your source data has an `interests` column with values like:
+- `"sports,music,travel"`
+- `"cooking"`
+- `"tech,gaming,music,movies"`
+
+### Solution: Split to array
+
+Map to an array attribute using `SPLIT`:
+
+```sql
+SPLIT(interests, ',')
+```
+
+This transforms `"sports,music,travel"` into `["sports", "music", "travel"]`.
+
+### Handling whitespace
+
+If values might have spaces around delimiters:
+
+```sql
+TRANSFORM(SPLIT(interests, ','), x -> TRIM(x))
+```
+
+### Handling empty values
+
+Filter out empty strings that result from trailing delimiters:
+
+```sql
+FILTER(SPLIT(interests, ','), x -> LENGTH(TRIM(x)) > 0)
+```
+
+## Conditional mappings
+
+When different source values require completely different transformation logic.
+
+### Scenario: Different ID types in one column
+
+Your `identifier` column contains mixed ID types:
+- `"email:user@example.com"`
+- `"phone:5551234567"`
+- `"cookie:abc123xyz"`
+
+### Solution: Parse and route
+
+```sql
+STRUCT(
+  CASE
+    WHEN identifier LIKE 'email:%' THEN 'email'
+    WHEN identifier LIKE 'phone:%' THEN 'phone'
+    WHEN identifier LIKE 'cookie:%' THEN 'cookie_id'
+    ELSE 'unknown'
+  END AS type,
+  SUBSTRING(identifier, POSITION(':' IN identifier) + 1) AS value,
+  CASE
+    WHEN identifier LIKE 'email:%' THEN 'hashed_email'
+    WHEN identifier LIKE 'phone:%' THEN 'hashed_phone'
+    WHEN identifier LIKE 'cookie:%' THEN 'advertising'
+    ELSE 'other'
+  END AS context
+)
+```
+
+### Scenario: Different date formats in one column
+
+Some rows use `MM/DD/YYYY`, others use `YYYY-MM-DD`:
+
+```sql
+CASE
+  WHEN date_col LIKE '____-__-__' THEN
+    TO_TIMESTAMP(date_col, 'YYYY-MM-DD')
+  WHEN date_col LIKE '__/__/____' THEN
+    TO_TIMESTAMP(date_col, 'MM/DD/YYYY')
+  ELSE
+    NULL
+END
+```
+
+## Missing or null data
+
+Handling columns that are frequently null or contain placeholder values.
+
+### Default values
+
+Provide a fallback when data is missing:
+
+```sql
+COALESCE(gender, 'unknown')
+```
+
+### Coalescing from multiple columns
+
+Try multiple columns in order:
+
+```sql
+COALESCE(primary_email, secondary_email, backup_email)
+```
+
+### Treating placeholders as null
+
+Your data uses `"N/A"` or `"-"` as placeholders:
+
+```sql
+CASE
+  WHEN UPPER(value) IN ('N/A', 'NA', '-', 'NONE', 'NULL', '') THEN NULL
+  ELSE value
+END
+```
+
+### Conditional defaults
+
+Different defaults based on context:
+
+```sql
+CASE
+  WHEN country = 'US' AND state IS NULL THEN 'unknown_us_state'
+  WHEN country != 'US' AND state IS NULL THEN NULL  -- Non-US doesn't need state
+  ELSE state
+END
+```
+
+## Type coercion challenges
+
+When source data types don't cleanly match target types.
+
+### String to numeric with formatting
+
+Source has currency formatting: `"$1,234.56"`
+
+```sql
+CAST(
+  REPLACE(REPLACE(amount, '$', ''), ',', '')
+  AS FLOAT
+)
+```
+
+### Boolean interpretations
+
+Sources represent booleans differently:
+
+| Source values | Transformation |
+|---------------|----------------|
+| `"yes"/"no"` | `LOWER(col) = 'yes'` |
+| `"Y"/"N"` | `UPPER(col) = 'Y'` |
+| `"1"/"0"` | `col = '1'` |
+| `"true"/"false"` | `LOWER(col) = 'true'` |
+| `1/0` (numeric) | `col = 1` |
+
+Handle multiple formats:
+
+```sql
+CASE
+  WHEN UPPER(col) IN ('Y', 'YES', 'TRUE', '1') THEN true
+  WHEN UPPER(col) IN ('N', 'NO', 'FALSE', '0') THEN false
+  ELSE NULL
+END
+```
+
+### Timestamp with multiple formats
+
+Parse dates that might be in several formats:
+
+```sql
+COALESCE(
+  TRY_TO_TIMESTAMP(date_col, 'YYYY-MM-DD''T''HH24:MI:SS'),
+  TRY_TO_TIMESTAMP(date_col, 'MM/DD/YYYY'),
+  TRY_TO_TIMESTAMP(date_col, 'DD-Mon-YYYY'),
+  TRY_TO_TIMESTAMP(date_col, 'YYYYMMDD')
+)
+```
+
+The `TRY_TO_TIMESTAMP` function returns null instead of erroring on parse failure, allowing the `COALESCE` to try the next format.
+
+## One-to-many relationships
+
+When a single source column maps to multiple parts of a struct attribute.
+
+### Scenario
+
+Your `full_address` column contains: `"123 Main St, Boston, MA 02101"`
+
+You need to map to a struct with separate fields for street, city, state, and postal code.
+
+### Solution: Parse components
+
+```sql
+STRUCT(
+  TRIM(SPLIT_PART(full_address, ',', 1)) AS street,
+  TRIM(SPLIT_PART(full_address, ',', 2)) AS city,
+  TRIM(SPLIT_PART(
+    SPLIT_PART(full_address, ',', 3), ' ', 1
+  )) AS state,
+  TRIM(SPLIT_PART(
+    SPLIT_PART(full_address, ',', 3), ' ', 2
+  )) AS postal_code
+)
+```
+
+<Warning>
+Parsing unstructured text is error-prone. Consider whether the complexity is worth it, or if the source data can be improved.
+</Warning>
+
+## Many-to-one relationships
+
+When multiple source columns combine into a single attribute.
+
+### Scenario: Separate date and time columns
+
+Source has `event_date` and `event_time` as separate columns:
+
+```sql
+TO_TIMESTAMP(
+  CONCAT(event_date, ' ', event_time),
+  'YYYY-MM-DD HH24:MI:SS'
+)
+```
+
+### Scenario: First name and last name
+
+Combine into a full name:
+
+```sql
+TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, '')))
+```
+
+### Scenario: Building a struct from multiple columns
+
+Create a `unique_identifier` from separate columns:
+
+```sql
+STRUCT(
+  id_type AS type,
+  id_value AS value,
+  COALESCE(id_context, 'default') AS context
+)
+```
+
+## Version handling
+
+When your source data schema changes over time.
+
+### Scenario: Column renamed in new data
+
+Old data has `sex`, new data has `gender`:
+
+```sql
+COALESCE(gender, sex)
+```
+
+### Scenario: New values added to enum
+
+Old data: `"M"`, `"F"`
+New data: `"M"`, `"F"`, `"NB"`, `"O"`
+
+Update your transformation to handle all values:
+
+```sql
+CASE UPPER(COALESCE(gender, sex))
+  WHEN 'M' THEN 'male'
+  WHEN 'F' THEN 'female'
+  WHEN 'NB' THEN 'other'
+  WHEN 'O' THEN 'other'
+  ELSE 'unknown'
+END
+```
+
+### Scenario: Data format changed
+
+Old timestamps in epoch milliseconds, new data in ISO 8601:
+
+```sql
+CASE
+  WHEN timestamp_col ~ '^\d+$' THEN
+    -- Numeric: assume epoch milliseconds
+    TO_TIMESTAMP(CAST(timestamp_col AS BIGINT) / 1000)
+  ELSE
+    -- String: assume ISO 8601
+    TO_TIMESTAMP(timestamp_col, 'YYYY-MM-DD''T''HH24:MI:SS')
+END
+```
+
+## Handling arrays of structs
+
+When your data contains nested structures.
+
+### Scenario: Multiple identifiers per row
+
+Source column `identifiers` contains JSON like:
+```json
+[
+  {"type": "email", "value": "user@example.com"},
+  {"type": "phone", "value": "5551234567"}
+]
+```
+
+### Solution: Parse JSON array
+
+```sql
+TRANSFORM(
+  JSON_PARSE(identifiers),
+  x -> STRUCT(
+    x.type AS type,
+    x.value AS value,
+    'parsed' AS context
+  )
+)
+```
+
+## Handling special characters
+
+When source data contains characters that need escaping or encoding.
+
+### URL encoding
+
+Source has URL-encoded values:
+
+```sql
+URL_DECODE(encoded_value)
+```
+
+### HTML entities
+
+Source has HTML entities like `&amp;`:
+
+```sql
+REPLACE(
+  REPLACE(
+    REPLACE(value, '&amp;', '&'),
+    '&lt;', '<'
+  ),
+  '&gt;', '>'
+)
+```
+
+### Unicode normalization
+
+Ensure consistent unicode representation:
+
+```sql
+NORMALIZE(unicode_string, 'NFC')
+```
+
+## Performance considerations
+
+Complex transformations can impact query performance.
+
+### Avoid expensive operations in hot paths
+
+If a transformation is complex, consider:
+- Pre-computing values in a materialized view
+- Simplifying the logic where possible
+- Breaking into multiple simpler mappings
+
+### Test with realistic data volumes
+
+Edge case handling that works in tests might be slow at scale. Test with production-like data volumes.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Basic mapping creation
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Test your edge case handling
+  </Card>
+  <Card title="Transformation Functions" icon="function" href="/reference/rosetta-stone/transformation-functions">
+    Complete function reference
+  </Card>
+  <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
+    Understand attribute types and validations
+  </Card>
+</CardGroup>

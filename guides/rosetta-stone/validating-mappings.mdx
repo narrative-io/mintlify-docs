@@ -1,0 +1,305 @@
+---
+title: 'Validating Mappings'
+description: 'Test and verify your schema mappings before production use'
+icon: 'circle-check'
+---
+
+This guide covers how to test and validate your Rosetta Stone mappings before activating them. Validation catches errors early, ensuring data quality before your data enters the normalized view.
+
+<Note>
+Before validating, you'll need created mappings. See [Mapping Schemas](/guides/rosetta-stone/mapping-schemas) to create your first mapping.
+</Note>
+
+## Why validate mappings
+
+Validation serves several purposes:
+
+**Catch transformation errors**: Identify syntax errors, type mismatches, or logic bugs in transformation expressions before they affect production data.
+
+**Verify edge cases**: Ensure your transformations handle unusual or unexpected values in your source data.
+
+**Preview output**: See exactly how your data will appear after normalization.
+
+**Ensure attribute compliance**: Confirm that transformed values meet attribute validations (enums, ranges, patterns).
+
+## Testing with sample data
+
+### Using the UI
+
+1. Navigate to your dataset's **Rosetta Stone** tab
+2. Select one or more mappings
+3. Click **Test Mappings**
+
+The test interface displays:
+- Sample rows from your source data
+- The transformation applied
+- The resulting output
+- Any validation errors or warnings
+
+[Screenshot placeholder: Test results showing source data and transformed output]
+
+Review each column to verify the transformation produces expected results.
+
+### Using the API
+
+Test a specific mapping against sample data:
+
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings/{mapping_id}/test" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sample_size": 100
+  }'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "mapping_id": "mapping-12345",
+    "samples_tested": 100,
+    "samples_passed": 97,
+    "samples_failed": 3,
+    "results": [
+      {
+        "source_value": "M",
+        "transformed_value": "male",
+        "validation_status": "passed"
+      },
+      {
+        "source_value": "X",
+        "transformed_value": null,
+        "validation_status": "failed",
+        "error": "Value 'X' not in allowed enum values"
+      }
+    ],
+    "error_summary": {
+      "enum_validation_failed": 3
+    }
+  }
+}
+```
+
+Test with custom sample data:
+
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings/{mapping_id}/test" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "custom_samples": [
+      {"sex": "M"},
+      {"sex": "F"},
+      {"sex": "X"},
+      {"sex": null},
+      {"sex": ""}
+    ]
+  }'
+```
+
+This allows you to specifically test edge cases you're concerned about.
+
+## Common validation checks
+
+### Type conversion accuracy
+
+Verify that type conversions work correctly:
+
+| Source type | Target type | Test for |
+|-------------|-------------|----------|
+| String → Integer | Numeric strings | Non-numeric values, decimals |
+| String → Timestamp | Date strings | Malformed dates, timezone handling |
+| Integer → Float | Numbers | Precision loss |
+| String → Boolean | Text values | Case sensitivity, unexpected values |
+
+**Example**: Testing date parsing
+
+```sql
+-- Transformation
+TO_TIMESTAMP(date_col, 'MM/DD/YYYY')
+```
+
+Test with:
+- Valid dates: `"01/15/2024"`
+- Invalid format: `"2024-01-15"` (wrong format)
+- Edge cases: `"02/29/2024"` (leap year), `"13/01/2024"` (invalid month)
+
+### Enum value coverage
+
+For enum attributes, ensure all source values map to valid enum members:
+
+1. Get unique values from your source column
+2. Trace each through your transformation
+3. Verify all outputs are in the allowed values list
+
+**Example**: Testing gender mapping
+
+Source values: `"M"`, `"F"`, `"Male"`, `"Female"`, `"m"`, `"f"`, `""`, `null`
+
+Transformation:
+```sql
+CASE UPPER(gender)
+  WHEN 'M' THEN 'male'
+  WHEN 'MALE' THEN 'male'
+  WHEN 'F' THEN 'female'
+  WHEN 'FEMALE' THEN 'female'
+  ELSE 'unknown'
+END
+```
+
+Verify that all variations map correctly.
+
+### Null handling
+
+Test how your transformation handles:
+- Explicit nulls
+- Empty strings
+- Missing values (if applicable)
+
+Ensure nulls are handled intentionally, not accidentally.
+
+### Date and timestamp parsing
+
+Date transformations are common sources of errors. Test:
+
+| Scenario | Example |
+|----------|---------|
+| Standard format | `"01/15/2024"` |
+| Different separators | `"01-15-2024"`, `"01.15.2024"` |
+| Year variations | `"01/15/24"` (two-digit year) |
+| Time zones | `"2024-01-15T10:30:00-05:00"` |
+| UTC timestamps | `"2024-01-15T15:30:00Z"` |
+| Timestamps with milliseconds | `"2024-01-15T15:30:00.123Z"` |
+
+## Reviewing validation results
+
+### Understanding error messages
+
+Common validation errors and their meanings:
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Type mismatch" | Output type doesn't match attribute type | Add explicit `CAST()` or fix transformation logic |
+| "Invalid enum value" | Output not in allowed values | Add case to transformation or map to default |
+| "Validation failed: minimum" | Numeric value below minimum | Add range check or filter invalid data |
+| "Validation failed: pattern" | String doesn't match regex | Verify format or clean source data |
+| "Null value for required field" | Required field is null | Add `COALESCE()` or fix source data |
+
+### Sample output review
+
+When reviewing test output:
+
+1. **Spot check random samples**: Verify that typical values transform correctly
+2. **Focus on edge cases**: Pay extra attention to unusual values
+3. **Check for unexpected nulls**: Nulls appearing where values are expected indicate transformation issues
+4. **Verify consistency**: Same input should always produce same output
+
+## Iterating on mappings
+
+When validation reveals issues, follow this process:
+
+### 1. Identify the root cause
+
+Is the issue:
+- A bug in the transformation expression?
+- Unexpected values in source data?
+- A mismatch between data and attribute definition?
+
+### 2. Update the mapping
+
+Fix the transformation expression to handle the issue:
+
+```bash
+curl -X PATCH "https://api.narrative.io/v1/mappings/{mapping_id}" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transformation": "CASE ... END"
+  }'
+```
+
+### 3. Re-validate
+
+Run tests again to confirm the fix works and doesn't introduce new issues.
+
+### 4. Test with full sample
+
+Before activating, test against a larger sample to catch less common edge cases:
+
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings/{mapping_id}/test" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sample_size": 1000
+  }'
+```
+
+## Promoting to production
+
+Once validation passes:
+
+### Review summary statistics
+
+Check the overall validation results:
+- What percentage of samples passed?
+- Are failures concentrated in specific value patterns?
+- Is the failure rate acceptable for your use case?
+
+### Activate the mapping
+
+Via UI:
+1. Click **Activate** on the mapping
+2. Confirm the activation
+
+Via API:
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings/{mapping_id}/activate" \
+  -H "Authorization: Bearer YOUR_API_TOKEN"
+```
+
+### Monitor initial results
+
+After activation, query the normalized data to verify it looks correct:
+
+```sql
+SELECT
+    target_attribute,
+    COUNT(*) as count
+FROM narrative.rosetta_stone
+WHERE _nio_source_dataset_id = 'your-dataset-id'
+GROUP BY target_attribute
+```
+
+This helps catch any issues that weren't apparent in sample testing.
+
+## Best practices
+
+**Test with representative data**: Ensure your test samples include the full variety of values in your dataset.
+
+**Include edge cases deliberately**: Don't rely on random sampling to cover edge cases. Test specific problematic values.
+
+**Document mapping decisions**: Record why certain values map to certain outputs, especially for ambiguous cases.
+
+**Version your mappings**: Keep track of mapping changes so you can roll back if issues arise.
+
+**Test after source data changes**: When your source data format changes, re-validate existing mappings.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Create and manage mappings
+  </Card>
+  <Card title="Edge Cases" icon="triangle-exclamation" href="/guides/rosetta-stone/edge-cases">
+    Handle complex mapping scenarios
+  </Card>
+  <Card title="Transformation Functions" icon="function" href="/reference/rosetta-stone/transformation-functions">
+    Complete function reference
+  </Card>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand the normalization pipeline
+  </Card>
+</CardGroup>

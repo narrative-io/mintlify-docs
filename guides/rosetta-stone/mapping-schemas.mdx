@@ -1,0 +1,375 @@
+---
+title: 'Mapping Schemas'
+description: 'Create mappings between your data schema and Rosetta Stone attributes'
+icon: 'diagram-project'
+---
+
+This guide covers how to create and manage mappings between your dataset columns and Rosetta Stone attributes. Mappings are the translation layer that enables your data to be queried through the normalized `narrative.rosetta_stone` table.
+
+<Note>
+For background on how mappings work, see [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works).
+</Note>
+
+## Prerequisites
+
+- A dataset uploaded to Narrative
+- Understanding of your dataset's column semantics
+- Familiarity with basic NQL syntax (for transformation expressions)
+
+## Using the UI
+
+### View suggested mappings
+
+1. Navigate to **Datasets** and select your dataset
+2. Click the **Rosetta Stone** tab
+3. Review the auto-generated mapping suggestions
+
+The UI displays your columns alongside suggested attributes. Each suggestion includes:
+- The target attribute name and description
+- A confidence score
+- A preview of sample data after transformation
+
+### Accept a suggested mapping
+
+For high-confidence suggestions:
+
+1. Review the suggested attribute and sample output
+2. Click **Accept** to create the mapping
+
+The mapping becomes active immediately.
+
+### Modify a suggested mapping
+
+If a suggestion is close but not quite right:
+
+1. Click **Edit** on the suggestion
+2. Modify the target attribute or transformation expression
+3. Click **Save**
+
+### Create a manual mapping
+
+For columns without suggestions or when you need a custom mapping:
+
+1. Click **Add Mapping**
+2. Select the source column
+3. Search for and select the target attribute
+4. Write a transformation expression if needed
+5. Click **Create**
+
+### Reject a suggestion
+
+If a suggestion is incorrect:
+
+1. Click the **X** or **Reject** button
+2. The suggestion is removed and won't reappear
+
+## Using the API
+
+### List available attributes
+
+Before creating mappings, browse available attributes:
+
+```bash
+curl -X GET "https://api.narrative.io/v1/attributes" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "id": "hl7_gender",
+      "name": "hl7_gender",
+      "description": "Gender using HL7 administrative gender codes",
+      "type": "enum",
+      "allowed_values": ["male", "female", "other", "unknown"]
+    },
+    {
+      "id": "event_timestamp",
+      "name": "event_timestamp",
+      "description": "The timestamp when the event occurred",
+      "type": "timestamp"
+    }
+  ]
+}
+```
+
+### Get mapping suggestions for a dataset
+
+Request auto-generated mapping suggestions:
+
+```bash
+curl -X GET "https://api.narrative.io/v1/datasets/{dataset_id}/mappings/suggestions" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+Response:
+
+```json
+{
+  "data": [
+    {
+      "source_column": "gender",
+      "suggested_attribute": "hl7_gender",
+      "confidence": 0.95,
+      "suggested_transformation": "LOWER(gender)",
+      "sample_output": ["male", "female", "male"]
+    },
+    {
+      "source_column": "event_date",
+      "suggested_attribute": "event_timestamp",
+      "confidence": 0.87,
+      "suggested_transformation": "TO_TIMESTAMP(event_date, 'YYYY-MM-DD')",
+      "sample_output": ["2024-01-15T00:00:00Z", "2024-01-16T00:00:00Z"]
+    }
+  ]
+}
+```
+
+### Create a mapping
+
+Create a new mapping for a dataset column:
+
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "dataset_id": "your-dataset-id",
+    "source_column": "sex",
+    "target_attribute": "hl7_gender",
+    "transformation": "CASE sex WHEN '\''M'\'' THEN '\''male'\'' WHEN '\''F'\'' THEN '\''female'\'' ELSE '\''unknown'\'' END"
+  }'
+```
+
+Response:
+
+```json
+{
+  "data": {
+    "id": "mapping-12345",
+    "dataset_id": "your-dataset-id",
+    "source_column": "sex",
+    "target_attribute": "hl7_gender",
+    "transformation": "CASE sex WHEN 'M' THEN 'male' WHEN 'F' THEN 'female' ELSE 'unknown' END",
+    "status": "active",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+### Accept a system-proposed mapping
+
+Accept a suggestion from the auto-generated mappings:
+
+```bash
+curl -X POST "https://api.narrative.io/v1/mappings/{suggestion_id}/accept" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+### Update an existing mapping
+
+Modify a mapping's transformation:
+
+```bash
+curl -X PATCH "https://api.narrative.io/v1/mappings/{mapping_id}" \
+  -H "Authorization: Bearer YOUR_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "transformation": "CASE LOWER(sex) WHEN '\''m'\'' THEN '\''male'\'' WHEN '\''f'\'' THEN '\''female'\'' WHEN '\''nb'\'' THEN '\''other'\'' ELSE '\''unknown'\'' END"
+  }'
+```
+
+### Delete a mapping
+
+Remove a mapping:
+
+```bash
+curl -X DELETE "https://api.narrative.io/v1/mappings/{mapping_id}" \
+  -H "Authorization: Bearer YOUR_API_TOKEN"
+```
+
+## Writing transformation expressions
+
+Transformation expressions are NQL expressions that convert source values to the target attribute format.
+
+### Simple column reference
+
+When no transformation is needed:
+
+```sql
+source_column
+```
+
+### Type conversion
+
+Convert a string to an integer:
+
+```sql
+CAST(string_column AS INTEGER)
+```
+
+Convert to timestamp:
+
+```sql
+TO_TIMESTAMP(date_string, 'YYYY-MM-DD')
+```
+
+### Conditional logic
+
+Map discrete values:
+
+```sql
+CASE source_column
+  WHEN 'A' THEN 'value_a'
+  WHEN 'B' THEN 'value_b'
+  ELSE 'default'
+END
+```
+
+Map ranges:
+
+```sql
+CASE
+  WHEN age < 18 THEN 'minor'
+  WHEN age < 65 THEN 'adult'
+  ELSE 'senior'
+END
+```
+
+### Null handling
+
+Provide a default for nulls:
+
+```sql
+COALESCE(source_column, 'unknown')
+```
+
+Replace specific values with null:
+
+```sql
+NULLIF(source_column, '')
+```
+
+### String manipulation
+
+Normalize case:
+
+```sql
+LOWER(source_column)
+UPPER(source_column)
+```
+
+Trim whitespace:
+
+```sql
+TRIM(source_column)
+```
+
+Extract a substring:
+
+```sql
+SUBSTRING(source_column, 1, 10)
+```
+
+### Combining multiple columns
+
+Concatenate values:
+
+```sql
+CONCAT(first_name, ' ', last_name)
+```
+
+Build a struct:
+
+```sql
+STRUCT(
+  'email_sha256' AS type,
+  hashed_email AS value,
+  'hashed_email' AS context
+)
+```
+
+## Complete worked example
+
+### Scenario
+
+You have a customer dataset with these columns:
+
+| Column | Sample values |
+|--------|---------------|
+| `cust_id` | `"12345"`, `"67890"` |
+| `sex` | `"M"`, `"F"`, `"X"` |
+| `signup_date` | `"01/15/2024"`, `"02/20/2024"` |
+| `email_hash` | `"a1b2c3..."`, `"d4e5f6..."` |
+
+### Step 1: Review suggestions
+
+The system suggests:
+- `sex` → `hl7_gender` (medium confidence)
+- `signup_date` → `event_timestamp` (high confidence)
+- `email_hash` → `email_sha256` (high confidence)
+
+### Step 2: Accept high-confidence mappings
+
+Accept the `signup_date` and `email_hash` mappings.
+
+### Step 3: Customize the gender mapping
+
+The suggested transformation doesn't handle `"X"` correctly. Create a custom mapping:
+
+```sql
+CASE sex
+  WHEN 'M' THEN 'male'
+  WHEN 'F' THEN 'female'
+  WHEN 'X' THEN 'other'
+  ELSE 'unknown'
+END
+```
+
+### Step 4: Create a manual mapping for customer ID
+
+Map `cust_id` to the `unique_identifier` attribute:
+
+```sql
+STRUCT(
+  'customer_id' AS type,
+  cust_id AS value,
+  'internal' AS context
+)
+```
+
+### Step 5: Test and activate
+
+Test all mappings, then activate.
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| "Type mismatch" error | Transformation output doesn't match attribute type | Use `CAST()` or adjust transformation |
+| "Invalid enum value" error | Transformation produces values not in allowed list | Add missing cases to `CASE` statement |
+| Null values in output | Transformation doesn't handle all source values | Add `ELSE` clause or use `COALESCE` |
+| "Column not found" error | Typo in column name | Verify column name matches exactly |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand the mechanics of attributes and mappings
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Test and verify your mappings
+  </Card>
+  <Card title="Edge Cases" icon="triangle-exclamation" href="/guides/rosetta-stone/edge-cases">
+    Handle complex mapping scenarios
+  </Card>
+  <Card title="Transformation Functions" icon="function" href="/reference/rosetta-stone/transformation-functions">
+    Complete function reference
+  </Card>
+</CardGroup>
