@@ -1,0 +1,146 @@
+---
+title: 'Location Data'
+description: 'Understanding location polygons, geospatial formats, and how to work with geographic data'
+icon: 'location-dot'
+---
+
+Location data adds geographic context to records, enabling use cases like proximity targeting, foot traffic analysis, and location-based audience building. At its core, location data maps coordinates to meaningful places—transforming raw latitude/longitude pairs into actionable insights.
+
+## Why location context matters
+
+Raw location data typically consists of latitude, longitude, and timestamp—coordinates that have limited meaning in isolation. The latitude `40.74576` and longitude `-73.9848` tells you little on its own, but when mapped to "Narrative Headquarters in New York City," the data becomes actionable.
+
+Location context enables:
+- **Proximity targeting:** Reach users near specific locations
+- **Foot traffic analysis:** Understand visitation patterns
+- **Competitive intelligence:** Analyze visits to competitor locations
+- **Attribution:** Connect ad exposure to physical store visits
+
+---
+
+## Location polygons
+
+A location polygon is a shape that represents a place, point of interest, or geographic boundary using geospatial coordinates. Polygons are defined by the coordinates of their vertices (corner points), connected by edges.
+
+### What polygons represent
+
+Polygons can represent locations at any scale:
+- Individual buildings or storefronts
+- City blocks or neighborhoods
+- Entire cities or regions
+- Country borders
+
+### Coordinate systems
+
+Most location data uses the **WGS84** (World Geodetic System 1984) coordinate reference system, which represents locations as latitude/longitude pairs:
+- **Latitude:** -90 to 90 (north/south of equator)
+- **Longitude:** -180 to 180 (east/west of prime meridian)
+
+<Note>
+Coordinate order varies by format. GeoJSON uses longitude-first (`[lon, lat]`), while many other systems use latitude-first (`lat, lon`). Always verify the expected order when working with location data.
+</Note>
+
+---
+
+## Location data formats
+
+### GeoJSON
+
+[GeoJSON](https://en.wikipedia.org/wiki/GeoJSON) is a JSON-based standard for encoding geographic data. It's human-readable, easy to parse in most programming languages, and widely supported.
+
+```json
+{
+  "type": "Polygon",
+  "coordinates": [[
+    [-122.389946, 37.7786],
+    [-122.389095, 37.7786],
+    [-122.389095, 37.7793],
+    [-122.389946, 37.7793],
+    [-122.389946, 37.7786]
+  ]]
+}
+```
+
+**Narrative accepts:**
+- `.json`, `.geojson`, and `.parquet` files
+- `Polygon` and `MultiPolygon` geometries
+- Does **not** accept GeoJSON embedded in CSV
+
+<Tip>
+Validate your GeoJSON using [GeoJSONLint](https://geojsonlint.com/) before upload.
+</Tip>
+
+### Well-Known Text (WKT)
+
+[WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry) is a text-based format for representing geometry. It's more compact than GeoJSON but less human-readable.
+
+```
+POLYGON((-122.389946 37.7786, -122.389095 37.7786, -122.389095 37.7793, -122.389946 37.7793, -122.389946 37.7786))
+```
+
+**Narrative accepts:**
+- WKT in CSV format
+- Does **not** accept WKT in JSON format
+
+### Shapefile
+
+[Shapefiles](https://en.wikipedia.org/wiki/Shapefile) are a common GIS format, but they require specialized libraries to read and write. They consist of multiple files (`.shp`, `.shx`, `.dbf`) that must be kept together.
+
+### Point-radius
+
+For locations where exact boundaries aren't known, point-radius defines a center point and a radius (typically in meters). While not technically a polygon, many systems convert point-radius to polygons by calculating vertices around the circle.
+
+```
+-122.389521, 37.7789, 100
+```
+(longitude, latitude, radius in meters)
+
+**Narrative accepts:**
+- Point-radius in `.txt`, `.json`, `.parquet`, and `.csv` formats
+
+---
+
+## Supported file formats
+
+| Format | File Types | Notes |
+|--------|------------|-------|
+| **GeoJSON** | `.json`, `.geojson`, `.parquet` | Polygon and MultiPolygon only |
+| **WKT** | `.csv` | WKT column with polygon geometry |
+| **Point-radius** | `.txt`, `.json`, `.parquet`, `.csv` | lon, lat, radius |
+
+---
+
+## Coordinate order
+
+A common source of errors is mixing up longitude and latitude order. Different formats use different conventions:
+
+| Format | Order | Example |
+|--------|-------|---------|
+| GeoJSON | `[longitude, latitude]` | `[-122.389, 37.778]` |
+| WKT | `longitude latitude` | `POINT(-122.389 37.778)` |
+| Google Maps | `latitude, longitude` | `37.778, -122.389` |
+
+For a comprehensive reference, see [lonlat.info](https://macwright.com/lonlat/).
+
+---
+
+## Creating location data
+
+If you need to define custom polygons:
+
+1. **Drawing tools:** Use [Bounding Box Tool](https://boundingbox.klokantech.com/) to draw shapes and export in various formats
+2. **GIS software:** Tools like QGIS (free) can create and edit complex geometries
+3. **Existing datasets:** Many POI datasets are available commercially or through open sources
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="IP Addresses" icon="network-wired" href="/concepts/data-formats/ip-addresses">
+    Network-based location signals
+  </Card>
+  <Card title="Unix Time" icon="clock" href="/concepts/data-formats/unix-time">
+    Timestamp formats for location data
+  </Card>
+</CardGroup>

@@ -1,0 +1,152 @@
+---
+title: 'IP Addresses'
+description: 'Understanding IP address formats, types, and their role in data collaboration'
+icon: 'network-wired'
+---
+
+IP addresses are unique identifiers for devices communicating over networks. Standing for Internet Protocol, they adhere to standardized formats that enable data routing across the internet. In data collaboration, IP addresses provide signals for geographic targeting, fraud detection, and network-level analytics.
+
+## IP address formats
+
+### IPv4
+
+The most common format, IPv4 addresses consist of four octets (8-bit numbers) separated by periods. Each octet ranges from 0 to 255.
+
+```
+192.168.1.1
+74.125.224.72
+```
+
+**Characteristics:**
+- 32-bit address space
+- ~4.3 billion possible addresses
+- Running out of available addresses globally
+
+### IPv6
+
+Developed to expand the address pool, IPv6 uses a 128-bit address format with eight groups of four hexadecimal digits separated by colons.
+
+```
+2001:0db8:85a3:0000:0000:8a2e:0370:7334
+```
+
+**Characteristics:**
+- 128-bit address space
+- ~340 undecillion possible addresses
+- Growing adoption but not yet universal
+
+<Tip>
+IPv6 addresses can be abbreviated by omitting leading zeros and collapsing consecutive zero groups with `::`. The address above could be written as `2001:db8:85a3::8a2e:370:7334`.
+</Tip>
+
+---
+
+## Types of IP addresses
+
+### Public vs. private
+
+| Type | Description | Example Ranges |
+|------|-------------|----------------|
+| **Public** | Globally routable, assigned by ISPs | Most addresses outside reserved ranges |
+| **Private** | Used within local networks, not routable on internet | `10.x.x.x`, `172.16-31.x.x`, `192.168.x.x` |
+
+Public IP addresses identify devices on the open internet and are the primary type used in data collaboration. Private addresses are used within homes and organizations and are not visible externally.
+
+### Static vs. dynamic
+
+| Type | Description | Use Cases |
+|------|-------------|-----------|
+| **Static** | Remains constant over time | Servers, business connections |
+| **Dynamic** | Changes periodically, assigned by DHCP | Residential connections, mobile |
+
+Most consumer internet connections use dynamic IPs, which can change daily or when the router restarts. This affects data collaboration because the same IP address might represent different users over time.
+
+### Dedicated vs. shared
+
+| Type | Description | Context |
+|------|-------------|---------|
+| **Dedicated** | Single device or organization | Direct server access |
+| **Shared** | Multiple users behind the same IP | NAT, VPNs, corporate networks, mobile carriers |
+
+Carrier-grade NAT (CGNAT) and VPNs mean that many users may share the same public IP address, making IP-based identification less precise.
+
+---
+
+## IP addresses in data collaboration
+
+### Geographic signals
+
+IP addresses can be mapped to approximate geographic locations:
+- **Country:** High accuracy
+- **Region/State:** Generally reliable
+- **City:** Moderate accuracy
+- **Postal code:** Less reliable
+- **Street level:** Not reliable
+
+IP geolocation is useful for:
+- Regulatory compliance (geo-restrictions)
+- Regional targeting
+- Fraud detection (location mismatches)
+
+<Warning>
+IP geolocation is approximate and can be inaccurate, especially for mobile users and VPN users. Never rely on IP location for critical decisions requiring precise location.
+</Warning>
+
+### Fraud and security signals
+
+IP addresses provide useful signals for fraud detection:
+- Known proxy/VPN IP ranges
+- Data center vs. residential IPs
+- Bot traffic identification
+- Rate limiting and abuse detection
+
+### Privacy considerations
+
+IP addresses are considered personal data under GDPR and may be subject to other privacy regulations:
+- They can identify households or organizations
+- Combined with other data, they may identify individuals
+- Collection requires appropriate legal basis
+
+---
+
+## Working with IP addresses
+
+### Normalization
+
+When matching IP data across sources:
+- Validate format (proper IPv4 or IPv6 structure)
+- Handle leading zeros consistently
+- Consider canonicalizing IPv6 addresses
+
+### Storage
+
+| Format | Storage Size | Notes |
+|--------|--------------|-------|
+| String | Variable | Human-readable, flexible |
+| Integer (IPv4) | 4 bytes | Efficient for IPv4 only |
+| Binary (IPv6) | 16 bytes | Supports both versions |
+
+### Matching limitations
+
+IP addresses are session-level identifiers, not user-level:
+- Dynamic IPs change over time
+- Shared IPs represent multiple users
+- Mobile IPs change as users move between networks
+
+For user-level matching, IP addresses are typically combined with other signals or used as one factor in probabilistic matching.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Location Data" icon="location-dot" href="/concepts/data-formats/location-data">
+    Geographic data formats and polygons
+  </Card>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Overview of identifier categories
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Privacy protection for identifiers
+  </Card>
+</CardGroup>
