@@ -121,6 +121,19 @@ When you query the `narrative.rosetta_stone` table:
 
 This happens transparently—you write one query, and the platform handles the complexity of accessing multiple heterogeneous sources.
 
+### Multiple mappings to the same attribute
+
+When a dataset has multiple columns mapped to the same attribute, the normalization process:
+
+1. **Evaluates each mapping** independently
+2. **Collects results** into an array
+3. **Expands the array** to produce one output row per value
+4. **Filters NULL values** during expansion
+
+This enables maximum data utilization—if a provider captures email addresses in multiple columns, queries receive all available values without needing to know the source schema structure.
+
+For example, if a dataset has `email_1` and `email_2` both mapped to `raw_email`, a query selecting that attribute returns one row per non-null email address. See [Multiple columns mapped to the same attribute](/guides/rosetta-stone/edge-cases#multiple-columns-mapped-to-the-same-attribute) for detailed examples and when to use alternatives like `COALESCE`.
+
 ## Normalization examples
 
 ### Date normalization

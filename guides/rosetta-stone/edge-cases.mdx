@@ -252,6 +252,71 @@ STRUCT(
 )
 ```
 
+## Multiple columns mapped to the same attribute
+
+When multiple source columns map to the same Rosetta Stone attribute, each mapping produces a value. The NQL compiler collects these into an array and automatically expands (unnests) them into separate rows.
+
+### Scenario
+
+Your dataset has multiple email columns:
+
+| user_id | name    | email_1       | email_2       |
+|---------|---------|---------------|---------------|
+| 1       | Alice   | foo@bar.com   | baz@bar.com   |
+| 2       | Bob     | no@thanks.com | NULL          |
+
+Both `email_1` and `email_2` are mapped to the `raw_email` attribute.
+
+### Query behavior
+
+When you query:
+
+```sql
+SELECT
+  user_id,
+  rosetta_stone.raw_email
+FROM narrative.rosetta_stone
+WHERE ...
+```
+
+The result contains one row per non-null email:
+
+| user_id | raw_email     |
+|---------|---------------|
+| 1       | foo@bar.com   |
+| 1       | baz@bar.com   |
+| 2       | no@thanks.com |
+
+### Why this happens
+
+The NQL compiler:
+1. Evaluates each mapping to `raw_email` (both `email_1` and `email_2`)
+2. Collects the results into an array: `['foo@bar.com', 'baz@bar.com']`
+3. Automatically unnests the array, creating one output row per array element
+4. Filters out NULL values during expansion
+
+This behavior enables queries that need all available values for an attribute without requiring you to know the source schema.
+
+### When to use alternatives
+
+**Use COALESCE when you want only one value per row:**
+
+If your source columns represent "primary email" and "backup email" with a preference order, map them using:
+
+```sql
+COALESCE(primary_email, secondary_email)
+```
+
+This returns only the first non-null value instead of expanding to multiple rows.
+
+### Performance considerations
+
+Row expansion multiplies result set size. If a dataset has 5 columns mapped to the same attribute and 1 million source rows, queries could return up to 5 million rows. Consider:
+
+- Filtering early to reduce the row count before expansion
+- Using COALESCE if you only need one value per source row
+- Being explicit about which specific columns you need
+
 ## Version handling
 
 When your source data schema changes over time.
