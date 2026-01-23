@@ -1,0 +1,275 @@
+---
+title: 'Hashing PII for Upload'
+description: 'Prepare email addresses and phone numbers for upload by hashing them with MD5, SHA-1, and SHA-256'
+icon: 'hashtag'
+---
+
+All personally identifiable information (PII) uploaded to Narrative must be pseudonymized using cryptographic hash functions. This guide walks you through formatting and hashing email addresses and phone numbers before uploading them to the platform.
+
+<Note>
+To understand why Narrative requires hashed identifiers rather than raw PII, see [Data Pseudonymization](/concepts/security/data-pseudonymization).
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- Your ID list saved as a single-column CSV file
+- Access to one of the following: Google Sheets, a command line terminal, or the Touchless PII Hasher app
+
+## Choose your method
+
+| Method | Best for | Requirements |
+|--------|----------|--------------|
+| [Touchless PII Hasher](https://www.narrative.io/touchless-pii-hasher) | Quick, one-off hashing | Web browser only |
+| Google Sheets | Small lists (under 10,000 rows) | Google account |
+| Command line | Large lists, automation | Terminal access |
+
+---
+
+## Hashing email addresses
+
+### Pre-formatting requirements
+
+Hash functions are case-sensitive and whitespace-sensitive. Before hashing, you must normalize your email addresses:
+
+| Rule | Example | Result |
+|------|---------|--------|
+| Lowercase all text | `JohnDoe@Gmail.COM` | `johndoe@gmail.com` |
+| Remove leading/trailing whitespace | `  john@example.com  ` | `john@example.com` |
+| Remove `+` aliases and everything after | `john+newsletter@gmail.com` | `john@gmail.com` |
+| Remove extra periods in username | `j.o.h.n@gmail.com` | `john@gmail.com` |
+
+<Warning>
+Skipping pre-formatting will result in different hash values, preventing matches with other datasets. A single extra space or uppercase letter produces a completely different hash.
+</Warning>
+
+### Supported hash algorithms
+
+Narrative supports three hash algorithms. For maximum correspondence with other datasets, we recommend generating all three:
+
+| Algorithm | Output length | Example hash of `johndoe@gmail.com` |
+|-----------|---------------|-------------------------------------|
+| MD5 | 32 characters | `29a1df4646cb3417c19994a59a3e022a` |
+| SHA-1 | 40 characters | `e1e8d3e4a336d4f9dc63b70a534ff10834471556` |
+| SHA-256 | 64 characters | `06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3` |
+
+### Method 1: Touchless PII Hasher (fastest)
+
+The [Touchless PII Hasher](https://www.narrative.io/touchless-pii-hasher) is a free web app that handles formatting and hashing automatically. Your data never leaves your browser.
+
+<Steps>
+  <Step title="Open the app">
+    Navigate to [narrative.io/touchless-pii-hasher](https://www.narrative.io/touchless-pii-hasher).
+  </Step>
+  <Step title="Upload your file">
+    Drag and drop your CSV file or click to browse.
+  </Step>
+  <Step title="Download the results">
+    The app automatically formats and hashes your data. Download the resulting file.
+  </Step>
+</Steps>
+
+### Method 2: Google Sheets (small lists)
+
+For lists under 10,000 rows, use Narrative's [Hashing Functions spreadsheet](https://docs.google.com/spreadsheets/d/1JZrNMcLC4PXrBPWfpL4JHdBPKUngZmW33hC7U1NrLBo/copy) which automatically handles pre-formatting and all three hash algorithms.
+
+<Steps>
+  <Step title="Make a copy of the template">
+    Open the [Hashing Functions spreadsheet](https://docs.google.com/spreadsheets/d/1JZrNMcLC4PXrBPWfpL4JHdBPKUngZmW33hC7U1NrLBo/copy) and click **Make a copy** when prompted.
+  </Step>
+  <Step title="Paste your email list">
+    Copy your list of emails and paste them starting in cell **A4**.
+  </Step>
+  <Step title="Wait for processing">
+    The spreadsheet may take a few minutes to compute, depending on list size.
+  </Step>
+  <Step title="Download the results">
+    Navigate to the tab titled **DOWNLOAD_THIS_SHEET_AS_.CSV_FILE**. Go to **File > Download > Comma-separated values (.csv, current sheet)**.
+  </Step>
+</Steps>
+
+### Method 3: Command line (large lists)
+
+For large lists or automation, use the command line. Narrative provides a hashing script, or you can use standard Unix tools.
+
+<Tabs>
+  <Tab title="Mac/Linux">
+    **Option A: Use Narrative's hashing script**
+
+    <Steps>
+      <Step title="Download the script">
+        Download [hashingFunction.py](https://gist.github.com/narrative-io/example-hashing-script) and save it to your `~/bin` directory.
+      </Step>
+      <Step title="Make it executable">
+        ```bash
+        chmod +x ~/bin/hashingFunction.py
+        ```
+      </Step>
+      <Step title="Run the script">
+        ```bash
+        ~/bin/hashingFunction.py < input.csv > output.csv
+        ```
+      </Step>
+    </Steps>
+
+    **Option B: Use standard Unix tools**
+
+    For a quick one-liner that handles pre-formatting and generates SHA-256 hashes:
+
+    ```bash
+    cat emails.csv | tr '[:upper:]' '[:lower:]' | sed 's/+[^@]*//g' | \
+      while read email; do echo -n "$email" | shasum -a 256 | cut -d' ' -f1; done > hashed.csv
+    ```
+
+    To generate all three hash formats:
+
+    ```bash
+    cat emails.csv | tr '[:upper:]' '[:lower:]' | sed 's/+[^@]*//g' | \
+      while read email; do
+        echo "$(echo -n "$email" | md5),$(echo -n "$email" | shasum -a 1 | cut -d' ' -f1),$(echo -n "$email" | shasum -a 256 | cut -d' ' -f1)"
+      done > hashed.csv
+    ```
+  </Tab>
+  <Tab title="Windows (PowerShell)">
+    Use PowerShell to hash your email list:
+
+    ```powershell
+    Get-Content emails.csv | ForEach-Object {
+        $email = $_.Trim().ToLower() -replace '\+[^@]*', ''
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($email)
+
+        $md5 = [System.Security.Cryptography.MD5]::Create()
+        $sha1 = [System.Security.Cryptography.SHA1]::Create()
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+
+        $md5Hash = [BitConverter]::ToString($md5.ComputeHash($bytes)) -replace '-', ''
+        $sha1Hash = [BitConverter]::ToString($sha1.ComputeHash($bytes)) -replace '-', ''
+        $sha256Hash = [BitConverter]::ToString($sha256.ComputeHash($bytes)) -replace '-', ''
+
+        "$sha256Hash,$md5Hash,$sha1Hash".ToLower()
+    } | Out-File -Encoding UTF8 hashed.csv
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+Never direct output to the same file as input. This will delete your data:
+
+```bash
+# DO NOT DO THIS
+hashingFunction.py < emails.csv > emails.csv  # Data will be lost!
+```
+</Warning>
+
+---
+
+## Hashing phone numbers
+
+Phone numbers follow a similar process, but with different pre-formatting rules.
+
+### Pre-formatting requirements
+
+| Rule | Example | Result |
+|------|---------|--------|
+| Remove all non-numeric characters | `+1 (555) 123-4567` | `15551234567` |
+| Include country code | `555-123-4567` (US) | `15551234567` |
+| Remove leading zeros (except country code) | `0555-123-4567` | `15551234567` |
+
+### Using Google Sheets for phone numbers
+
+Use Narrative's [Phone Hashing Functions spreadsheet](https://docs.google.com/spreadsheets/d/1example-phone-sheet/copy) which automatically strips non-numeric characters before hashing.
+
+Follow the same steps as email hashing above.
+
+### Using command line for phone numbers
+
+<Tabs>
+  <Tab title="Mac/Linux">
+    ```bash
+    cat phones.csv | tr -cd '0-9\n' | \
+      while read phone; do
+        echo "$(echo -n "$phone" | md5),$(echo -n "$phone" | shasum -a 1 | cut -d' ' -f1),$(echo -n "$phone" | shasum -a 256 | cut -d' ' -f1)"
+      done > hashed_phones.csv
+    ```
+  </Tab>
+  <Tab title="Windows (PowerShell)">
+    ```powershell
+    Get-Content phones.csv | ForEach-Object {
+        $phone = $_ -replace '[^0-9]', ''
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($phone)
+
+        $md5 = [System.Security.Cryptography.MD5]::Create()
+        $sha1 = [System.Security.Cryptography.SHA1]::Create()
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+
+        $md5Hash = [BitConverter]::ToString($md5.ComputeHash($bytes)) -replace '-', ''
+        $sha1Hash = [BitConverter]::ToString($sha1.ComputeHash($bytes)) -replace '-', ''
+        $sha256Hash = [BitConverter]::ToString($sha256.ComputeHash($bytes)) -replace '-', ''
+
+        "$sha256Hash,$md5Hash,$sha1Hash".ToLower()
+    } | Out-File -Encoding UTF8 hashed_phones.csv
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Verify your output
+
+Before uploading, verify your hashing is correct using this test data:
+
+**Test email:** `johndoe@gmail.com`
+
+| Algorithm | Expected hash |
+|-----------|---------------|
+| SHA-256 | `06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3` |
+| MD5 | `29a1df4646cb3417c19994a59a3e022a` |
+| SHA-1 | `e1e8d3e4a336d4f9dc63b70a534ff10834471556` |
+
+If your hashes match, your implementation is correct.
+
+---
+
+## Uploading your hashed list
+
+Once your list is hashed:
+
+1. Ensure your file is in CSV format
+2. Navigate to your dataset in Narrative
+3. Upload the hashed file
+
+<Tip>
+For detailed upload instructions, see [Connecting Data Sources](/guides/ingestion/connecting-data-sources).
+</Tip>
+
+---
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Hashes don't match expected values | Pre-formatting not applied | Verify lowercase, whitespace removal, and alias stripping |
+| Google Sheets is slow or unresponsive | List too large | Use command line method for lists over 10,000 rows |
+| Different hashes for same email | Inconsistent formatting | Ensure all emails go through the same pre-formatting pipeline |
+| Command not found (Mac/Linux) | Script not in PATH | Use full path to script or add `~/bin` to PATH |
+| PowerShell security error | Execution policy | Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Understand why Narrative requires hashed identifiers
+  </Card>
+  <Card title="Connecting Data Sources" icon="plug" href="/guides/ingestion/connecting-data-sources">
+    Upload your hashed data to Narrative
+  </Card>
+  <Card title="Touchless PII Hasher" icon="wand-magic-sparkles" href="https://www.narrative.io/touchless-pii-hasher">
+    Free web app for quick, secure hashing
+  </Card>
+  <Card title="Security Model" icon="shield-halved" href="/concepts/architecture/security-model">
+    Learn how Narrative protects your data
+  </Card>
+</CardGroup>
