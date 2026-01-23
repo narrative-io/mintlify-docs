@@ -1,0 +1,112 @@
+---
+title: 'TypeScript SDK'
+description: 'Reference documentation for the Narrative TypeScript SDK'
+icon: 'js'
+---
+
+The Narrative TypeScript SDK (`@narrative.io/data-collaboration-sdk-ts`) provides type-safe access to the Narrative API for Node.js and TypeScript applications.
+
+## Installation
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @narrative.io/data-collaboration-sdk-ts
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @narrative.io/data-collaboration-sdk-ts
+    ```
+  </Tab>
+  <Tab title="bun">
+    ```bash
+    bun add @narrative.io/data-collaboration-sdk-ts
+    ```
+  </Tab>
+</Tabs>
+
+## Quick start
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+// Execute an NQL query
+const result = await api.executeNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+});
+
+// List datasets
+const datasets = await api.getDatasets();
+```
+
+## Architecture
+
+The SDK uses a mixin pattern to combine multiple API modules into a single `NarrativeApi` class. This provides a unified interface while maintaining type safety for each module's methods.
+
+```typescript
+// All API methods are available on the NarrativeApi instance
+const api = new NarrativeApi({ apiKey: 'your-key' });
+
+// NQL operations
+await api.executeNql({ ... });
+await api.compileNql({ ... });
+
+// Dataset operations
+await api.getDatasets();
+await api.getDataset(datasetId);
+
+// Job tracking
+await api.getJobs();
+await api.getJob(jobId);
+```
+
+## Available API modules
+
+The SDK provides access to the following API modules:
+
+| Module | Methods | Description |
+|--------|---------|-------------|
+| NQL | `executeNql()`, `compileNql()`, `validateNql()`, `parseNql()` | Execute and analyze NQL queries |
+| Datasets | `getDatasets()`, `getDataset()`, `createDataset()`, `updateDataset()`, `deleteDataset()` | Manage datasets |
+| Jobs | `getJobs()`, `getJob()` | Track asynchronous job status |
+| Uploads | Upload file operations | Upload data to datasets |
+| Access Rules | `getAccessRules()`, `createAccessRule()`, `updateAccessRule()`, `deleteAccessRule()` | Manage permissions |
+| Mappings | Rosetta Stone mapping operations | Work with schema mappings |
+| Data Planes | `getDataPlanes()` | Data plane operations |
+| Subscriptions | `getSubscriptions()` | Manage data subscriptions |
+| Access Tokens | Token management operations | Manage API tokens |
+
+For complete method signatures and parameters, see [API Modules Reference](/reference/sdks/typescript/api-modules).
+
+## Requirements
+
+- **Node.js**: 18 or later
+- **TypeScript**: 4.7 or later (for TypeScript users)
+
+## Source and issues
+
+- **npm**: [@narrative.io/data-collaboration-sdk-ts](https://www.npmjs.com/package/@narrative.io/data-collaboration-sdk-ts)
+- **GitHub**: [narrative-io/data-collaboration-sdk-ts](https://github.com/narrative-io/data-collaboration-sdk-ts)
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="gear" href="/reference/sdks/typescript/configuration">
+    Configuration options and environments
+  </Card>
+  <Card title="API Modules" icon="puzzle-piece" href="/reference/sdks/typescript/api-modules">
+    Complete method reference
+  </Card>
+  <Card title="SDK Quickstart" icon="rocket" href="/getting-started/sdk-quickstart">
+    Get started with the SDK
+  </Card>
+  <Card title="SDK Guides" icon="book-open" href="/guides/sdk">
+    How-to guides for common tasks
+  </Card>
+</CardGroup>

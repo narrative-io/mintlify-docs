@@ -1,0 +1,93 @@
+---
+title: 'SDKs'
+description: 'Official SDKs for programmatic access to Narrative I/O'
+icon: 'code'
+---
+
+Narrative provides official SDKs for integrating with the platform programmatically. SDKs simplify authentication, provide type safety, and offer convenient methods for common operations.
+
+## Available SDKs
+
+<CardGroup cols={2}>
+  <Card title="TypeScript SDK" icon="js" href="/reference/sdks/typescript">
+    Full-featured SDK for Node.js and TypeScript applications. Includes complete type definitions and supports all API operations.
+  </Card>
+</CardGroup>
+
+## When to use an SDK
+
+| Approach | Best for |
+|----------|----------|
+| **Web UI** | Manual operations, data exploration, one-off tasks |
+| **REST API** | Custom integrations, languages without SDK support |
+| **SDK** | TypeScript/JavaScript apps, type safety, rapid development |
+
+### Benefits of using an SDK
+
+- **Type safety** - Full TypeScript support with autocomplete
+- **Convenience** - Pre-built methods for common operations
+- **Authentication** - Simplified API key management
+- **Error handling** - Consistent error types and messages
+- **Documentation** - Inline documentation and examples
+
+## Quick comparison
+
+```typescript
+// With SDK
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({ apiKey: process.env.NARRATIVE_API_KEY });
+const datasets = await api.getDatasets();
+```
+
+```typescript
+// With REST API directly
+const response = await fetch('https://api.narrative.io/datasets', {
+  headers: {
+    'Authorization': `Bearer ${process.env.NARRATIVE_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+});
+const datasets = await response.json();
+```
+
+## Getting started
+
+<Steps>
+  <Step title="Create an API key">
+    Navigate to [Settings > API Keys](/account-settings/api-keys) and create a new key with appropriate permissions.
+  </Step>
+  <Step title="Install the SDK">
+    ```bash
+    npm install @narrative.io/data-collaboration-sdk-ts
+    ```
+  </Step>
+  <Step title="Initialize and use">
+    ```typescript
+    import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+    const api = new NarrativeApi({
+      apiKey: process.env.NARRATIVE_API_KEY,
+    });
+
+    const datasets = await api.getDatasets();
+    ```
+  </Step>
+</Steps>
+
+## Related resources
+
+<CardGroup cols={2}>
+  <Card title="SDK Quickstart" icon="rocket" href="/getting-started/sdk-quickstart">
+    Tutorial for first-time SDK users
+  </Card>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Create and manage API keys
+  </Card>
+  <Card title="REST API Reference" icon="book" href="/api-reference">
+    Full REST API documentation
+  </Card>
+  <Card title="SDK Guides" icon="book-open" href="/guides/sdk">
+    How-to guides for common tasks
+  </Card>
+</CardGroup>

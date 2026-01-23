@@ -1,0 +1,319 @@
+---
+title: 'Error Handling'
+description: 'Handle errors gracefully when using the Narrative TypeScript SDK'
+icon: 'triangle-exclamation'
+---
+
+Robust error handling is essential for building reliable applications with the Narrative SDK. This guide covers common error types and patterns for handling them.
+
+## Prerequisites
+
+- SDK installed and configured (see [SDK Quickstart](/getting-started/sdk-quickstart))
+
+## Error types
+
+### HTTP errors
+
+The SDK throws errors for HTTP response codes indicating failures:
+
+| Status | Name | Description |
+|--------|------|-------------|
+| 400 | Bad Request | Invalid request parameters or malformed query |
+| 401 | Unauthorized | Invalid or missing API key |
+| 403 | Forbidden | API key lacks required permissions |
+| 404 | Not Found | Resource doesn't exist |
+| 429 | Too Many Requests | Rate limit exceeded |
+| 500 | Internal Server Error | Server-side error |
+| 502 | Bad Gateway | Upstream service error |
+| 503 | Service Unavailable | Service temporarily unavailable |
+
+### Network errors
+
+Connection issues throw standard JavaScript errors:
+
+- Connection timeout
+- DNS resolution failure
+- Network unreachable
+
+### Validation errors
+
+Query or data validation failures return detailed error messages:
+
+- NQL syntax errors
+- Schema validation failures
+- Invalid parameter values
+
+## Basic error handling
+
+Wrap SDK calls in try-catch blocks:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+try {
+  const datasets = await api.getDatasets();
+  console.log('Datasets:', datasets.records.length);
+} catch (error) {
+  console.error('Error fetching datasets:', error);
+}
+```
+
+## Handling specific errors
+
+Check the error status for specific handling:
+
+```typescript
+try {
+  const dataset = await api.getDataset(12345);
+  console.log('Dataset:', dataset.name);
+} catch (error) {
+  if (error.status === 401) {
+    console.error('Authentication failed: Check your API key');
+  } else if (error.status === 403) {
+    console.error('Permission denied: API key lacks access to this dataset');
+  } else if (error.status === 404) {
+    console.error('Dataset not found');
+  } else if (error.status === 429) {
+    console.error('Rate limited: Too many requests');
+  } else if (error.status >= 500) {
+    console.error('Server error: Try again later');
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+```
+
+## Rate limiting
+
+Handle rate limits with exponential backoff:
+
+```typescript
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries = 5,
+  baseDelayMs = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error as Error;
+
+      // Only retry on rate limits and server errors
+      const status = (error as any).status;
+      if (status !== 429 && status < 500) {
+        throw error;
+      }
+
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        const jitter = Math.random() * 1000;
+        console.log(`Retry ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay + jitter));
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+// Usage
+const datasets = await withRetry(() => api.getDatasets());
+```
+
+## Query error handling
+
+NQL queries can fail for various reasons:
+
+```typescript
+try {
+  const result = await api.executeNql({
+    nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+    data_plane_id: null,
+  });
+
+  if (result.state === 'failed') {
+    console.error('Query failed:', result.failures);
+  } else {
+    console.log('Query completed:', result.result.rows, 'rows');
+  }
+} catch (error) {
+  if (error.status === 400) {
+    // Parse error details for NQL syntax issues
+    console.error('Invalid query:', error.message);
+  } else {
+    console.error('Query error:', error);
+  }
+}
+```
+
+### Validating before execution
+
+Catch syntax errors before running expensive queries:
+
+```typescript
+async function safeExecuteQuery(nql: string) {
+  // First validate the query
+  try {
+    await api.validateNql({ nql, data_plane_id: null });
+  } catch (validationError) {
+    console.error('Query validation failed:', validationError);
+    throw new Error('Invalid query syntax');
+  }
+
+  // Then execute
+  return await api.executeNql({ nql, data_plane_id: null });
+}
+```
+
+## Creating an error wrapper
+
+Build a reusable error handler:
+
+```typescript
+class NarrativeError extends Error {
+  status?: number;
+  details?: unknown;
+
+  constructor(message: string, status?: number, details?: unknown) {
+    super(message);
+    this.name = 'NarrativeError';
+    this.status = status;
+    this.details = details;
+  }
+
+  isRetryable(): boolean {
+    return this.status === 429 || (this.status ?? 0) >= 500;
+  }
+
+  isAuthError(): boolean {
+    return this.status === 401 || this.status === 403;
+  }
+
+  isNotFound(): boolean {
+    return this.status === 404;
+  }
+}
+
+async function wrapApiCall<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation();
+  } catch (error) {
+    const status = (error as any).status;
+    const message = (error as any).message || 'Unknown error';
+    throw new NarrativeError(message, status, error);
+  }
+}
+
+// Usage
+try {
+  const dataset = await wrapApiCall(() => api.getDataset(12345));
+} catch (error) {
+  if (error instanceof NarrativeError) {
+    if (error.isAuthError()) {
+      console.error('Authentication issue');
+    } else if (error.isNotFound()) {
+      console.error('Resource not found');
+    } else if (error.isRetryable()) {
+      console.error('Temporary error, retry later');
+    }
+  }
+}
+```
+
+## Logging errors
+
+Implement structured error logging:
+
+```typescript
+function logError(context: string, error: unknown) {
+  const errorInfo = {
+    timestamp: new Date().toISOString(),
+    context,
+    message: (error as Error).message,
+    status: (error as any).status,
+    stack: (error as Error).stack,
+  };
+
+  console.error(JSON.stringify(errorInfo, null, 2));
+
+  // Send to your logging service
+  // await logService.error(errorInfo);
+}
+
+try {
+  const datasets = await api.getDatasets();
+} catch (error) {
+  logError('getDatasets', error);
+  throw error;
+}
+```
+
+## Graceful degradation
+
+Provide fallbacks when services are unavailable:
+
+```typescript
+async function getDatasetsWithFallback() {
+  try {
+    const response = await api.getDatasets();
+    return { source: 'api', data: response.records };
+  } catch (error) {
+    const status = (error as any).status;
+
+    if (status >= 500 || status === 429) {
+      // Return cached data if available
+      const cachedData = await getCachedDatasets();
+      if (cachedData) {
+        console.warn('Using cached datasets due to API error');
+        return { source: 'cache', data: cachedData };
+      }
+    }
+
+    throw error;
+  }
+}
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Always use try-catch | Wrap all SDK calls in error handlers |
+| Check error status | Handle different errors appropriately |
+| Implement retries | Use exponential backoff for transient errors |
+| Validate inputs | Catch errors early with validation |
+| Log errors | Record errors for debugging and monitoring |
+| Graceful degradation | Provide fallbacks when possible |
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Frequent 401 errors | API key expired or invalid | Generate a new API key |
+| Frequent 429 errors | Too many requests | Implement rate limiting and backoff |
+| Intermittent 500 errors | Server issues | Implement retry logic |
+| Network timeouts | Slow connection or large responses | Increase timeout or paginate |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/guides/sdk/authentication">
+    Configure authentication properly
+  </Card>
+  <Card title="API Keys" icon="gear" href="/account-settings/api-keys">
+    Manage API keys and permissions
+  </Card>
+  <Card title="Tracking Jobs" icon="spinner" href="/guides/sdk/tracking-jobs">
+    Handle async operation errors
+  </Card>
+  <Card title="SDK Reference" icon="book" href="/reference/sdks/typescript">
+    Complete SDK documentation
+  </Card>
+</CardGroup>

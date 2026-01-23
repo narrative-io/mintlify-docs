@@ -1,0 +1,570 @@
+---
+title: 'API Modules'
+description: 'Reference for all TypeScript SDK API modules'
+icon: 'puzzle-piece'
+---
+
+The `NarrativeApi` class exposes multiple API modules through a mixin pattern. This reference documents all available methods.
+
+## NQL API
+
+Execute, validate, and compile NQL queries.
+
+### executeNql
+
+Execute an NQL query and return results.
+
+```typescript
+const result = await api.executeNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+  execution_cluster: { type: 'shared' },  // optional
+  create_as_view: false,                   // optional
+});
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `nql` | `string` | Yes | The NQL query to execute |
+| `data_plane_id` | `string \| null` | Yes | Target data plane ID |
+| `execution_cluster` | `{ type: 'shared' \| 'dedicated' }` | No | Execution cluster type |
+| `create_as_view` | `boolean` | No | Create result as a view |
+
+**Returns:** `Promise<NqlResult>`
+
+### compileNql
+
+Compile an NQL query and return the transpiled SQL.
+
+```typescript
+const compiled = await api.compileNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+});
+
+console.log(compiled.sql);
+```
+
+**Returns:** `Promise<NqlCompileResult>`
+
+### validateNql
+
+Validate an NQL query's syntax.
+
+```typescript
+const ast = await api.validateNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+});
+```
+
+**Returns:** `Promise<NqlAst>`
+
+### parseNql
+
+Parse an NQL query into an abstract syntax tree.
+
+```typescript
+const ast = await api.parseNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+});
+```
+
+**Returns:** `Promise<NqlAst>`
+
+### getNqlByJobId
+
+Retrieve results from a previous query by job ID.
+
+```typescript
+const result = await api.getNqlByJobId('job-id-here');
+```
+
+**Returns:** `Promise<NqlResult>`
+
+---
+
+## Datasets API
+
+Manage datasets and their metadata.
+
+### getDatasets
+
+List all accessible datasets.
+
+```typescript
+const response = await api.getDatasets();
+console.log(response.records);
+```
+
+**Returns:** `Promise<ApiRecords<Dataset>>`
+
+### getDataset
+
+Get a specific dataset by ID.
+
+```typescript
+const dataset = await api.getDataset(12345);
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `datasetId` | `number` | Yes | Dataset ID |
+
+**Returns:** `Promise<Dataset>`
+
+### createDataset
+
+Create a new dataset.
+
+```typescript
+const dataset = await api.createDataset({
+  name: 'my_dataset',
+  display_name: 'My Dataset',
+  description: 'Description here',
+  schema: { properties: { ... } },
+  tags: ['tag1', 'tag2'],
+});
+```
+
+**Returns:** `Promise<Dataset>`
+
+### updateDataset
+
+Update dataset metadata.
+
+```typescript
+const dataset = await api.updateDataset({
+  dataset_id: 12345,
+  display_name: 'Updated Name',
+  description: 'Updated description',
+});
+```
+
+**Returns:** `Promise<Dataset>`
+
+### deleteDataset
+
+Delete a dataset permanently.
+
+```typescript
+await api.deleteDataset(12345);
+```
+
+**Returns:** `Promise<void>`
+
+### addTags
+
+Add tags to a dataset.
+
+```typescript
+const dataset = await api.addTags(12345, ['production', 'verified']);
+```
+
+**Returns:** `Promise<Dataset>`
+
+### removeTags
+
+Remove tags from a dataset.
+
+```typescript
+const dataset = await api.removeTags(12345, ['deprecated']);
+```
+
+**Returns:** `Promise<Dataset>`
+
+### getStatistics
+
+Get dataset statistics.
+
+```typescript
+const stats = await api.getStatistics(12345, 0, 1000);
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `datasetId` | `number` | Yes | Dataset ID |
+| `offset` | `number` | No | Pagination offset (default: 0) |
+| `size` | `number` | No | Page size (default: 1000) |
+
+**Returns:** `Promise<ApiRecords<DatasetTableSummary>>`
+
+### getColumnStats
+
+Get column-level statistics.
+
+```typescript
+const columnStats = await api.getColumnStats(12345);
+```
+
+**Returns:** `Promise<ColumnStatistics>`
+
+### getDatasetSample
+
+Get a sample of dataset records.
+
+```typescript
+const sample = await api.getDatasetSample(12345, 1000);
+```
+
+**Returns:** `Promise<ApiRecords<Record<string, string>>>`
+
+### requestDatasetSample
+
+Request a new sample (async operation).
+
+```typescript
+const { job_id } = await api.requestDatasetSample(12345);
+```
+
+**Returns:** `Promise<{ job_id: string }>`
+
+### getDatasetFiles
+
+List files in a dataset.
+
+```typescript
+const files = await api.getDatasetFiles(
+  12345,           // datasetId
+  100,             // size
+  0,               // offset
+  '2024-01-01',    // afterTimestamp (optional)
+  67890            // fromSnapshotId (optional)
+);
+```
+
+**Returns:** `Promise<FilePerSnapshotResponse>`
+
+### getDatasetFileDownloadUrl
+
+Get a download URL for a specific file.
+
+```typescript
+const { download_url } = await api.getDatasetFileDownloadUrl(
+  12345,           // datasetId
+  67890,           // snapshotId
+  'file-id-here'   // fileId
+);
+```
+
+**Returns:** `Promise<{ download_url: string }>`
+
+### refreshMaterializedView
+
+Refresh a materialized view.
+
+```typescript
+const job = await api.refreshMaterializedView(12345);
+console.log('Job ID:', job.id);
+```
+
+**Returns:** `Promise<UnknownJob>`
+
+### updateRetentionPolicy
+
+Update the retention policy.
+
+```typescript
+const dataset = await api.updateRetentionPolicy(12345, {
+  type: 'time_based',
+  retention_days: 365,
+});
+```
+
+**Returns:** `Promise<Dataset>`
+
+### activateDataset
+
+Activate a pending dataset.
+
+```typescript
+await api.activateDataset(12345);
+```
+
+**Returns:** `Promise<void>`
+
+---
+
+## Jobs API
+
+Track asynchronous job status.
+
+### getJobs
+
+List all jobs.
+
+```typescript
+const response = await api.getJobs({
+  page: 1,
+  per_page: 50,
+});
+```
+
+**Returns:** `Promise<ApiRecordsV2<Job>>`
+
+### getJob
+
+Get a specific job by ID.
+
+```typescript
+const job = await api.getJob('job-id-here');
+```
+
+**Returns:** `Promise<Job>`
+
+---
+
+## Access Rules API
+
+Manage access permissions.
+
+### getAccessRules
+
+List access rules.
+
+```typescript
+const rules = await api.getAccessRules();
+```
+
+**Returns:** `Promise<ApiRecords<AccessRule>>`
+
+### createAccessRule
+
+Create a new access rule.
+
+```typescript
+const rule = await api.createAccessRule({
+  // rule configuration
+});
+```
+
+**Returns:** `Promise<AccessRule>`
+
+### updateAccessRule
+
+Update an existing access rule.
+
+```typescript
+const rule = await api.updateAccessRule({
+  // updated configuration
+});
+```
+
+**Returns:** `Promise<AccessRule>`
+
+### deleteAccessRule
+
+Delete an access rule.
+
+```typescript
+await api.deleteAccessRule(ruleId);
+```
+
+**Returns:** `Promise<void>`
+
+---
+
+## Access Tokens API
+
+Manage API tokens.
+
+### getAccessTokens
+
+List all access tokens.
+
+```typescript
+const tokens = await api.getAccessTokens();
+```
+
+**Returns:** `Promise<ApiRecords<AccessToken>>`
+
+### getAccessToken
+
+Get a specific token.
+
+```typescript
+const token = await api.getAccessToken(tokenId);
+```
+
+**Returns:** `Promise<AccessToken>`
+
+### createAccessToken
+
+Create a new access token.
+
+```typescript
+const token = await api.createAccessToken({
+  name: 'My Token',
+  permissions: ['datasets:read'],
+  expires_at: '2025-12-31T23:59:59Z',
+});
+```
+
+**Returns:** `Promise<AccessToken>`
+
+### updateAccessToken
+
+Update an existing token.
+
+```typescript
+const token = await api.updateAccessToken({
+  id: tokenId,
+  name: 'Updated Name',
+});
+```
+
+**Returns:** `Promise<AccessToken>`
+
+### deleteAccessToken
+
+Delete an access token.
+
+```typescript
+await api.deleteAccessToken(tokenId);
+```
+
+**Returns:** `Promise<void>`
+
+---
+
+## Mappings API
+
+Work with Rosetta Stone mappings.
+
+### getMappings
+
+List mappings for a company.
+
+```typescript
+const mappings = await api.getMappings(companyId);
+```
+
+**Returns:** `Promise<ApiRecords<Mapping>>`
+
+### createPrivateMapping
+
+Create a private mapping.
+
+```typescript
+const mapping = await api.createPrivateMapping(companyId, {
+  // mapping configuration
+});
+```
+
+**Returns:** `Promise<Mapping>`
+
+### testMapping
+
+Test a mapping configuration.
+
+```typescript
+const result = await api.testMapping({
+  // test configuration
+});
+```
+
+**Returns:** `Promise<MappingTestResult>`
+
+### previewMapping
+
+Preview mapping results.
+
+```typescript
+const preview = await api.previewMapping({
+  // preview configuration
+});
+```
+
+**Returns:** `Promise<MappingPreview>`
+
+---
+
+## Subscriptions API
+
+Manage data subscriptions.
+
+### getSubscriptions
+
+List all subscriptions.
+
+```typescript
+const subscriptions = await api.getSubscriptions();
+```
+
+**Returns:** `Promise<ApiRecords<Subscription>>`
+
+---
+
+## Health API
+
+Check API health status.
+
+### getHealthCheck
+
+Check if the API is healthy.
+
+```typescript
+const health = await api.getHealthCheck();
+console.log('Status:', health.status);
+```
+
+**Returns:** `Promise<HealthCheckResponse>`
+
+---
+
+## TypeScript types
+
+The SDK exports all type definitions:
+
+```typescript
+import type {
+  // Core types
+  NarrativeApi,
+  Config,
+  Environment,
+
+  // Dataset types
+  Dataset,
+  DatasetStatus,
+  DatasetWriteMode,
+  Schema,
+  SchemaProperty,
+
+  // NQL types
+  NqlQueryInput,
+  NqlResult,
+  NqlCompileResult,
+
+  // Job types
+  Job,
+
+  // Access types
+  AccessRule,
+  AccessToken,
+
+  // Pagination
+  ApiRecords,
+  ApiRecordsV2,
+  PaginationOptions,
+} from '@narrative.io/data-collaboration-sdk-ts';
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="SDK Overview" icon="js" href="/reference/sdks/typescript">
+    TypeScript SDK overview
+  </Card>
+  <Card title="Configuration" icon="gear" href="/reference/sdks/typescript/configuration">
+    Configuration options
+  </Card>
+  <Card title="SDK Guides" icon="book-open" href="/guides/sdk">
+    How-to guides
+  </Card>
+  <Card title="REST API" icon="code" href="/api-reference">
+    Full REST API reference
+  </Card>
+</CardGroup>

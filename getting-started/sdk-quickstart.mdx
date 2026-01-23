@@ -1,0 +1,205 @@
+---
+title: 'Automate with the TypeScript SDK'
+description: 'Use the Narrative SDK to programmatically query, manage, and share data'
+icon: 'code'
+---
+
+The Narrative TypeScript SDK provides type-safe access to the Narrative API, enabling you to automate data workflows, execute NQL queries, and manage datasets programmatically.
+
+<Info>
+This tutorial assumes you have completed [Write Your First NQL Query](/getting-started/first-nql-query) and have a basic understanding of NQL.
+</Info>
+
+## Prerequisites
+
+- Node.js 18 or later
+- A Narrative I/O account
+- An API key with appropriate permissions (see [API Keys](/account-settings/api-keys))
+
+## What you'll learn
+
+- How to install and configure the SDK
+- How to execute an NQL query programmatically
+- How to work with query results
+
+## Install the SDK
+
+<Steps>
+  <Step title="Initialize your project">
+    Create a new directory and initialize a Node.js project:
+
+    ```bash
+    mkdir narrative-demo && cd narrative-demo
+    npm init -y
+    ```
+  </Step>
+  <Step title="Install the SDK">
+    Install the Narrative TypeScript SDK:
+
+    <Tabs>
+      <Tab title="npm">
+        ```bash
+        npm install @narrative.io/data-collaboration-sdk-ts
+        ```
+      </Tab>
+      <Tab title="yarn">
+        ```bash
+        yarn add @narrative.io/data-collaboration-sdk-ts
+        ```
+      </Tab>
+      <Tab title="bun">
+        ```bash
+        bun add @narrative.io/data-collaboration-sdk-ts
+        ```
+      </Tab>
+    </Tabs>
+  </Step>
+  <Step title="Configure TypeScript (optional)">
+    If you're using TypeScript, install the necessary dependencies:
+
+    ```bash
+    npm install typescript ts-node @types/node --save-dev
+    npx tsc --init
+    ```
+  </Step>
+</Steps>
+
+## Initialize the SDK
+
+Create a new file called `index.ts` (or `index.js` if using JavaScript):
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+// Initialize the SDK with your API key
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+```
+
+<Warning>
+Never commit API keys to source control. Use environment variables or a secrets manager to store sensitive credentials.
+</Warning>
+
+Set your API key as an environment variable before running your code:
+
+```bash
+export NARRATIVE_API_KEY="your-api-key-here"
+```
+
+## Execute your first query
+
+Add the following code to execute an NQL query:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+async function main() {
+  const api = new NarrativeApi({
+    apiKey: process.env.NARRATIVE_API_KEY,
+  });
+
+  // Execute an NQL query
+  const result = await api.executeNql({
+    nql: `
+      SELECT _nio_id, _nio_updated_at
+      FROM company_data."my_dataset"
+      LIMIT 10
+    `,
+    data_plane_id: null,
+  });
+
+  console.log('Query completed:', result.state);
+  console.log('Rows returned:', result.result.rows);
+}
+
+main().catch(console.error);
+```
+
+Run your script:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```bash
+    npx ts-node index.ts
+    ```
+  </Tab>
+  <Tab title="JavaScript">
+    ```bash
+    node index.js
+    ```
+  </Tab>
+</Tabs>
+
+## Work with datasets
+
+You can also use the SDK to manage datasets:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+async function listDatasets() {
+  const api = new NarrativeApi({
+    apiKey: process.env.NARRATIVE_API_KEY,
+  });
+
+  // List all datasets
+  const datasets = await api.getDatasets();
+
+  console.log(`Found ${datasets.records.length} datasets:`);
+  for (const dataset of datasets.records) {
+    console.log(`- ${dataset.name} (ID: ${dataset.id})`);
+  }
+
+  // Get details for a specific dataset
+  const datasetId = datasets.records[0]?.id;
+  if (datasetId) {
+    const dataset = await api.getDataset(datasetId);
+    console.log('\nDataset details:', dataset.name);
+    console.log('Status:', dataset.status);
+    console.log('Created:', dataset.created_at);
+  }
+}
+
+listDatasets().catch(console.error);
+```
+
+## Validate a query before execution
+
+Use the `compileNql` method to validate and see the transpiled SQL without executing:
+
+```typescript
+const compiled = await api.compileNql({
+  nql: `
+    SELECT _nio_id
+    FROM company_data."my_dataset"
+    LIMIT 100
+  `,
+  data_plane_id: null,
+});
+
+console.log('Transpiled SQL:', compiled.sql);
+
+if (compiled.mappingErrors) {
+  console.log('Mapping errors:', compiled.mappingErrors);
+}
+```
+
+## Next steps
+
+Now that you've executed your first SDK query, explore these resources to learn more:
+
+<CardGroup cols={2}>
+  <Card title="Authentication Guide" icon="key" href="/guides/sdk/authentication">
+    Configure API keys and environments
+  </Card>
+  <Card title="Executing Queries" icon="terminal" href="/guides/sdk/executing-queries">
+    Advanced query patterns and options
+  </Card>
+  <Card title="Managing Datasets" icon="database" href="/guides/sdk/managing-datasets">
+    Create, update, and manage datasets
+  </Card>
+  <Card title="SDK Reference" icon="book" href="/reference/sdks/typescript">
+    Complete API reference documentation
+  </Card>
+</CardGroup>

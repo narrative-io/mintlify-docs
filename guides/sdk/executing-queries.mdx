@@ -1,0 +1,262 @@
+---
+title: 'Executing NQL Queries'
+description: 'Run, validate, and compile NQL queries using the TypeScript SDK'
+icon: 'terminal'
+---
+
+The Narrative SDK provides methods to execute, validate, and compile NQL queries programmatically. This guide covers common query patterns and best practices.
+
+<Note>
+For NQL syntax and language features, see the [NQL Reference](/reference/nql/syntax).
+</Note>
+
+## Prerequisites
+
+- SDK installed and configured (see [SDK Quickstart](/getting-started/sdk-quickstart))
+- Familiarity with [NQL syntax](/reference/nql/syntax)
+- An API key with query permissions
+
+## Running a query
+
+### Basic execution
+
+Use `executeNql()` to run a query and retrieve results:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+const result = await api.executeNql({
+  nql: `
+    SELECT _nio_id, _nio_updated_at
+    FROM company_data."my_dataset"
+    LIMIT 100
+  `,
+  data_plane_id: null,
+});
+
+console.log('Query state:', result.state);
+console.log('Rows returned:', result.result.rows);
+console.log('Cost:', result.result.cost);
+```
+
+### Query input options
+
+The `executeNql()` method accepts the following options:
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `nql` | `string` | Yes | The NQL query to execute |
+| `data_plane_id` | `string \| null` | Yes | Target data plane ID, or `null` for default |
+| `execution_cluster` | `object` | No | Cluster configuration (`shared` or `dedicated`) |
+| `create_as_view` | `boolean` | No | Create the query as a view |
+
+```typescript
+const result = await api.executeNql({
+  nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+  execution_cluster: { type: 'dedicated' },
+});
+```
+
+### Understanding the result
+
+The `NqlResult` object contains execution metadata:
+
+```typescript
+interface NqlResult {
+  id: string;              // Job ID
+  state: string;           // 'completed', 'failed', etc.
+  created_at: string;      // When the query was submitted
+  completed_at: string;    // When execution finished
+  result: {
+    type: string;
+    rows: number;          // Number of rows returned
+    cost: number;          // Query cost
+    nql_type: string;
+  };
+  input: {
+    nql: string;           // The original query
+    compiled_select?: string;
+  };
+  failures: unknown[];     // Any execution errors
+}
+```
+
+## Validating a query
+
+Use `validateNql()` to check query syntax without execution:
+
+```typescript
+const validation = await api.validateNql({
+  nql: `
+    SELECT _nio_id
+    FROM company_data."my_dataset"
+    LIMIT 10
+  `,
+  data_plane_id: null,
+});
+
+console.log('Query is valid');
+```
+
+If the query has syntax errors, the method throws an error with details about the issue.
+
+## Compiling a query
+
+Use `compileNql()` to see the transpiled SQL without executing:
+
+```typescript
+const compiled = await api.compileNql({
+  nql: `
+    SELECT _nio_id, _nio_updated_at
+    FROM company_data."my_dataset"
+    WHERE _nio_updated_at > CURRENT_DATE - INTERVAL '7' DAY
+    LIMIT 100
+  `,
+  data_plane_id: null,
+});
+
+console.log('Transpiled SQL:', compiled.sql);
+
+if (compiled.mappingErrors) {
+  console.log('Mapping errors:', compiled.mappingErrors);
+}
+```
+
+This is useful for:
+- Debugging query issues
+- Understanding how NQL maps to the underlying SQL dialect
+- Verifying Rosetta Stone mappings
+
+## Parsing a query
+
+Use `parseNql()` to get the abstract syntax tree (AST):
+
+```typescript
+const ast = await api.parseNql({
+  nql: 'SELECT _nio_id FROM company_data."my_dataset" LIMIT 10',
+  data_plane_id: null,
+});
+
+console.log('AST:', JSON.stringify(ast, null, 2));
+```
+
+## Retrieving a previous query
+
+If you have a job ID from a previous query, retrieve its results:
+
+```typescript
+const result = await api.getNqlByJobId('job-id-here');
+
+console.log('Query state:', result.state);
+console.log('Rows returned:', result.result.rows);
+```
+
+## Query patterns
+
+### Filtering data
+
+```typescript
+const result = await api.executeNql({
+  nql: `
+    SELECT sha256_hashed_email, event_type, event_timestamp
+    FROM company_data."customer_events"
+    WHERE event_timestamp >= CURRENT_DATE - INTERVAL '30' DAY
+      AND event_type = 'purchase'
+    LIMIT 1000
+  `,
+  data_plane_id: null,
+});
+```
+
+### Aggregations
+
+```typescript
+const result = await api.executeNql({
+  nql: `
+    SELECT
+      event_type,
+      COUNT(*) as event_count
+    FROM company_data."customer_events"
+    GROUP BY event_type
+    LIMIT 100
+  `,
+  data_plane_id: null,
+});
+```
+
+### Using Rosetta Stone attributes
+
+Query normalized data across datasets:
+
+```typescript
+const result = await api.executeNql({
+  nql: `
+    SELECT
+      hl7_gender,
+      unique_id,
+      timestamp_utc
+    FROM narrative.rosetta_stone
+    LIMIT 100
+  `,
+  data_plane_id: null,
+});
+```
+
+## Error handling
+
+Wrap query execution in try-catch to handle errors:
+
+```typescript
+try {
+  const result = await api.executeNql({
+    nql: 'SELECT * FROM company_data."my_dataset" LIMIT 10',
+    data_plane_id: null,
+  });
+
+  if (result.state === 'completed') {
+    console.log('Success:', result.result.rows, 'rows');
+  } else {
+    console.log('Query state:', result.state);
+  }
+} catch (error) {
+  if (error.status === 400) {
+    console.error('Invalid query:', error.message);
+  } else if (error.status === 403) {
+    console.error('Permission denied');
+  } else {
+    console.error('Query failed:', error);
+  }
+}
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Always use LIMIT | Prevent unbounded result sets |
+| Validate before executing | Use `compileNql()` to catch errors early |
+| Handle errors gracefully | Wrap calls in try-catch |
+| Use appropriate timeouts | Long-running queries may need monitoring |
+| Filter at the source | Apply WHERE clauses to reduce data scanned |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax Reference" icon="book" href="/reference/nql/syntax">
+    Complete NQL language reference
+  </Card>
+  <Card title="NQL Design Philosophy" icon="lightbulb" href="/concepts/nql/design-philosophy">
+    Understanding NQL's approach
+  </Card>
+  <Card title="Query Optimization" icon="gauge-high" href="/guides/nql/query-optimization">
+    Tips for efficient queries
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/sdk/error-handling">
+    Handle SDK errors gracefully
+  </Card>
+</CardGroup>

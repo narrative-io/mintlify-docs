@@ -1,0 +1,269 @@
+---
+title: 'Uploading Data'
+description: 'Upload files to Narrative datasets using the TypeScript SDK'
+icon: 'upload'
+---
+
+The Narrative SDK provides methods to upload data files to your datasets programmatically. This guide covers the upload workflow and best practices.
+
+<Note>
+For recurring uploads, consider using [Automated Syncs](/guides/ingestion/automated-syncs) instead of manual SDK uploads.
+</Note>
+
+## Prerequisites
+
+- SDK installed and configured (see [SDK Quickstart](/getting-started/sdk-quickstart))
+- A target dataset (see [Managing Datasets](/guides/sdk/managing-datasets))
+- An API key with write permissions
+- Data file in a supported format (CSV, JSON, Parquet)
+
+## Supported formats
+
+| Format | Extension | Notes |
+|--------|-----------|-------|
+| CSV | `.csv` | Comma-separated values with headers |
+| JSON | `.json` | JSON Lines (one object per line) or JSON array |
+| Parquet | `.parquet` | Apache Parquet columnar format |
+
+## Upload workflow
+
+The upload process involves these steps:
+
+1. **Get an upload URL** - Request a pre-signed URL for uploading
+2. **Upload the file** - Send the file to the pre-signed URL
+3. **Confirm the upload** - Notify Narrative that the upload is complete
+4. **Monitor ingestion** - Track the ingestion job status
+
+## Basic upload
+
+Here's a complete example using Node.js:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+import fs from 'fs';
+import path from 'path';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+async function uploadFile(datasetId: number, filePath: string) {
+  const fileName = path.basename(filePath);
+  const fileContent = fs.readFileSync(filePath);
+
+  // Step 1: Get upload URL
+  const uploadUrl = await api.getUploadUrl(datasetId, fileName);
+  console.log('Got upload URL');
+
+  // Step 2: Upload file to S3
+  await api.uploadFileToS3(uploadUrl.url, fileContent, uploadUrl.headers);
+  console.log('File uploaded to S3');
+
+  // Step 3: Confirm upload
+  await api.confirmUpload(datasetId, uploadUrl.upload_id);
+  console.log('Upload confirmed');
+
+  return uploadUrl.upload_id;
+}
+
+// Usage
+const uploadId = await uploadFile(12345, './data/customer_events.csv');
+console.log('Upload ID:', uploadId);
+```
+
+## Ingesting from a URL
+
+If your data is already accessible via URL, you can ingest directly:
+
+```typescript
+await api.ingestDatasetFile(
+  { source_file: 'https://example.com/data/events.csv' },
+  12345  // dataset ID
+);
+
+console.log('Ingestion started');
+```
+
+## Monitoring upload status
+
+After confirming an upload, monitor the ingestion job:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+async function waitForIngestion(jobId: string) {
+  while (true) {
+    const job = await api.getJob(jobId);
+
+    console.log(`Status: ${job.state}`);
+
+    if (job.state === 'completed') {
+      console.log('Ingestion completed successfully');
+      return job;
+    }
+
+    if (job.state === 'failed') {
+      throw new Error(`Ingestion failed: ${JSON.stringify(job.failures)}`);
+    }
+
+    // Wait before checking again
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+}
+```
+
+## Uploading multiple files
+
+Upload multiple files to the same dataset:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+import fs from 'fs';
+import path from 'path';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+async function uploadMultipleFiles(datasetId: number, filePaths: string[]) {
+  const results = [];
+
+  for (const filePath of filePaths) {
+    const fileName = path.basename(filePath);
+    const fileContent = fs.readFileSync(filePath);
+
+    console.log(`Uploading ${fileName}...`);
+
+    const uploadUrl = await api.getUploadUrl(datasetId, fileName);
+    await api.uploadFileToS3(uploadUrl.url, fileContent, uploadUrl.headers);
+    await api.confirmUpload(datasetId, uploadUrl.upload_id);
+
+    results.push({
+      file: fileName,
+      uploadId: uploadUrl.upload_id,
+    });
+
+    console.log(`Completed ${fileName}`);
+  }
+
+  return results;
+}
+
+// Usage
+const files = [
+  './data/events_2024_01.csv',
+  './data/events_2024_02.csv',
+  './data/events_2024_03.csv',
+];
+
+const results = await uploadMultipleFiles(12345, files);
+console.log('Uploaded:', results);
+```
+
+## Data preparation
+
+Before uploading, ensure your data meets the dataset schema requirements.
+
+### CSV files
+
+- Include a header row matching schema field names
+- Use consistent formatting for dates and timestamps
+- Handle special characters properly (escape or quote)
+
+```csv
+customer_id,event_type,event_timestamp,event_value
+cust_123,purchase,2024-01-15T10:30:00Z,99.99
+cust_456,view,2024-01-15T11:00:00Z,0
+```
+
+### JSON files
+
+Use JSON Lines format (one object per line):
+
+```json
+{"customer_id": "cust_123", "event_type": "purchase", "event_timestamp": "2024-01-15T10:30:00Z", "event_value": 99.99}
+{"customer_id": "cust_456", "event_type": "view", "event_timestamp": "2024-01-15T11:00:00Z", "event_value": 0}
+```
+
+### Hashing PII
+
+If your data contains PII, hash it before uploading:
+
+```typescript
+import crypto from 'crypto';
+
+function hashEmail(email: string): string {
+  const normalized = email.toLowerCase().trim();
+  return crypto.createHash('sha256').update(normalized).digest('hex');
+}
+
+// Before uploading, transform your data
+const hashedData = rawData.map(row => ({
+  ...row,
+  sha256_hashed_email: hashEmail(row.email),
+}));
+```
+
+<Tip>
+For detailed hashing instructions, see [Hashing PII for Upload](/guides/ingestion/hashing-pii).
+</Tip>
+
+## Error handling
+
+```typescript
+try {
+  const uploadUrl = await api.getUploadUrl(datasetId, fileName);
+  await api.uploadFileToS3(uploadUrl.url, fileContent, uploadUrl.headers);
+  await api.confirmUpload(datasetId, uploadUrl.upload_id);
+} catch (error) {
+  if (error.status === 400) {
+    console.error('Invalid request:', error.message);
+  } else if (error.status === 403) {
+    console.error('Permission denied - check API key permissions');
+  } else if (error.status === 404) {
+    console.error('Dataset not found');
+  } else {
+    console.error('Upload failed:', error);
+  }
+}
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Validate before upload | Check file format and schema match |
+| Hash PII | Never upload unhashed personal data |
+| Use appropriate formats | Parquet for large datasets, CSV/JSON for smaller |
+| Monitor jobs | Track ingestion status to catch failures |
+| Handle errors | Implement retry logic for transient failures |
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Schema mismatch | File columns don't match dataset schema | Verify column names and types |
+| Upload timeout | File too large or slow connection | Try smaller files or increase timeout |
+| Permission denied | API key lacks write access | Check API key permissions |
+| Invalid format | File format not recognized | Verify file extension and content |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Hashing PII" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare PII for upload
+  </Card>
+  <Card title="Connecting Data Sources" icon="plug" href="/guides/ingestion/connecting-data-sources">
+    Alternative ingestion methods
+  </Card>
+  <Card title="Tracking Jobs" icon="spinner" href="/guides/sdk/tracking-jobs">
+    Monitor upload progress
+  </Card>
+  <Card title="Managing Datasets" icon="database" href="/guides/sdk/managing-datasets">
+    Dataset operations
+  </Card>
+</CardGroup>

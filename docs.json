@@ -28,7 +28,8 @@
               "getting-started/upload-data",
               "getting-started/normalize-data",
               "getting-started/first-nql-query",
-              "getting-started/first-data-collaboration"
+              "getting-started/first-data-collaboration",
+              "getting-started/sdk-quickstart"
             ]
           }
         ]
@@ -105,6 +106,18 @@
               "account-settings/api-keys",
               "account-settings/sso"
             ]
+          },
+          {
+            "group": "SDKs",
+            "pages": [
+              "guides/sdk/index",
+              "guides/sdk/authentication",
+              "guides/sdk/executing-queries",
+              "guides/sdk/managing-datasets",
+              "guides/sdk/uploading-data",
+              "guides/sdk/tracking-jobs",
+              "guides/sdk/error-handling"
+            ]
           }
         ]
       },
@@ -114,7 +127,8 @@
           {
             "group": "Overview",
             "pages": [
-              "concepts/index"
+              "concepts/index",
+              "concepts/data-collaboration-platforms"
             ]
           },
           {
@@ -226,6 +240,20 @@
             ]
           },
           {
+            "group": "SDKs",
+            "pages": [
+              "reference/sdks/index",
+              {
+                "group": "TypeScript SDK",
+                "pages": [
+                  "reference/sdks/typescript/index",
+                  "reference/sdks/typescript/configuration",
+                  "reference/sdks/typescript/api-modules"
+                ]
+              }
+            ]
+          },
+          {
             "group": "Glossary",
             "pages": [
               "reference/glossary"
@@ -269,6 +297,12 @@
               "cookbooks/use-cases/marketing-normalization",
               "cookbooks/use-cases/identity-resolution"
             ]
+          },
+          {
+            "group": "SDK Recipes",
+            "pages": [
+              "cookbooks/sdk/typescript-automation"
+            ]
           }
         ]
       }
@@ -279,11 +313,6 @@
           "anchor": "Release Notes",
           "href": "/release-notes",
           "icon": "clock-rotate-left"
-        },
-        {
-          "anchor": "Status",
-          "href": "https://status.narrative.io",
-          "icon": "signal-bars"
         }
       ]
     }

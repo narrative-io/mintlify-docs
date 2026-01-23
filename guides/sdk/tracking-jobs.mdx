@@ -1,0 +1,280 @@
+---
+title: 'Tracking Job Status'
+description: 'Monitor asynchronous jobs and handle completion events'
+icon: 'spinner'
+---
+
+Many Narrative operations are asynchronous, returning a job ID that you can use to track progress. This guide covers how to monitor jobs and handle their completion.
+
+<Note>
+For a detailed list of job types, see [Job Types Reference](/reference/architecture/job-types).
+</Note>
+
+## Prerequisites
+
+- SDK installed and configured (see [SDK Quickstart](/getting-started/sdk-quickstart))
+- An API key with appropriate permissions
+
+## Understanding jobs
+
+Operations like file uploads, dataset refreshes, and certain queries run asynchronously. When you start one of these operations, you receive a job ID that you can poll for status updates.
+
+### Job states
+
+| State | Description |
+|-------|-------------|
+| `pending` | Job is queued and waiting to start |
+| `running` | Job is currently executing |
+| `completed` | Job finished successfully |
+| `failed` | Job encountered an error |
+
+## Getting job status
+
+Retrieve the status of a specific job:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+const job = await api.getJob('job-id-here');
+
+console.log('Job ID:', job.id);
+console.log('State:', job.state);
+console.log('Created:', job.created_at);
+console.log('Updated:', job.updated_at);
+```
+
+## Listing jobs
+
+List all jobs, optionally filtered by status:
+
+```typescript
+// List all jobs
+const allJobs = await api.getJobs();
+console.log(`Total jobs: ${allJobs.records.length}`);
+
+// List with pagination
+const paginatedJobs = await api.getJobs({
+  page: 1,
+  per_page: 50,
+});
+
+// Filter and process
+for (const job of allJobs.records) {
+  console.log(`${job.id}: ${job.state} - ${job.type}`);
+}
+```
+
+## Polling for completion
+
+A common pattern is to poll until a job completes:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+async function waitForJob(jobId: string, maxWaitMs = 300000) {
+  const startTime = Date.now();
+  const pollInterval = 5000; // 5 seconds
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const job = await api.getJob(jobId);
+
+    console.log(`Job ${jobId}: ${job.state}`);
+
+    if (job.state === 'completed') {
+      return { success: true, job };
+    }
+
+    if (job.state === 'failed') {
+      return { success: false, job, error: job.failures };
+    }
+
+    // Wait before next poll
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+  }
+
+  throw new Error(`Job ${jobId} did not complete within ${maxWaitMs}ms`);
+}
+
+// Usage
+const result = await waitForJob('job-id-here');
+if (result.success) {
+  console.log('Job completed successfully');
+} else {
+  console.error('Job failed:', result.error);
+}
+```
+
+## Exponential backoff
+
+For long-running jobs, use exponential backoff to reduce API calls:
+
+```typescript
+async function waitForJobWithBackoff(jobId: string, maxWaitMs = 600000) {
+  const startTime = Date.now();
+  let pollInterval = 1000; // Start with 1 second
+  const maxInterval = 30000; // Cap at 30 seconds
+
+  while (Date.now() - startTime < maxWaitMs) {
+    const job = await api.getJob(jobId);
+
+    console.log(`Job ${jobId}: ${job.state} (next check in ${pollInterval}ms)`);
+
+    if (job.state === 'completed') {
+      return { success: true, job };
+    }
+
+    if (job.state === 'failed') {
+      return { success: false, job };
+    }
+
+    // Wait with exponential backoff
+    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    pollInterval = Math.min(pollInterval * 1.5, maxInterval);
+  }
+
+  throw new Error(`Job ${jobId} timed out`);
+}
+```
+
+## Handling job results
+
+Different job types return different results:
+
+### NQL query jobs
+
+```typescript
+const queryResult = await api.getNqlByJobId(jobId);
+
+if (queryResult.state === 'completed') {
+  console.log('Rows returned:', queryResult.result.rows);
+  console.log('Query cost:', queryResult.result.cost);
+}
+```
+
+### Dataset refresh jobs
+
+```typescript
+const job = await api.getJob(refreshJobId);
+
+if (job.state === 'completed') {
+  console.log('Materialized view refreshed');
+  // Fetch updated dataset statistics
+  const stats = await api.getStatistics(datasetId);
+}
+```
+
+## Error handling
+
+Handle job failures gracefully:
+
+```typescript
+async function executeWithRetry(operation: () => Promise<string>, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const jobId = await operation();
+      const result = await waitForJob(jobId);
+
+      if (result.success) {
+        return result.job;
+      }
+
+      console.error(`Attempt ${attempt} failed:`, result.error);
+
+      if (attempt < maxRetries) {
+        const backoff = Math.pow(2, attempt) * 1000;
+        console.log(`Retrying in ${backoff}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoff));
+      }
+    } catch (error) {
+      console.error(`Attempt ${attempt} error:`, error);
+
+      if (attempt === maxRetries) {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error('All retry attempts failed');
+}
+
+// Usage
+const job = await executeWithRetry(async () => {
+  const result = await api.refreshMaterializedView(datasetId);
+  return result.id;
+});
+```
+
+## Batch job monitoring
+
+Monitor multiple jobs concurrently:
+
+```typescript
+async function waitForAllJobs(jobIds: string[]) {
+  const results = await Promise.all(
+    jobIds.map(async (jobId) => {
+      try {
+        const result = await waitForJob(jobId);
+        return { jobId, ...result };
+      } catch (error) {
+        return { jobId, success: false, error };
+      }
+    })
+  );
+
+  const succeeded = results.filter(r => r.success);
+  const failed = results.filter(r => !r.success);
+
+  console.log(`Completed: ${succeeded.length}/${results.length}`);
+  console.log(`Failed: ${failed.length}/${results.length}`);
+
+  return { results, succeeded, failed };
+}
+
+// Usage
+const jobIds = ['job-1', 'job-2', 'job-3'];
+const { succeeded, failed } = await waitForAllJobs(jobIds);
+```
+
+## Best practices
+
+| Practice | Description |
+|----------|-------------|
+| Use exponential backoff | Reduce API calls for long-running jobs |
+| Set reasonable timeouts | Prevent indefinite waiting |
+| Log progress | Track job state changes for debugging |
+| Handle all states | Account for pending, running, completed, and failed |
+| Implement retries | Retry failed operations when appropriate |
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Job stays pending | Queue backlog or resource constraints | Wait longer or contact support |
+| Job fails immediately | Invalid input or permissions | Check error details and fix input |
+| Timeout waiting | Job taking longer than expected | Increase timeout or check job complexity |
+| 404 on job ID | Job expired or invalid ID | Verify job ID and check retention |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Job Types" icon="list" href="/reference/architecture/job-types">
+    Reference for all job types
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/sdk/error-handling">
+    Handle SDK errors gracefully
+  </Card>
+  <Card title="Uploading Data" icon="upload" href="/guides/sdk/uploading-data">
+    Upload files and track ingestion
+  </Card>
+  <Card title="Managing Datasets" icon="database" href="/guides/sdk/managing-datasets">
+    Dataset operations that create jobs
+  </Card>
+</CardGroup>

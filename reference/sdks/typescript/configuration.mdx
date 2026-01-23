@@ -1,0 +1,169 @@
+---
+title: 'Configuration'
+description: 'Configuration options for the Narrative TypeScript SDK'
+icon: 'gear'
+---
+
+The `NarrativeApi` class accepts a configuration object that controls authentication, environment targeting, and request behavior.
+
+## Constructor options
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: 'your-api-key',
+  environment: 'prod',
+  headers: {},
+  verbose: false,
+});
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `apiKey` | `string` | `undefined` | API key for authentication. Passed as a Bearer token. |
+| `environment` | `'prod' \| 'dev' \| string` | `'prod'` | Target environment or custom base URL |
+| `headers` | `Record<string, string>` | `{}` | Additional HTTP headers to include in requests |
+| `verbose` | `boolean` | `false` | Enable verbose logging (automatically enabled in dev) |
+
+## Environment URLs
+
+The SDK supports two built-in environments, or you can specify a custom URL:
+
+| Environment | Base URL |
+|-------------|----------|
+| `prod` | `https://api.narrative.io/` |
+| `dev` | `https://api-dev.narrative.io/` |
+| Custom | Any valid URL you provide |
+
+## Configuration examples
+
+### Production (default)
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+```
+
+### Development environment
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: 'dev',
+});
+```
+
+### Custom base URL
+
+For self-hosted or custom deployments:
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: 'https://custom.narrative.example.com/',
+});
+```
+
+### Enable verbose logging
+
+Useful for debugging API requests:
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  verbose: true,
+});
+```
+
+When verbose mode is enabled, the SDK logs:
+- Request URLs and methods
+- Request payloads
+- Response data
+- Configuration details
+
+<Note>
+Verbose mode is automatically enabled when using the `dev` environment.
+</Note>
+
+### Custom headers
+
+Add custom headers to all requests:
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  headers: {
+    'X-Custom-Header': 'custom-value',
+  },
+});
+```
+
+## Runtime configuration
+
+You can update the API key after initialization:
+
+```typescript
+const api = new NarrativeApi({});
+
+// Set API key later
+api.setApiKey('new-api-key');
+
+// Get current API key
+const currentKey = api.getApiKey();
+
+// Get current environment
+const environment = api.getEnvironment();
+
+// Get base URL
+const baseUrl = api.getBaseUrl();
+```
+
+## Environment variables
+
+While the SDK doesn't automatically read environment variables, the recommended pattern is:
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: process.env.NARRATIVE_ENVIRONMENT || 'prod',
+});
+```
+
+| Variable | Description |
+|----------|-------------|
+| `NARRATIVE_API_KEY` | Your API key for authentication |
+| `NARRATIVE_ENVIRONMENT` | Target environment (`prod`, `dev`, or custom URL) |
+
+## TypeScript types
+
+The SDK exports configuration types for TypeScript users:
+
+```typescript
+import type { Config, Environment } from '@narrative.io/data-collaboration-sdk-ts';
+
+const config: Config = {
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: 'prod' as Environment,
+};
+
+const api = new NarrativeApi(config);
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Create and manage API keys
+  </Card>
+  <Card title="Authentication Guide" icon="lock" href="/guides/sdk/authentication">
+    Authentication best practices
+  </Card>
+  <Card title="SDK Overview" icon="js" href="/reference/sdks/typescript">
+    TypeScript SDK overview
+  </Card>
+  <Card title="API Modules" icon="puzzle-piece" href="/reference/sdks/typescript/api-modules">
+    Available API methods
+  </Card>
+</CardGroup>

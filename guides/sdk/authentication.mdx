@@ -1,0 +1,203 @@
+---
+title: 'SDK Authentication'
+description: 'Configure API key authentication for the Narrative TypeScript SDK'
+icon: 'key'
+---
+
+The Narrative SDK uses API keys for authentication. This guide covers how to configure authentication securely and manage credentials across different environments.
+
+## Prerequisites
+
+- An API key with appropriate permissions (see [API Keys](/account-settings/api-keys))
+- The Narrative SDK installed in your project
+
+## Authentication methods
+
+### Environment variable (recommended)
+
+Store your API key in an environment variable to keep it out of source control:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+```
+
+Set the environment variable before running your application:
+
+<Tabs>
+  <Tab title="Mac/Linux">
+    ```bash
+    export NARRATIVE_API_KEY="your-api-key-here"
+    node app.js
+    ```
+  </Tab>
+  <Tab title="Windows (PowerShell)">
+    ```powershell
+    $env:NARRATIVE_API_KEY = "your-api-key-here"
+    node app.js
+    ```
+  </Tab>
+  <Tab title="Windows (CMD)">
+    ```batch
+    set NARRATIVE_API_KEY=your-api-key-here
+    node app.js
+    ```
+  </Tab>
+</Tabs>
+
+### Using a .env file
+
+For local development, use a `.env` file with a package like `dotenv`:
+
+```bash
+npm install dotenv
+```
+
+Create a `.env` file in your project root:
+
+```bash
+NARRATIVE_API_KEY=your-api-key-here
+NARRATIVE_ENVIRONMENT=prod
+```
+
+Load the environment variables in your code:
+
+```typescript
+import 'dotenv/config';
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: process.env.NARRATIVE_ENVIRONMENT || 'prod',
+});
+```
+
+<Warning>
+Never commit `.env` files to source control. Add `.env` to your `.gitignore` file.
+</Warning>
+
+### Direct configuration
+
+For testing or when credentials are managed externally:
+
+```typescript
+const api = new NarrativeApi({
+  apiKey: 'your-api-key-here',
+});
+```
+
+<Warning>
+Avoid hardcoding API keys in source code. Use environment variables or a secrets manager in production.
+</Warning>
+
+## Environment selection
+
+The SDK supports multiple environments:
+
+| Environment | Use case |
+|-------------|----------|
+| `prod` | Production workloads (default) |
+| `dev` | Development and testing |
+| Custom URL | Self-hosted or custom deployments |
+
+```typescript
+// Production (default)
+const prodApi = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+// Development
+const devApi = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: 'dev',
+});
+
+// Custom URL
+const customApi = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+  environment: 'https://custom.narrative.example.com/',
+});
+```
+
+## Verifying authentication
+
+Test your credentials by making a simple API call:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+async function verifyAuth() {
+  const api = new NarrativeApi({
+    apiKey: process.env.NARRATIVE_API_KEY,
+  });
+
+  try {
+    const datasets = await api.getDatasets();
+    console.log('Authentication successful!');
+    console.log(`Found ${datasets.records.length} datasets`);
+  } catch (error) {
+    if (error.status === 401) {
+      console.error('Authentication failed: Invalid API key');
+    } else if (error.status === 403) {
+      console.error('Authentication failed: Insufficient permissions');
+    } else {
+      console.error('Unexpected error:', error);
+    }
+  }
+}
+
+verifyAuth();
+```
+
+## Updating credentials at runtime
+
+You can change the API key after initialization:
+
+```typescript
+const api = new NarrativeApi({});
+
+// Set API key later
+api.setApiKey('new-api-key');
+
+// Verify the change
+console.log('Current key:', api.getApiKey());
+```
+
+## Security best practices
+
+| Practice | Description |
+|----------|-------------|
+| Use environment variables | Keep credentials out of source code |
+| Rotate keys regularly | Create new keys and revoke old ones periodically |
+| Use minimum permissions | Grant only the permissions needed for the task |
+| Set key expiration | Configure expiration dates for all API keys |
+| Monitor key usage | Review access logs for unusual activity |
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| `401 Unauthorized` | Invalid or expired API key | Verify the key is correct and hasn't expired |
+| `403 Forbidden` | Insufficient permissions | Check the key's permissions in Settings > API Keys |
+| `undefined` API key | Environment variable not set | Ensure the variable is exported in your shell |
+| Key not working in CI/CD | Variable not configured | Add the secret to your CI/CD environment |
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Create and manage API keys
+  </Card>
+  <Card title="Configuration Reference" icon="gear" href="/reference/sdks/typescript/configuration">
+    Complete configuration options
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/guides/sdk/error-handling">
+    Handle authentication errors gracefully
+  </Card>
+  <Card title="Security Best Practices" icon="shield" href="/guides/best-practices/security">
+    Security guidelines for data collaboration
+  </Card>
+</CardGroup>

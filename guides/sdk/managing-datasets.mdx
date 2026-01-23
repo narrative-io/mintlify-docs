@@ -1,0 +1,313 @@
+---
+title: 'Managing Datasets'
+description: 'Create, read, update, and delete datasets using the TypeScript SDK'
+icon: 'database'
+---
+
+The Narrative SDK provides comprehensive methods for managing datasets programmatically. This guide covers common dataset operations and patterns.
+
+<Note>
+For conceptual information about datasets, see [Datasets](/concepts/primitives/datasets).
+</Note>
+
+## Prerequisites
+
+- SDK installed and configured (see [SDK Quickstart](/getting-started/sdk-quickstart))
+- An API key with dataset permissions
+
+## Listing datasets
+
+Retrieve all datasets accessible to your account:
+
+```typescript
+import { NarrativeApi } from '@narrative.io/data-collaboration-sdk-ts';
+
+const api = new NarrativeApi({
+  apiKey: process.env.NARRATIVE_API_KEY,
+});
+
+const response = await api.getDatasets();
+
+console.log(`Found ${response.records.length} datasets:`);
+for (const dataset of response.records) {
+  console.log(`- ${dataset.name} (ID: ${dataset.id}, Status: ${dataset.status})`);
+}
+```
+
+## Getting dataset details
+
+Retrieve details for a specific dataset by ID:
+
+```typescript
+const dataset = await api.getDataset(12345);
+
+console.log('Name:', dataset.name);
+console.log('Description:', dataset.description);
+console.log('Status:', dataset.status);
+console.log('Created:', dataset.created_at);
+console.log('Updated:', dataset.updated_at);
+console.log('Tags:', dataset.tags);
+```
+
+### Dataset properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `number` | Unique dataset identifier |
+| `name` | `string` | Dataset name |
+| `display_name` | `string` | Human-readable display name |
+| `description` | `string` | Dataset description |
+| `status` | `string` | `active`, `archived`, or `pending` |
+| `schema` | `object` | Dataset schema definition |
+| `tags` | `string[]` | Tags for organization |
+| `created_at` | `string` | Creation timestamp |
+| `updated_at` | `string` | Last update timestamp |
+| `write_mode` | `string` | `append` or `overwrite` |
+
+## Creating a dataset
+
+Create a new dataset with schema definition:
+
+```typescript
+const newDataset = await api.createDataset({
+  name: 'customer_events',
+  display_name: 'Customer Events',
+  description: 'Customer interaction events from our platform',
+  schema: {
+    properties: {
+      customer_id: { type: 'string' },
+      event_type: { type: 'string' },
+      event_timestamp: { type: 'timestamptz' },
+      event_value: { type: 'double' },
+    },
+  },
+  tags: ['customers', 'events'],
+});
+
+console.log('Created dataset:', newDataset.id);
+```
+
+### Schema property types
+
+| Type | Description |
+|------|-------------|
+| `string` | Text values |
+| `long` | Integer numbers |
+| `double` | Floating-point numbers |
+| `boolean` | True/false values |
+| `timestamptz` | Timestamp with timezone |
+| `object` | Nested object |
+| `array` | Array of values |
+
+## Updating a dataset
+
+Update dataset metadata:
+
+```typescript
+const updated = await api.updateDataset({
+  dataset_id: 12345,
+  display_name: 'Customer Events (Updated)',
+  description: 'Updated description for customer events',
+});
+
+console.log('Updated:', updated.name);
+```
+
+## Managing tags
+
+Add tags to a dataset:
+
+```typescript
+const dataset = await api.addTags(12345, ['production', 'verified']);
+console.log('Tags:', dataset.tags);
+```
+
+Remove tags from a dataset:
+
+```typescript
+const dataset = await api.removeTags(12345, ['deprecated']);
+console.log('Tags:', dataset.tags);
+```
+
+## Getting dataset statistics
+
+Retrieve summary statistics:
+
+```typescript
+const stats = await api.getStatistics(12345);
+
+console.log('Statistics:', stats.records);
+```
+
+Get column-level statistics:
+
+```typescript
+const columnStats = await api.getColumnStats(12345);
+
+console.log('Column statistics:', columnStats);
+```
+
+## Dataset summary
+
+Get a summary with sample data:
+
+```typescript
+const summary = await api.getDatasetSummary(
+  12345,    // dataset ID
+  false,    // allRecords - set to true for all records
+  100,      // perPage
+  0         // offset
+);
+
+console.log('Summary:', summary);
+```
+
+## Sampling data
+
+Request a sample of records:
+
+```typescript
+// Request a sample (async operation)
+const sampleRequest = await api.requestDatasetSample(12345);
+console.log('Sample job ID:', sampleRequest.job_id);
+
+// After the job completes, retrieve the sample
+const sample = await api.getDatasetSample(12345, 1000);
+console.log(`Sample contains ${sample.records.length} records`);
+```
+
+Delete a sample:
+
+```typescript
+await api.deleteDatasetSample(12345);
+console.log('Sample deleted');
+```
+
+## Working with files
+
+List files in a dataset:
+
+```typescript
+const files = await api.getDatasetFiles(
+  12345,           // dataset ID
+  100,             // size (number of snapshots)
+  0,               // offset
+  '2024-01-01',    // afterTimestamp (optional)
+);
+
+for (const snapshot of files.snapshots) {
+  console.log(`Snapshot ${snapshot.id}:`, snapshot.files.length, 'files');
+}
+```
+
+Get a download URL for a specific file:
+
+```typescript
+const download = await api.getDatasetFileDownloadUrl(
+  12345,           // dataset ID
+  67890,           // snapshot ID
+  'file-id-here'   // file ID
+);
+
+console.log('Download URL:', download.download_url);
+```
+
+## Materialized views
+
+Refresh a materialized view:
+
+```typescript
+const job = await api.refreshMaterializedView(12345);
+console.log('Refresh job ID:', job.id);
+```
+
+Create a refresh schedule:
+
+```typescript
+await api.createDatasetRefreshSchedule(12345, {
+  cron_expression: '0 0 * * *',  // Daily at midnight
+  enabled: true,
+});
+```
+
+Update a refresh schedule:
+
+```typescript
+await api.updateDatasetRefreshSchedule(12345, {
+  cron_expression: '0 */6 * * *',  // Every 6 hours
+  enabled: true,
+});
+```
+
+Delete a refresh schedule:
+
+```typescript
+await api.deleteDatasetRefreshSchedule(12345);
+```
+
+## Retention policy
+
+Update the retention policy:
+
+```typescript
+const updated = await api.updateRetentionPolicy(12345, {
+  type: 'time_based',
+  retention_days: 365,
+});
+
+console.log('Retention policy updated');
+```
+
+## Activating a dataset
+
+Activate a pending dataset:
+
+```typescript
+await api.activateDataset(12345);
+console.log('Dataset activated');
+```
+
+## Deleting a dataset
+
+<Warning>
+Deleting a dataset is permanent and cannot be undone. Ensure you have backups if needed.
+</Warning>
+
+```typescript
+await api.deleteDataset(12345);
+console.log('Dataset deleted');
+```
+
+## Error handling
+
+```typescript
+try {
+  const dataset = await api.getDataset(12345);
+  console.log('Dataset:', dataset.name);
+} catch (error) {
+  if (error.status === 404) {
+    console.error('Dataset not found');
+  } else if (error.status === 403) {
+    console.error('Permission denied');
+  } else {
+    console.error('Error:', error);
+  }
+}
+```
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Datasets Concept" icon="lightbulb" href="/concepts/primitives/datasets">
+    Understanding datasets in Narrative
+  </Card>
+  <Card title="Uploading Data" icon="upload" href="/guides/sdk/uploading-data">
+    Upload files to datasets
+  </Card>
+  <Card title="Executing Queries" icon="terminal" href="/guides/sdk/executing-queries">
+    Query dataset data
+  </Card>
+  <Card title="API Modules Reference" icon="puzzle-piece" href="/reference/sdks/typescript/api-modules">
+    Complete API documentation
+  </Card>
+</CardGroup>
