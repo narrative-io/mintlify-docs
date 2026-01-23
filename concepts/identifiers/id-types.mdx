@@ -1,0 +1,145 @@
+---
+title: 'Identifier Types'
+description: 'Understanding the categories of identifiers used in data collaboration'
+icon: 'tags'
+---
+
+Most data records in Narrative's platform have one or more identifiers as attributes. Identifiers act as unique representations of underlying concepts—typically the device, browser, or user where data was collected. Since an identifier can represent different concepts, all identifiers include a type designation so you know what the identifier represents.
+
+## Why identifier types matter
+
+When you query data, you need to know what kind of identifier you're working with:
+- A **cookie** represents a browser session on a specific domain
+- A **mobile ad ID** represents a mobile device
+- A **hashed email** represents a person across devices
+
+Understanding identifier types helps you:
+- Match data across the right dimensions
+- Estimate reach and overlap correctly
+- Apply appropriate privacy controls
+
+---
+
+## Identifier categories
+
+### Mobile Ad IDs (MAIDs)
+
+Mobile advertising identifiers are device-level identifiers provided by mobile operating systems. They're accessible through platform APIs and persist until the user resets them.
+
+| Platform | ID Type | Format |
+|----------|---------|--------|
+| Apple iOS | `idfa` | Uppercase UUID: `918F1D4F-D195-4A8B-AF47-44683FE11DB9` |
+| Google Android | `adid` (also called GAID) | Lowercase UUID: `3f097372-f01e-4b64-984c-395ae5828ee6` |
+
+<Note>
+Mobile ad ID availability has decreased significantly due to privacy changes. Apple's App Tracking Transparency (ATT) requires user opt-in, and many users decline.
+</Note>
+
+**Related:** [Mobile Ad IDs](/concepts/identifiers/mobile-ad-ids) for a deeper dive into IDFA and GAID.
+
+---
+
+### Cookies
+
+When data is collected in a web browser context (desktop or mobile web), the identifier is typically a cookie. Cookies are storage mechanisms tied to a specific domain—a cookie set by one website cannot be read by another.
+
+Because cookies are domain-specific, Narrative doesn't have a single "cookie" identifier type. Instead, each data provider has their own cookie namespace. Cookie identifiers are useful for:
+- Retargeting within a publisher's properties
+- Frequency capping across a provider's inventory
+- Cross-device matching when linked to other identifiers
+
+<Warning>
+Third-party cookies are being deprecated in major browsers. Chrome has announced plans to phase them out, and Safari and Firefox already block them by default.
+</Warning>
+
+---
+
+### Hashed Emails
+
+Email addresses are personally identifiable information (PII) and cannot be shared in raw form. To enable matching while preserving privacy, emails are hashed using one-way cryptographic functions before being shared.
+
+| ID Type | Hash Algorithm | Output Length |
+|---------|---------------|---------------|
+| `md5_email` | MD5 | 32 hex characters |
+| `sha1_email` | SHA-1 | 40 hex characters |
+| `sha256_email` | SHA-256 | 64 hex characters |
+
+**Important formatting rules:**
+1. Convert to lowercase before hashing
+2. Remove leading/trailing whitespace
+3. Apply the hash algorithm
+
+```
+Email: JohnDoe@Gmail.com
+Formatted: johndoe@gmail.com
+SHA-256: 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+```
+
+Hashed emails are valuable because:
+- They persist across devices (people use the same email everywhere)
+- They're deterministic (same email always produces the same hash)
+- They can't be reversed to reveal the original email
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization) for more on hashing techniques.
+
+---
+
+### Hashed Phone Numbers
+
+Similar to emails, phone numbers are hashed to enable matching while protecting PII.
+
+| ID Type | Hash Algorithm | Format |
+|---------|---------------|--------|
+| `md5_phone` | MD5 | E.164 format, then hash |
+| `sha1_phone` | SHA-1 | E.164 format, then hash |
+| `sha256_phone` | SHA-256 | E.164 format, then hash |
+
+Phone numbers should be normalized to E.164 format before hashing:
+- Include country code
+- Remove spaces, dashes, parentheses
+- Example: `+14155551234`
+
+---
+
+### Universal IDs
+
+Emerging universal identifier systems aim to provide privacy-preserving, cross-platform identity without relying on cookies or device IDs.
+
+| ID Type | Description |
+|---------|-------------|
+| `uid2` | Unified ID 2.0 - generated from hashed emails, supports opt-out |
+| `rampid` | LiveRamp's identity resolution identifier |
+| `id5` | ID5's probabilistic and deterministic identity solution |
+
+**Related:** [UID2](/concepts/identifiers/uid2) for details on Unified ID 2.0.
+
+---
+
+## Choosing the right identifier type
+
+| Use Case | Recommended Identifier Types |
+|----------|----------------------------|
+| Cross-device targeting | Hashed email, UID2 |
+| Mobile app targeting | IDFA, GAID |
+| Web retargeting | First-party cookies, hashed email |
+| Offline-to-online matching | Hashed email, hashed phone |
+| Privacy-first campaigns | UID2, first-party data |
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="ID Mapping" icon="link" href="/concepts/identifiers/id-mapping">
+    Connect identifiers across devices and channels
+  </Card>
+  <Card title="Mobile Ad IDs" icon="mobile" href="/concepts/identifiers/mobile-ad-ids">
+    Deep dive into IDFA and GAID
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How hashing protects identifiers
+  </Card>
+  <Card title="Hashing PII for Upload" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Step-by-step guide to formatting and hashing
+  </Card>
+</CardGroup>

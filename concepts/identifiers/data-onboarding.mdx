@@ -1,0 +1,154 @@
+---
+title: 'Data Onboarding'
+description: 'Translating offline customer data for digital activation'
+icon: 'upload'
+---
+
+Data onboarding is the process of taking offline customer data and connecting it to online identifiers for digital activation. It bridges the gap between CRM systems, point-of-sale data, and loyalty programs with the digital advertising ecosystem.
+
+## Why data onboarding matters
+
+Many companies have rich customer data from offline interactions:
+- Purchase history from retail stores
+- Loyalty program memberships
+- Call center interactions
+- Direct mail campaigns
+
+But digital advertising platforms work with online identifiers—cookies, mobile ad IDs, and universal IDs. Without onboarding, this valuable first-party data remains unusable for digital marketing.
+
+Data onboarding unlocks:
+- **Digital reach for offline customers:** Find your store customers online
+- **Personalization at scale:** Apply offline insights to digital experiences
+- **Closed-loop measurement:** Connect digital campaigns to offline conversions
+
+---
+
+## How data onboarding works
+
+### 1. Prepare and anonymize offline data
+
+Data onboarding starts with your offline customer file—typically including emails, phone numbers, and customer attributes.
+
+Before any matching occurs, personally identifiable information (PII) must be pseudonymized:
+- Hash email addresses and phone numbers
+- Remove or mask direct identifiers (names, addresses)
+- Retain only the attributes needed for activation
+
+<Note>
+Narrative requires PII to be hashed before upload. See [Hashing PII for Upload](/guides/ingestion/hashing-pii) for formatting requirements.
+</Note>
+
+### 2. Match to online identifiers
+
+Pseudonymized customer data is matched to online identifiers through identity resolution:
+
+| Offline Identifier | Matched To |
+|-------------------|------------|
+| Hashed email | Mobile ad IDs, cookies, UID2 |
+| Hashed phone | Mobile ad IDs, UID2 |
+| Postal address | Device graphs (probabilistic) |
+
+Matching can be:
+- **Deterministic:** Direct link observed (e.g., user logged in with email on mobile app)
+- **Probabilistic:** Inferred from signals (e.g., shared household IP address)
+
+### 3. Activate in digital channels
+
+Once matched, customer segments can be activated across digital platforms:
+- Programmatic display and video
+- Social media advertising
+- Connected TV
+- Retail media networks
+
+---
+
+## Benefits of data onboarding
+
+### Boost media reach
+
+By appending online identifiers to your customer file, you gain additional touchpoints to reach customers across devices and channels—not just where they gave you their email.
+
+### Improve personalization
+
+Bring offline insights online. A customer who purchased in-store can receive relevant digital ads, while someone who returned a product can be excluded from promotions.
+
+### Enable omni-channel measurement
+
+Combining offline and online data provides a complete view of customer journeys. Measure how digital campaigns drive store visits, or how in-store experiences influence online behavior.
+
+### Power advanced analytics
+
+Onboarded data enables analysis across the full customer journey. Understand how offline and online touchpoints interact and influence each other, rather than analyzing channels in silos.
+
+---
+
+## Challenges in data onboarding
+
+### Privacy compliance
+
+Offline customer records often contain PII that's regulated under GDPR, CCPA, and other privacy laws. Mitigate risk by:
+- Hashing all identifiers before sharing
+- Maintaining appropriate consent records
+- Working with compliant onboarding partners
+
+### Match rates
+
+Not all offline customers will match to online identifiers. Typical match rates range from 30-70% depending on:
+- Data quality and recency
+- Identifier types available
+- Target platform coverage
+
+### Data freshness
+
+Customer data changes over time. Email addresses become invalid, people move, devices are replaced. Regular refresh of onboarded data maintains accuracy.
+
+### Cost and complexity
+
+Traditional onboarding services can be expensive and require long-term commitments. They may also charge for records that don't match, making ROI difficult to predict.
+
+---
+
+## Data onboarding in Narrative
+
+Narrative simplifies data onboarding with transparent matching and flexible activation:
+
+### Self-service upload
+
+Upload your hashed customer file directly to the platform without intermediaries.
+
+### Transparent matching
+
+See which identity providers match your data and at what rates. Choose which matches to activate based on quality and coverage.
+
+### Flexible activation
+
+Activate matched audiences to multiple destinations:
+- The Trade Desk (with automatic UID2 generation)
+- Other DSPs and ad platforms
+- Analytics environments
+
+### Pay for matches
+
+Only pay for records that successfully match to online identifiers.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="ID Mapping" icon="link" href="/concepts/identifiers/id-mapping">
+    How identifiers are connected across channels
+  </Card>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Types of identifiers used in onboarding
+  </Card>
+  <Card title="UID2" icon="shield-check" href="/concepts/identifiers/uid2">
+    Privacy-preserving identifier for activation
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Hashing and privacy protection
+  </Card>
+  <Card title="Hashing PII for Upload" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare data for onboarding
+  </Card>
+</CardGroup>

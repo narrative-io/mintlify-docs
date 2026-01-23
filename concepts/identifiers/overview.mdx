@@ -1,0 +1,70 @@
+---
+title: 'Identifiers in Data Collaboration'
+description: 'Understanding how identifiers enable privacy-preserving data matching across organizations'
+icon: 'fingerprint'
+---
+
+Data collaboration depends on identifiers—the keys that connect records across different organizations and systems. When two companies want to find overlapping customers or match behavioral data to a customer file, identifiers make that connection possible.
+
+But identifiers in data collaboration come with unique challenges: privacy regulations require protection of personal information, different organizations use different identifier systems, and the fragmented digital landscape means a single person might be represented by dozens of different identifiers across devices and channels.
+
+## Why identifiers matter
+
+Consider a retail company that wants to target its existing customers with digital advertising. They have email addresses from their CRM, but ad platforms work with mobile device IDs and cookies. Without identifier mapping, their customer data is siloed and unusable for digital activation.
+
+Data collaboration platforms solve this by:
+- **Pseudonymizing** identifiers (hashing emails) so they can be matched without exposing PII
+- **Mapping** between identifier types (connecting hashed emails to mobile ad IDs)
+- **Standardizing** identifier formats so data from different sources can be matched
+
+## The identifier ecosystem
+
+The digital advertising and data collaboration ecosystem uses several categories of identifiers:
+
+| Category | Examples | Persistence | Privacy Status |
+|----------|----------|-------------|----------------|
+| **Device IDs** | IDFA (iOS), GAID (Android) | Resettable by user | Pseudo-anonymous |
+| **Browser IDs** | Third-party cookies, first-party cookies | Session or persistent | Pseudo-anonymous |
+| **Hashed PII** | MD5/SHA-256 hashed emails and phones | Permanent | Pseudonymized |
+| **Universal IDs** | UID2, RampID, ID5 | Varies | Pseudonymized |
+
+Each identifier type serves different use cases and has different trade-offs in terms of reach, accuracy, and privacy.
+
+## Identifier challenges
+
+### Cross-device identity
+
+A single consumer might use a smartphone, tablet, laptop, and smart TV—each with different identifiers. Connecting these identifiers to understand that they represent the same person is a core challenge in data collaboration.
+
+### Privacy and consent
+
+Privacy regulations (GDPR, CCPA) and platform policies (Apple's ATT, Google's Privacy Sandbox) increasingly restrict how identifiers can be collected and used. Organizations must balance data utility with privacy compliance.
+
+### Identifier deprecation
+
+The digital ecosystem is in flux. Third-party cookies are being phased out, mobile ad ID availability is declining, and new privacy-preserving identifiers are emerging. Data strategies must adapt to this changing landscape.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Categories of identifiers used in data collaboration
+  </Card>
+  <Card title="Mobile Ad IDs" icon="mobile" href="/concepts/identifiers/mobile-ad-ids">
+    Understanding IDFA, GAID, and mobile device identifiers
+  </Card>
+  <Card title="ID Mapping" icon="link" href="/concepts/identifiers/id-mapping">
+    Connecting identifiers across devices and channels
+  </Card>
+  <Card title="UID2" icon="shield-check" href="/concepts/identifiers/uid2">
+    The Unified ID 2.0 privacy-preserving identifier
+  </Card>
+  <Card title="Data Onboarding" icon="upload" href="/concepts/identifiers/data-onboarding">
+    Translating offline data for digital activation
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How hashing protects identifiers
+  </Card>
+</CardGroup>

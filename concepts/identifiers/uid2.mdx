@@ -1,0 +1,151 @@
+---
+title: 'UID2 (Unified ID 2.0)'
+description: 'A privacy-preserving identifier for cross-platform data collaboration'
+icon: 'shield-check'
+---
+
+Unified ID 2.0 (UID2) is an open-source identifier framework designed to enable privacy-conscious data collaboration in a post-cookie world. Developed by the Identity Consortium with The Trade Desk as a primary operator, UID2 provides a deterministic, encrypted identifier derived from email addresses or phone numbers.
+
+## Why UID2 exists
+
+The digital advertising ecosystem faces a identity crisis:
+- Third-party cookies are being deprecated
+- Mobile ad ID availability is declining
+- Privacy regulations require user consent and control
+
+UID2 addresses these challenges by providing:
+- **Privacy by design:** Users can opt out at any time
+- **Transparency:** Open-source framework with clear governance
+- **Interoperability:** Works across platforms and partners
+- **Determinism:** Same input always produces the same output
+
+---
+
+## How UID2 works
+
+### Token generation
+
+UID2 tokens are generated from personally identifiable information (PII) through a multi-step process:
+
+1. **Input:** Email address or phone number
+2. **Normalization:** Standardize format (lowercase, trim whitespace)
+3. **Hashing:** Apply SHA-256 hash
+4. **Encryption:** Encrypt with rotating keys
+5. **Output:** UID2 token
+
+The resulting token is:
+- Deterministic (same email always produces the same UID2)
+- Encrypted (raw hash is not exposed)
+- Refreshable (tokens can be regenerated with new keys)
+
+### Token types
+
+| Token Type | Description | Use Case |
+|------------|-------------|----------|
+| **UID2 Token** | Encrypted, rotatable identifier | Real-time bidding, ad serving |
+| **Raw UID2** | Underlying identifier before encryption | Secure storage, internal systems |
+
+### Key rotation
+
+UID2 tokens are encrypted with keys that rotate periodically. This means:
+- Tokens eventually expire and must be refreshed
+- Compromised tokens become invalid
+- Users can effectively reset their identity by regenerating tokens
+
+---
+
+## Privacy features
+
+### User opt-out
+
+UID2 includes a centralized opt-out mechanism. When users opt out:
+- Their UID2 is added to a global opt-out list
+- All participants must check this list before using UID2s
+- The opt-out persists across all participating companies
+
+### Transparency
+
+The UID2 framework is open-source and governed by an independent consortium, providing:
+- Clear documentation of how identifiers are generated
+- Public audit of participating companies
+- User-facing explanations of how data is used
+
+### No cross-party tracking without consent
+
+UID2 is generated from first-party data (emails collected with consent). It cannot be used to track users who haven't shared their information with a participating company.
+
+---
+
+## UID2 in Narrative
+
+Narrative supports UID2 through automatic generation and native integration with The Trade Desk.
+
+### Automatic generation
+
+When you upload data with supported identifier types, Narrative can automatically generate UID2 tokens:
+
+**Supported input attributes:**
+- Hashed Email (any hash algorithm)
+- SHA-256 Hashed Email
+- Phone Number
+- SHA-256 Hashed Phone Number
+
+### Trade Desk integration
+
+The Narrative TTD Connector enables seamless UID2 workflows:
+1. Upload data with email or phone identifiers
+2. Narrative generates UID2 tokens automatically
+3. Activate audiences directly in The Trade Desk
+
+### Existing UID2s
+
+If your data already contains UID2 tokens (from advertising partners or other sources), Narrative's TTD Connector processes them directly, automatically mapping the UID2 field.
+
+---
+
+## UID2 vs. other identifiers
+
+| Aspect | UID2 | Hashed Email | Cookies | MAIDs |
+|--------|------|--------------|---------|-------|
+| **Persistence** | Until opt-out | Permanent | Session/limited | Until reset |
+| **Cross-device** | Yes | Yes | No | No |
+| **User control** | Centralized opt-out | None | Browser settings | Device settings |
+| **Privacy status** | Enhanced | Pseudonymized | Trackable | Pseudo-anonymous |
+| **Future viability** | High | High | Declining | Declining |
+
+---
+
+## Getting started with UID2
+
+To use UID2 in Narrative:
+
+1. Ensure your data includes email or phone identifiers
+2. Hash identifiers before upload if not already hashed
+3. Configure the TTD Connector for your destination
+4. Narrative handles UID2 generation automatically
+
+---
+
+## Additional resources
+
+- [The Trade Desk UID2 Initiative](https://www.thetradedesk.com/us/about-us/industry-initiatives/unified-id-solution-2-0)
+- [UID2 Documentation](https://unifiedid.com/docs/intro)
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Overview of all identifier categories
+  </Card>
+  <Card title="ID Mapping" icon="link" href="/concepts/identifiers/id-mapping">
+    Connect identifiers across platforms
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How hashing protects identifiers
+  </Card>
+  <Card title="Hashing PII for Upload" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare your data for UID2 generation
+  </Card>
+</CardGroup>

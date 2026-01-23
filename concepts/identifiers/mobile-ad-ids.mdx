@@ -1,0 +1,126 @@
+---
+title: 'Mobile Advertising IDs'
+description: 'Understanding IDFA, GAID, and how mobile device identifiers work'
+icon: 'mobile'
+---
+
+Mobile advertising identifiers (MAIDs) are unique pseudo-anonymous identifiers tied to mobile devices. Both iOS and Android provide APIs that allow developers to collect data linked to these identifiers, enabling advertising, analytics, and measurement without exposing personally identifiable information.
+
+## How MAIDs work
+
+Mobile operating systems generate a unique identifier for each device that app developers can access through platform APIs. This identifier:
+- Is pseudo-anonymous (doesn't directly identify a person)
+- Persists across app installs and sessions
+- Can be reset or disabled by the user
+- Is accessible to any app with appropriate permissions
+
+MAIDs were designed as a privacy-conscious alternative to hardware identifiers like IMEI or MAC address, which cannot be reset and could be used for persistent tracking without user control.
+
+---
+
+## Platform implementations
+
+### Apple iOS: IDFA
+
+Apple's Identifier for Advertisers (IDFA) is available on iOS devices through the [ASIdentifierManager](https://developer.apple.com/documentation/adsupport/asidentifiermanager) API.
+
+**Format:** Uppercase UUID with hyphens
+```
+918F1D4F-D195-4A8B-AF47-44683FE11DB9
+```
+
+**Key characteristics:**
+- 32 hexadecimal characters separated by hyphens
+- Uppercase by convention
+- Same across all apps on the device (when available)
+
+<Warning>
+Since iOS 14.5, Apple's App Tracking Transparency (ATT) framework requires apps to request user permission before accessing the IDFA. Many users decline, significantly reducing IDFA availability.
+</Warning>
+
+### Google Android: GAID
+
+Google's Advertising ID (GAID, also called Ad ID or AAID) is available on Android devices through [Google Play Services](https://support.google.com/googleplay/android-developer/answer/6048248).
+
+**Format:** Lowercase UUID with hyphens
+```
+3f097372-f01e-4b64-984c-395ae5828ee6
+```
+
+**Key characteristics:**
+- 32 hexadecimal characters separated by hyphens
+- Lowercase by convention
+- Requires Google Play Services (not available on some devices)
+
+---
+
+## Privacy considerations
+
+MAIDs were designed with privacy in mind, providing several user controls:
+
+### User reset
+
+Both platforms allow users to reset their advertising identifier at any time, generating a new ID and breaking the connection to previously collected data.
+
+### Opt-out mechanisms
+
+Users can limit ad tracking or disable personalized advertising entirely:
+
+- **iOS:** Settings > Privacy > Tracking > Allow Apps to Request to Track
+- **Android:** Settings > Privacy > Ads > Delete advertising ID
+
+When users opt out, the MAID may return as all zeros or be unavailable entirely.
+
+### Declining availability
+
+The mobile advertising ecosystem has shifted significantly:
+- **Apple ATT:** Only ~25-30% of iOS users opt in to tracking
+- **Android:** Google has announced plans to introduce similar privacy controls
+
+This declining availability has driven adoption of alternative identifiers like [UID2](/concepts/identifiers/uid2) and increased focus on first-party data strategies.
+
+---
+
+## Using MAIDs in data collaboration
+
+### Data collection context
+
+MAIDs are typically collected in scenarios where apps have user permission:
+- SDK integrations with user consent
+- Real-time bidding environments where MAIDs are passed in bid requests
+- Publisher-direct integrations
+
+### Matching considerations
+
+When matching data using MAIDs:
+- **Normalize format:** Ensure consistent casing (uppercase for IDFA, lowercase for GAID)
+- **Handle opt-outs:** Filter out all-zero identifiers
+- **Consider recency:** Older MAIDs may have been reset
+
+### Cross-device identity
+
+MAIDs identify devices, not people. A person with multiple devices will have different MAIDs on each. To build cross-device identity, MAIDs are often linked to:
+- Hashed emails (from app logins)
+- Other device identifiers
+- Universal IDs like UID2
+
+**Related:** [ID Mapping](/concepts/identifiers/id-mapping) for connecting MAIDs to other identifier types.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Overview of all identifier categories
+  </Card>
+  <Card title="ID Mapping" icon="link" href="/concepts/identifiers/id-mapping">
+    Connect MAIDs to other identifiers
+  </Card>
+  <Card title="UID2" icon="shield-check" href="/concepts/identifiers/uid2">
+    Privacy-preserving alternative identifier
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    How hashing protects identifiers
+  </Card>
+</CardGroup>

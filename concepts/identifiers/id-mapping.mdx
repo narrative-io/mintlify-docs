@@ -1,0 +1,155 @@
+---
+title: 'ID Mapping'
+description: 'Connecting identifiers across devices, channels, and platforms'
+icon: 'link'
+---
+
+ID mapping connects different identifiers to the same user, enabling cross-device targeting, measurement, and analytics. When a data provider links a hashed email to a mobile advertising ID, or a cookie to a device identifier, they create an ID mapping that bridges previously siloed data.
+
+## Why ID mapping matters
+
+Modern consumers interact with brands across multiple touchpoints:
+- Mobile apps (identified by MAID)
+- Websites on desktop (identified by cookies)
+- Email communications (identified by email address)
+- Connected TV (identified by device graphs)
+
+Without ID mapping, each touchpoint exists in isolation. A retailer might show the same ad to a customer on mobile, desktop, and CTV without recognizing it's the same person—wasting budget and creating a poor experience.
+
+ID mapping solves this by creating links between identifiers, enabling:
+- **Unified targeting:** Reach the same person across devices
+- **Frequency capping:** Limit ad exposure across channels
+- **Attribution:** Connect conversions to the right touchpoints
+- **Audience expansion:** Find customers in new channels
+
+---
+
+## Common ID linkages
+
+### Hashed Email to MAID
+
+The most valuable and deterministic mapping connects hashed emails to mobile advertising IDs.
+
+**How it works:** When a user logs into a mobile app with their email address, the app developer can link the MAID (from the device) to the hashed email (from the login). This creates a deterministic, high-confidence link.
+
+**Use cases:**
+- Target email subscribers in mobile apps
+- Extend CRM audiences to mobile advertising
+- Measure mobile conversions against email campaigns
+
+### Cookie to MAID
+
+Connects web browsing behavior to mobile device identity.
+
+**How it works:**
+- Cookie syncing through pixel fires on mobile web
+- SDK-based matching when users interact on both web and app
+- Probabilistic matching based on shared signals (IP, location, behavior)
+
+**Use cases:**
+- Retarget website visitors in mobile apps
+- Build unified user profiles across web and app
+- Measure cross-platform campaign performance
+
+### Cookie to Hashed Email
+
+Links browser-based identity to email-based identity.
+
+**How it works:** When users log in on websites, the site can link their cookie to their hashed email. This creates a durable identifier that persists even when cookies are cleared.
+
+**Use cases:**
+- Build persistent identity across browser sessions
+- Connect anonymous browsing to known customers
+- Enable email-based audience activation
+
+---
+
+## ID mapping quality
+
+Not all ID mappings are equal. Consider these quality factors:
+
+### Deterministic vs. probabilistic
+
+| Type | Description | Confidence |
+|------|-------------|------------|
+| **Deterministic** | Direct observation of link (e.g., same user logged in) | High |
+| **Probabilistic** | Inferred from signals (e.g., shared IP, similar behavior) | Variable |
+
+Deterministic mappings are more accurate but harder to scale. Probabilistic mappings offer broader reach but may include false matches.
+
+### Recency
+
+ID mappings can become stale:
+- Users reset their MAIDs
+- Cookies expire or are cleared
+- Email addresses change
+
+More recent mappings are generally more reliable.
+
+### Source quality
+
+The method of collection matters:
+- **First-party login data:** Highest quality
+- **SDK integrations:** High quality
+- **Cookie syncing:** Medium quality
+- **Probabilistic inference:** Variable quality
+
+---
+
+## ID mapping in Narrative
+
+Narrative enables ID mapping through several mechanisms:
+
+### Standardized identifiers
+
+When ingesting data, Narrative normalizes identifier formats to enable matching across sources:
+- Consistent casing for MAIDs
+- Standardized hashing for emails and phones
+- Narrative Cookie IDs for cross-supplier cookie matching
+
+### Cross-supplier matching
+
+Different data suppliers use different cookie namespaces. Narrative creates a standardized cookie ID that links to each supplier's cookies, enabling matching across suppliers.
+
+### Query-time joining
+
+Use NQL to join datasets on shared identifiers:
+
+```sql
+SELECT
+  a.hashed_email,
+  b.maid
+FROM company_a."email_data" a
+JOIN company_b."maid_data" b
+  ON a.narrative_id = b.narrative_id
+```
+
+---
+
+## Privacy considerations
+
+ID mapping must respect privacy regulations and user expectations:
+
+- **Consent:** Ensure mappings are created with appropriate user consent
+- **Pseudonymization:** Always hash PII before creating mappings
+- **Data minimization:** Only create mappings needed for specific use cases
+- **User controls:** Honor opt-outs across all linked identifiers
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Identifier Types" icon="tags" href="/concepts/identifiers/id-types">
+    Categories of identifiers used in mapping
+  </Card>
+  <Card title="Data Onboarding" icon="upload" href="/concepts/identifiers/data-onboarding">
+    Connect offline data to online identifiers
+  </Card>
+  <Card title="UID2" icon="shield-check" href="/concepts/identifiers/uid2">
+    Privacy-preserving universal identifier
+  </Card>
+  <Card title="Narrative ID" icon="fingerprint" href="/concepts/security/narrative-id">
+    Secure cross-partner matching
+  </Card>
+</CardGroup>
