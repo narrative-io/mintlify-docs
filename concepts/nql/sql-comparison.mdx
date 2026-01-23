@@ -1,0 +1,326 @@
+---
+title: 'NQL vs SQL'
+description: 'Understanding how NQL extends and differs from standard SQL'
+icon: 'code-compare'
+---
+
+If you know SQL, you already know most of NQL. This page explains what's the same, what's different, and what NQL adds for data collaboration scenarios.
+
+## What stays the same
+
+NQL uses standard SQL syntax for core query operations. If you've written SQL queries before, these patterns work exactly as you'd expect:
+
+### SELECT statements
+
+```sql
+SELECT
+  column1,
+  column2,
+  UPPER(column3) AS transformed
+FROM table_reference
+WHERE condition
+ORDER BY column1 DESC
+LIMIT 100
+```
+
+### Aggregations and grouping
+
+```sql
+SELECT
+  category,
+  COUNT(*) AS count,
+  SUM(amount) AS total,
+  AVG(score) AS average
+FROM table_reference
+GROUP BY category
+HAVING COUNT(*) > 10
+```
+
+### Joins
+
+```sql
+SELECT t1.column1, t2.column2
+FROM table1 t1
+INNER JOIN table2 t2 ON t1.id = t2.foreign_id
+LEFT JOIN table3 t3 ON t1.id = t3.ref_id
+```
+
+### Subqueries and CTEs
+
+```sql
+WITH summary AS (
+  SELECT category, SUM(amount) AS total
+  FROM sales
+  GROUP BY category
+)
+SELECT * FROM summary WHERE total > 1000
+```
+
+### Standard functions
+
+Most SQL functions work as expected:
+- String: `UPPER`, `LOWER`, `CONCAT`, `SUBSTRING`, `TRIM`
+- Numeric: `ABS`, `ROUND`, `FLOOR`, `CEIL`
+- Date: `CURRENT_DATE`, `DATE_TRUNC`, `EXTRACT`
+- Aggregate: `COUNT`, `SUM`, `AVG`, `MIN`, `MAX`
+
+---
+
+## What's different
+
+### Table references use dataset IDs
+
+In traditional SQL, you reference tables by name. In NQL, you reference datasets by their numeric ID within a schema:
+
+<CodeGroup>
+
+```sql Standard SQL
+SELECT * FROM users
+SELECT * FROM analytics.events
+```
+
+```sql NQL
+SELECT * FROM company_data."123"
+SELECT * FROM company_data."456"
+```
+
+</CodeGroup>
+
+The ID must be quoted because it's numeric. The `company_data` schema contains your datasets.
+
+### Special data sources
+
+NQL provides access to shared resources that don't exist in traditional databases:
+
+| Source | Purpose |
+|--------|---------|
+| `narrative.rosetta_stone` | Identity resolution across datasets |
+| `provider_slug."access_rule"` | Data shared via access rules |
+
+```sql
+-- Identity resolution data
+SELECT unique_id, event_timestamp
+FROM narrative.rosetta_stone
+
+-- Data from another company's access rule
+SELECT * FROM partner_company."fitness_data"
+```
+
+### Price filtering
+
+Every dataset includes a `_price_cpm_usd` column representing the cost per 1,000 rows. This doesn't exist in traditional databases:
+
+```sql
+-- Only get data priced at $1 or less per 1000 rows
+SELECT *
+FROM company_data."123"
+WHERE _price_cpm_usd <= 1.00
+```
+
+### EXPLAIN forecasts instead of plans
+
+In traditional SQL, `EXPLAIN` shows the query execution plan. In NQL, `EXPLAIN` forecasts data availability and cost:
+
+<CodeGroup>
+
+```sql Standard SQL EXPLAIN
+-- Shows: Seq Scan, Index Scan, costs, row estimates
+EXPLAIN SELECT * FROM users WHERE age > 30
+```
+
+```sql NQL EXPLAIN
+-- Shows: estimated row count, estimated cost, data freshness
+EXPLAIN SELECT * FROM company_data."123" WHERE age > 30
+```
+
+</CodeGroup>
+
+Use NQL's `EXPLAIN` to preview what data matches your criteria before purchasing.
+
+---
+
+## What NQL adds
+
+### Budget controls
+
+NQL includes budget clauses to control data spending—a concept that doesn't exist in traditional SQL:
+
+```sql
+CREATE MATERIALIZED VIEW "my_data"
+AS (SELECT * FROM company_data."123")
+BUDGET 50 USD
+
+-- Recurring budget limits
+LIMIT 100 USD PER CALENDAR_MONTH
+LIMIT 10 USD PER CALENDAR_DAY
+```
+
+### Materialized views with options
+
+NQL's `CREATE MATERIALIZED VIEW` includes scheduling, partitioning, and metadata options beyond what most databases offer:
+
+```sql
+CREATE MATERIALIZED VIEW "daily_summary"
+REFRESH_SCHEDULE = '@daily'
+DISPLAY_NAME = 'Daily Summary Report'
+DESCRIPTION = 'Aggregated daily metrics'
+EXPIRE = 'P30D'
+TAGS = ('analytics', 'daily')
+PARTITIONED_BY event_date DAY
+AS (
+  SELECT date, COUNT(*) as events
+  FROM company_data."123"
+  GROUP BY date
+)
+BUDGET 25 USD
+```
+
+### QUALIFY clause
+
+While some databases support `QUALIFY`, it's not part of standard SQL. NQL includes it for filtering on window function results:
+
+```sql
+-- Keep only the most recent record per user
+SELECT user_id, email, last_seen
+FROM company_data."123"
+QUALIFY ROW_NUMBER() OVER (
+  PARTITION BY user_id
+  ORDER BY last_seen DESC
+) = 1
+```
+
+Without `QUALIFY`, you'd need a subquery:
+
+```sql
+-- Equivalent without QUALIFY (more verbose)
+SELECT user_id, email, last_seen
+FROM (
+  SELECT
+    user_id, email, last_seen,
+    ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY last_seen DESC) AS rn
+  FROM company_data."123"
+) sub
+WHERE rn = 1
+```
+
+### DELTA tables
+
+Query only changed records since the last execution—useful for incremental processing:
+
+```sql
+SELECT *
+FROM DELTA(TABLE company_data."123")
+```
+
+This capability requires the platform to track changes, which isn't standard SQL functionality.
+
+### Rosetta Stone integration
+
+Access identity resolution through special columns:
+
+```sql
+SELECT
+  company_data."1"._rosetta_stone.unique_id,
+  company_data."1".user_attribute
+FROM company_data."1"
+```
+
+### Narrative-specific functions
+
+Functions designed for data collaboration scenarios:
+
+```sql
+SELECT
+  NORMALIZE_EMAIL(email) AS clean_email,
+  NORMALIZE_PHONE('E164', phone, 'US') AS clean_phone,
+  HASH(user_id, email) AS identity_hash,
+  UNIVERSE_SAMPLE(user_id, 0.1) AS in_sample
+FROM company_data."123"
+```
+
+---
+
+## SQL features not supported
+
+Some SQL features aren't available in NQL:
+
+| Feature | Status | Alternative |
+|---------|--------|-------------|
+| `CREATE TABLE` | Not supported | Use `CREATE MATERIALIZED VIEW` |
+| `INSERT/UPDATE/DELETE` | Not supported | Views are the output mechanism |
+| `CREATE INDEX` | Not supported | Partitioning provides similar benefits |
+| Stored procedures | Not supported | — |
+| Transactions | Not supported | Each query is atomic |
+| `UNION` | Limited support | Some restrictions apply |
+
+---
+
+## Dialect differences
+
+NQL is transpiled to different database engines (Snowflake, Spark). The transpiler handles dialect differences, but awareness helps when debugging:
+
+### Date functions
+
+<CodeGroup>
+
+```sql NQL
+-- NQL uses consistent syntax
+WHERE event_date >= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+```sql Snowflake (transpiled)
+WHERE event_date >= DATEADD(DAY, -30, CURRENT_DATE())
+```
+
+```sql Spark (transpiled)
+WHERE event_date >= DATE_SUB(CURRENT_DATE(), 30)
+```
+
+</CodeGroup>
+
+### NULL handling
+
+NQL follows standard SQL NULL semantics, but the underlying engine may have subtle differences. The transpiler normalizes most cases.
+
+---
+
+## Migration tips
+
+### Coming from PostgreSQL/MySQL
+
+1. Replace table names with dataset IDs: `users` → `company_data."123"`
+2. Add budget clauses to materialized views
+3. Use `EXPLAIN` to forecast rather than plan
+4. Consider `_price_cpm_usd` filtering for cost control
+
+### Coming from Snowflake/BigQuery
+
+1. Dataset references use numeric IDs instead of table names
+2. Most functions work the same
+3. `QUALIFY` is fully supported
+4. Window functions work as expected
+
+### Coming from Spark SQL
+
+1. Similar syntax for complex types (arrays, structs, maps)
+2. `UNNEST` and `LATERAL` joins work as expected
+3. UDFs are replaced with Narrative-specific functions
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Design Philosophy" icon="compass-drafting" href="/concepts/nql/design-philosophy">
+    Why Narrative created a purpose-built query language
+  </Card>
+  <Card title="NQL Syntax Reference" icon="code" href="/reference/nql/syntax">
+    Complete query structure and grammar
+  </Card>
+  <Card title="Write Your First Query" icon="play" href="/getting-started/first-nql-query">
+    Hands-on tutorial to get started
+  </Card>
+  <Card title="Functions Reference" icon="function" href="/reference/nql/functions">
+    All available functions
+  </Card>
+</CardGroup>

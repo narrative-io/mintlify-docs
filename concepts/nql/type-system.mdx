@@ -1,0 +1,335 @@
+---
+title: 'Type System'
+description: 'How NQL handles types across different database engines'
+icon: 'diagram-project'
+---
+
+NQL's type system bridges the gap between your queries and multiple underlying database engines. Understanding how types work helps you write portable queries and avoid common pitfalls.
+
+## Why NQL needs its own type system
+
+Different database engines handle types differently:
+
+- **Snowflake** uses `NUMBER`, `VARCHAR`, `VARIANT` for semi-structured data
+- **Spark** uses `LONG`, `STRING`, and nested types with specific semantics
+- **BigQuery** uses `INT64`, `STRING`, and `STRUCT`/`ARRAY` with its own rules
+
+NQL provides a consistent type system that the control plane maps to the appropriate native types during transpilation. You write one query, and it works correctly regardless of where your data lives.
+
+## Primitive types
+
+NQL's primitive types map to standard database types across all supported engines:
+
+| NQL Type | Snowflake | Spark | Description |
+|----------|-----------|-------|-------------|
+| `STRING` / `VARCHAR` | `VARCHAR` | `STRING` | Variable-length text |
+| `BOOLEAN` | `BOOLEAN` | `BOOLEAN` | True/false |
+| `LONG` / `BIGINT` | `NUMBER` | `BIGINT` | 64-bit integer |
+| `DOUBLE` | `FLOAT` | `DOUBLE` | 64-bit floating point |
+| `DECIMAL` | `NUMBER` | `DECIMAL` | Arbitrary precision |
+| `DATE` | `DATE` | `DATE` | Calendar date |
+| `TIMESTAMP` | `TIMESTAMP_NTZ` | `TIMESTAMP` | Date and time |
+
+### When precision matters
+
+For financial or measurement data where exact precision is required, use `DECIMAL` instead of `DOUBLE`:
+
+```sql
+-- Floating-point: may have rounding errors
+SELECT 0.1 + 0.2 AS float_result  -- Could be 0.30000000000000004
+
+-- Decimal: exact precision
+SELECT CAST(0.1 AS DECIMAL) + CAST(0.2 AS DECIMAL) AS decimal_result  -- Exactly 0.3
+```
+
+---
+
+## Complex types
+
+Data collaboration often involves hierarchical and nested data structures. NQL supports three complex types that work consistently across engines.
+
+### Arrays
+
+Arrays store ordered collections of same-type elements. They're useful for:
+- Lists of identifiers
+- Tags or categories
+- Time-series values
+
+```sql
+-- Creating arrays
+SELECT ARRAY('email', 'phone', 'cookie') AS id_types
+
+-- Accessing elements (0-based indexing)
+SELECT identifiers[0] AS first_id FROM company_data."123"
+
+-- Getting array size
+SELECT SIZE(tags) AS tag_count FROM company_data."123"
+```
+
+**Why arrays exist**: Many identity resolution scenarios involve multiple identifiers per record. Arrays let you store and query these without flattening to separate rows.
+
+### Structs
+
+Structs group named fields with potentially different types—like a row within a row. They're useful for:
+- Nested attributes
+- Composite identifiers
+- Grouped metadata
+
+```sql
+-- Creating structs
+SELECT NAMED_STRUCT('type', 'email', 'value', 'user@example.com') AS identifier
+
+-- Accessing fields
+SELECT person.name, person.age FROM company_data."123"
+
+-- Deeply nested access
+SELECT user.address.city FROM company_data."123"
+```
+
+**Why structs exist**: Real-world data is hierarchical. An identity might have a type and value; an address might have street, city, and postal code. Structs preserve this structure without requiring separate columns.
+
+### Maps
+
+Maps store key-value pairs where all keys share a type and all values share a type. They're useful for:
+- Dynamic properties
+- Metadata with variable keys
+- Key-value attributes
+
+```sql
+-- Accessing map values
+SELECT ELEMENT_AT(properties, 'source') AS source FROM company_data."123"
+```
+
+**Why maps exist**: Some data has dynamic or sparse attributes. Rather than creating columns for every possible property, maps store only the properties that exist for each record.
+
+---
+
+## Nested types
+
+Complex types can be nested to represent hierarchical data:
+
+```sql
+-- Array of structs (common for identifiers)
+ARRAY<STRUCT<type:STRING, value:STRING, timestamp:LONG>>
+
+-- Struct with nested array
+STRUCT<name:STRING, tags:ARRAY<STRING>>
+
+-- Map with struct values
+MAP<STRING, STRUCT<count:LONG, last_seen:TIMESTAMP>>
+```
+
+### Accessing nested data
+
+Use dot notation for struct fields and bracket notation for arrays:
+
+```sql
+SELECT
+  -- Array of structs
+  identifiers[0].type AS first_type,
+  identifiers[0].value AS first_value,
+
+  -- Nested struct
+  user.preferences.language AS user_language,
+
+  -- Map within struct
+  ELEMENT_AT(user.metadata, 'source') AS source
+FROM company_data."123"
+```
+
+---
+
+## Type coercion
+
+NQL automatically converts types in certain contexts to reduce the need for explicit casting.
+
+### Implicit coercion
+
+| Context | Behavior |
+|---------|----------|
+| Numeric comparisons | Smaller types promoted to larger (LONG → DOUBLE) |
+| String concatenation | Non-strings converted to strings |
+| Boolean context | Some conversions allowed |
+
+```sql
+-- Numeric promotion
+SELECT 1 + 1.5  -- LONG + DOUBLE = DOUBLE
+
+-- String concatenation
+SELECT 'User #' || 123  -- Number converted to string
+```
+
+### When to use explicit CAST
+
+Use `CAST` when:
+- Converting between incompatible types
+- Ensuring specific precision
+- Documenting intent clearly
+
+```sql
+-- Parse string as number
+WHERE CAST(string_column AS LONG) > 100
+
+-- Ensure decimal precision
+SELECT CAST(amount AS DECIMAL) * CAST(rate AS DECIMAL)
+
+-- Convert timestamp to date
+SELECT CAST(event_timestamp AS DATE) AS event_date
+```
+
+---
+
+## NULL handling
+
+NULL represents missing or unknown data. Understanding NULL behavior prevents subtle bugs.
+
+### NULL in comparisons
+
+NULL is not equal to anything, including itself:
+
+```sql
+-- These all return NULL, not TRUE or FALSE
+SELECT NULL = NULL     -- NULL
+SELECT NULL <> NULL    -- NULL
+SELECT NULL = 'value'  -- NULL
+```
+
+Use `IS NULL` and `IS NOT NULL` for NULL checks:
+
+```sql
+WHERE email IS NOT NULL
+WHERE phone IS NULL
+```
+
+### NULL in operations
+
+Operations involving NULL typically return NULL:
+
+```sql
+SELECT NULL + 1           -- NULL
+SELECT CONCAT('Hi ', NULL) -- NULL (in most engines)
+```
+
+### NULL-safe comparisons
+
+Use `IS NOT DISTINCT FROM` for NULL-safe equality:
+
+```sql
+-- Returns TRUE when both are NULL
+WHERE a IS NOT DISTINCT FROM b
+```
+
+This is especially useful in MERGE conditions:
+
+```sql
+MERGE ON target.id IS NOT DISTINCT FROM source.id
+```
+
+---
+
+## Type inference
+
+NQL infers types from context when possible:
+
+```sql
+-- Literal type inference
+SELECT 'text'           -- STRING
+SELECT 123              -- LONG
+SELECT 123.45           -- DOUBLE
+SELECT true             -- BOOLEAN
+SELECT DATE '2024-01-01'  -- DATE
+```
+
+### ARRAY type inference
+
+Array literals infer element type from contents:
+
+```sql
+SELECT ARRAY(1, 2, 3)         -- ARRAY<LONG>
+SELECT ARRAY('a', 'b', 'c')   -- ARRAY<STRING>
+```
+
+---
+
+## Cross-engine considerations
+
+While NQL abstracts type differences, some edge cases exist:
+
+### Timestamp precision
+
+Different engines support different timestamp precision. NQL uses millisecond precision as the common denominator.
+
+### String collation
+
+String comparison and sorting may differ slightly between engines. For consistent behavior, normalize strings (lowercase, trim) before comparison.
+
+### Numeric overflow
+
+Large numbers may overflow differently across engines. For critical calculations, consider using DECIMAL with explicit precision.
+
+---
+
+## Troubleshooting type errors
+
+### UnsupportedTypeError
+
+This error occurs when an operation doesn't support the given types:
+
+```sql
+-- Error: Can't compare STRING to LONG directly
+WHERE string_column = 123
+```
+
+**Fix**: Use explicit CAST:
+
+```sql
+WHERE CAST(string_column AS LONG) = 123
+-- or
+WHERE string_column = CAST(123 AS STRING)
+```
+
+### Type mismatch in arrays
+
+All array elements must have the same type:
+
+```sql
+-- Error: Mixed types in array
+SELECT ARRAY(1, 'two', 3)
+```
+
+**Fix**: Ensure consistent types or cast explicitly:
+
+```sql
+SELECT ARRAY(CAST(1 AS STRING), 'two', CAST(3 AS STRING))
+```
+
+### NULL type resolution
+
+NULL by itself has no type. In some contexts, you need to cast NULL:
+
+```sql
+-- May cause issues in some contexts
+SELECT NULL
+
+-- Explicit typed NULL
+SELECT CAST(NULL AS STRING)
+```
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Types Reference" icon="shapes" href="/reference/nql/data-types">
+    Complete type reference with syntax
+  </Card>
+  <Card title="NQL vs SQL" icon="code-compare" href="/concepts/nql/sql-comparison">
+    How NQL types compare to standard SQL
+  </Card>
+  <Card title="Functions Reference" icon="function" href="/reference/nql/functions">
+    Type conversion and manipulation functions
+  </Card>
+  <Card title="Troubleshooting" icon="bug" href="/guides/nql/troubleshooting">
+    Common type-related errors and solutions
+  </Card>
+</CardGroup>
