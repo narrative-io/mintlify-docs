@@ -1,0 +1,77 @@
+---
+title: 'Data Collaboration Platforms'
+description: 'How the convergence of big data infrastructure, specialized talent, and data scarcity led to a new category of software for acquiring and sharing data'
+icon: 'timeline'
+---
+
+A Data Collaboration Platform is software that enables organizations to discover, acquire, and share data with external partners. The category emerged in the mid-2010s as a response to a specific problem: organizations had invested heavily in data infrastructure and analytics talent, but lacked access to the external data they needed to realize the full value of those investments.
+
+## The infrastructure foundation
+
+The 2000s saw a transformation in how organizations store and process data. Open-source projects like Hadoop, Spark, and Kafka—many originating from Silicon Valley companies solving their own scaling challenges—made it possible to work with datasets that would have overwhelmed traditional databases.
+
+Initially, only large enterprises could deploy and operate this infrastructure. The expertise required was scarce and expensive. But cloud platforms changed this dynamic. Services like Amazon Web Services, Google Cloud Platform, and Microsoft Azure abstracted away the operational complexity, allowing mid-sized companies to access the same capabilities without building data centers or hiring specialized operations teams.
+
+By the early 2010s, the infrastructure barrier had largely fallen. Organizations of many sizes could store petabytes of data and run complex analytical workloads. The question shifted from "can we handle this much data?" to "what can we do with it?"
+
+## The talent evolution
+
+Powerful infrastructure created demand for people who could use it. Traditional database administrators understood relational databases and SQL, but the new paradigm required different skills: distributed systems, statistical modeling, and programming in languages like Python and R.
+
+Organizations began hiring data scientists, data engineers, and analytics professionals. These roles brought capabilities that hadn't existed in most companies: predictive modeling, machine learning, and the ability to extract insights from unstructured data. The job title "data scientist" barely existed before 2010; by the mid-2010s, it was one of the most sought-after positions in technology.
+
+This talent could do things with data that simply weren't possible before—identifying patterns in customer behavior, predicting equipment failures, optimizing supply chains in real time. But their effectiveness depended entirely on having access to the right data.
+
+## The data acquisition gap
+
+Infrastructure and talent, it turned out, were necessary but not sufficient. Organizations discovered that their internal data—however large—rarely contained everything they needed for sophisticated analytics.
+
+A retailer might have detailed transaction data but lack information about customer behavior outside their stores. A financial services company might have comprehensive records of their own customers but no visibility into market-wide trends. A healthcare organization might have clinical data but miss the social determinants that influence patient outcomes.
+
+The need for external data wasn't new. What changed was the scale and complexity of what organizations wanted to do with it. Machine learning models require training data from multiple sources. Predictive analytics work better with more signals. The same infrastructure and talent investments that enabled sophisticated analytics also created demand for data that no single organization could generate internally.
+
+Acquiring external data, however, was difficult. The process typically involved:
+
+- **Discovery** — Finding organizations that had relevant data, often through personal networks or industry connections
+- **Negotiation** — Working through legal and commercial terms, frequently taking months
+- **Technical integration** — Building custom pipelines to ingest data in whatever format the provider used
+- **Ongoing maintenance** — Managing schema changes, delivery schedules, and data quality issues
+
+Each data partnership was a bespoke project. Organizations that needed data from multiple sources faced the same integration challenges repeatedly.
+
+## How Data Collaboration Platforms address this
+
+Data Collaboration Platforms emerged to systematize what had been ad-hoc. Rather than negotiating individual data partnerships, organizations can discover and acquire data through a common interface.
+
+The core capabilities of a Data Collaboration Platform typically include:
+
+**Centralized discovery.** A catalog of available datasets that organizations can browse and evaluate, replacing informal networks and one-off outreach.
+
+**Standardized formats.** Common schemas and data formats that reduce the integration burden. Instead of building custom pipelines for each data source, organizations work with consistent structures.
+
+**Programmatic access.** APIs and query interfaces that allow data acquisition to be automated and integrated into existing workflows, rather than relying on manual file transfers.
+
+**Access control and governance.** Mechanisms for data providers to control how their data is used, enabling collaboration that wouldn't happen if providers had to trust recipients with unrestricted access.
+
+**Privacy-preserving techniques.** Capabilities like [data pseudonymization](/concepts/security/data-pseudonymization) that allow organizations to collaborate on sensitive data while protecting individual privacy.
+
+The result is that acquiring external data looks less like a series of custom projects and more like querying a database. Organizations can move from identifying a data need to having that data in their analytics pipeline in days rather than months.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Datasets" icon="table" href="/concepts/primitives/datasets">
+    The fundamental unit of data in Narrative—how data is organized and made available for collaboration
+  </Card>
+  <Card title="Rosetta Stone" icon="language" href="/concepts/rosetta-stone/overview">
+    How Narrative normalizes schemas across different data sources and formats
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    How Narrative orchestrates data discovery, access control, and collaboration
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/getting-started/quick-start">
+    Get started with your first data collaboration
+  </Card>
+</CardGroup>
