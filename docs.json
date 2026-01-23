@@ -139,6 +139,12 @@
             ]
           },
           {
+            "group": "Data Formats",
+            "pages": [
+              "concepts/data-formats/unix-time"
+            ]
+          },
+          {
             "group": "Architecture",
             "pages": [
               "concepts/architecture/query-processing",

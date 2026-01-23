@@ -354,6 +354,18 @@ An NQL expression used within a Rosetta Stone mapping to convert source data to 
 
 ## U
 
+### Unix time
+
+The number of seconds (or milliseconds) elapsed since January 1st, 1970 at 00:00:00 UTC (the Unix epoch). Narrative's Data Streaming Platform uses Unix time in milliseconds for all timestamp fields, providing millisecond-level precision for data collaboration.
+
+**Related:** [Unix Time](/concepts/data-formats/unix-time)
+
+### Upsert
+
+A database operation that inserts a new record if it does not exist, or updates the existing record if it does. The term combines "update" and "insert." In NQL, upsert behavior is achieved using the `MERGE ON` clause within `CREATE MATERIALIZED VIEW` statements.
+
+**Related:** [Incremental Upserts with MERGE ON](/guides/nql/incremental-upserts), [Materialized View Syntax](/reference/nql/materialized-view-syntax)
+
 ### UNNEST
 
 An NQL function that expands an array column into multiple rows, with one row generated for each element in the array. UNNEST is commonly used to flatten multi-key matching scenarios into single-key joins that the query planner can optimize efficiently.

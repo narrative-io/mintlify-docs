@@ -1,0 +1,57 @@
+---
+title: "Unix Time"
+description: "Understanding Unix timestamps and how Narrative uses them for data collaboration"
+icon: "clock"
+---
+
+Unix time represents timestamps as the number of seconds elapsed since January 1st, 1970 at 00:00:00 UTC, known as the **Unix epoch**. This method simplifies parsing and utilizing time across various systems by representing it as a single integer.
+
+Narrative's Data Streaming Platform uses Unix time in **milliseconds** for all timestamp fields, providing millisecond-level precision for data collaboration.
+
+## Unix Epoch
+
+The Unix epoch—January 1st, 1970 at 00:00:00 UTC—was chosen by early Unix engineers as a convenient and uniform starting point for representing time. All Unix timestamps are calculated relative to this moment.
+
+## Examples
+
+| Date / Time | Unix Time (seconds) |
+|-------------|---------------------|
+| January 1st, 1970 00:00:00 | 0 |
+| June 6th, 1983 00:00:00 | 423705600 |
+| June 6th, 1983 16:00:00 | 423763200 |
+| September 9th, 2001 01:46:40 | 1000000000 |
+| July 20th, 1969 20:17:40 | -14182940 |
+
+<Note>
+Dates before 1970 are represented as negative numbers, counting seconds backward to the Unix epoch.
+</Note>
+
+## Limitations
+
+### Year 2038 Problem
+
+Systems that store Unix time as a signed 32-bit integer will encounter errors after **03:14:07 UTC on January 19, 2038**, when timestamps exceed the maximum 32-bit value. This is similar to the Y2K issue. Modern systems using 64-bit integers are not affected.
+
+### Leap Seconds
+
+Unix time assumes each day has exactly 86,400 seconds and does not account for leap seconds. This means Unix time can drift slightly from true UTC time, though the difference is negligible for most applications.
+
+## Variations
+
+### Unix Time with Decimals
+
+For sub-second precision, Unix time can include decimal places. For example, `1609459200.5` represents a moment 500 milliseconds after midnight on January 1st, 2021.
+
+### Unix Time in Milliseconds
+
+Narrative uses this format, representing time as the number of **milliseconds** since the Unix epoch. This provides greater precision for timestamp data—multiply standard Unix time by 1,000 to convert.
+
+For example:
+- Unix time (seconds): `1609459200`
+- Unix time (milliseconds): `1609459200000`
+
+## Additional Resources
+
+- [Wikipedia: Year 2038 Problem](https://en.wikipedia.org/wiki/Year_2038_problem)
+- [Wikipedia: Unix time](https://en.wikipedia.org/wiki/Unix_time)
+- [Epoch Converter](https://www.epochconverter.com/) for practical conversions between Unix time and standard dates
