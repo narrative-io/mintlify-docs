@@ -1,0 +1,196 @@
+---
+title: 'Normalize with Rosetta Stone'
+description: 'Map your data to a standard schema for seamless collaboration'
+icon: 'language'
+---
+
+In this tutorial, you'll use Rosetta Stone to normalize your data. Normalization maps your unique schema to Narrative's standard format, enabling queries across datasets from different sources.
+
+<Info>
+This tutorial is part of the First Steps series. Complete [Upload Your Data](/getting-started/upload-data) before starting.
+</Info>
+
+## Prerequisites
+
+- A Narrative I/O account
+- At least one uploaded dataset (from the previous tutorial)
+
+## What you'll learn
+
+- How to view automatic mapping suggestions for your data
+- How to accept, modify, and reject suggested mappings
+- How to write a custom transformation expression
+- How to test and validate your mappings
+
+## What you'll build
+
+By the end of this tutorial, your dataset will be normalized to Rosetta Stone attributes. This means:
+- Your data is queryable through the standard `narrative.rosetta_stone` table
+- Other users can discover and access your data using standard attribute names
+- Your data can be combined with other normalized datasets
+
+## Steps
+
+<Steps>
+  <Step title="Open your dataset">
+    Navigate to **Datasets** in the left sidebar and select the dataset you uploaded in the previous tutorial.
+
+    [Screenshot placeholder: Dataset list view with a dataset selected]
+
+    Click on the dataset name to open its detail view.
+  </Step>
+
+  <Step title="Navigate to Rosetta Stone mappings">
+    In the dataset detail view, click the **Rosetta Stone** tab.
+
+    [Screenshot placeholder: Dataset detail view with Rosetta Stone tab highlighted]
+
+    This opens the mapping interface where you can see:
+    - Your dataset's columns on the left
+    - Suggested Rosetta Stone attributes on the right
+    - Confidence indicators for each suggestion
+  </Step>
+
+  <Step title="Review mapping suggestions">
+    Narrative automatically analyzes your data and suggests mappings. Each suggestion shows:
+
+    | Indicator | Meaning |
+    |-----------|---------|
+    | Green checkmark | High confidence—likely correct |
+    | Yellow warning | Medium confidence—review recommended |
+    | Red X | Low confidence or no suggestion—manual mapping needed |
+
+    [Screenshot placeholder: Mapping suggestions with different confidence levels]
+
+    Click on any suggestion to see details about why the system made that recommendation.
+  </Step>
+
+  <Step title="Accept high-confidence mappings">
+    For suggestions with a green checkmark, click **Accept** to confirm the mapping.
+
+    [Screenshot placeholder: Accepting a mapping]
+
+    For example, if you have a column named `email_hash` and the system suggests the `email_sha256` attribute with high confidence, accepting creates a mapping that links them.
+
+    <Tip>
+    You can select multiple high-confidence mappings and accept them in bulk using the **Accept All High Confidence** button.
+    </Tip>
+  </Step>
+
+  <Step title="Customize a mapping with a transformation">
+    Let's customize a mapping to see how transformations work. Find a date column in your dataset—the system may have suggested a timestamp attribute.
+
+    Click **Edit** on that mapping to open the transformation editor.
+
+    [Screenshot placeholder: Transformation editor]
+
+    If your dates are in a format like `MM/DD/YYYY`, you might need a transformation:
+
+    ```sql
+    TO_TIMESTAMP(your_date_column, 'MM/DD/YYYY')
+    ```
+
+    This converts your date format to the standard timestamp format.
+
+    Common transformation patterns include:
+
+    | Source format | Transformation |
+    |---------------|----------------|
+    | `MM/DD/YYYY` | `TO_TIMESTAMP(col, 'MM/DD/YYYY')` |
+    | `M` or `F` for gender | `CASE col WHEN 'M' THEN 'male' WHEN 'F' THEN 'female' ELSE 'unknown' END` |
+    | Uppercase strings | `LOWER(col)` |
+
+    Click **Save** when you're done editing.
+  </Step>
+
+  <Step title="Handle unmapped columns">
+    Some columns may not have suggested mappings. You have two options:
+
+    **Map manually**: Click **Add Mapping** and select the appropriate attribute from the list. Use the search to find attributes by name or description.
+
+    **Leave unmapped**: Not every column needs to map to a Rosetta Stone attribute. Columns that are specific to your use case or don't have corresponding attributes can remain unmapped.
+
+    [Screenshot placeholder: Adding a manual mapping]
+  </Step>
+
+  <Step title="Test your mappings">
+    Before activating, test your mappings to ensure they work correctly.
+
+    Click **Test Mappings** to run a sample transformation.
+
+    [Screenshot placeholder: Test results view]
+
+    The test shows:
+    - Sample rows from your data
+    - The transformed output for each mapping
+    - Any validation errors or warnings
+
+    Review the output to verify:
+    - Values convert correctly (dates parse properly, enums map to valid values)
+    - No unexpected nulls appear
+    - Transformations produce the expected format
+
+    <Warning>
+    If you see validation errors, click on the error to see details. Common issues include:
+    - Date format mismatches
+    - Values that don't match enum options
+    - Type conversion failures (e.g., non-numeric strings when expecting integers)
+    </Warning>
+  </Step>
+
+  <Step title="Activate your mappings">
+    Once testing passes, click **Activate All** to enable your mappings.
+
+    [Screenshot placeholder: Activate confirmation]
+
+    Your mappings are now live. Data from your dataset is normalized and available through Rosetta Stone.
+  </Step>
+</Steps>
+
+## Verify it worked
+
+Run this query to see your normalized data:
+
+```sql
+SELECT *
+FROM narrative.rosetta_stone
+WHERE _nio_source_dataset_id = 'YOUR_DATASET_ID'
+LIMIT 10
+```
+
+Replace `YOUR_DATASET_ID` with your actual dataset ID (visible in the dataset detail view).
+
+You should see your data with standardized column names matching the attributes you mapped.
+
+## What you accomplished
+
+- Reviewed automatic mapping suggestions
+- Accepted high-confidence mappings
+- Created a custom transformation for a date field
+- Tested mappings before activation
+- Activated mappings to make your data available through Rosetta Stone
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| No mapping suggestions appear | Ensure your dataset has uploaded data, not just a schema |
+| Transformation errors | Check the [Transformation Functions](/reference/rosetta-stone/transformation-functions) reference for correct syntax |
+| Test shows unexpected nulls | Your transformation may not handle all source values—add `ELSE` clauses to `CASE` statements |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Write Your First Query" icon="terminal" href="/getting-started/first-nql-query">
+    Query your normalized data with NQL
+  </Card>
+  <Card title="How Rosetta Stone Works" icon="lightbulb" href="/concepts/rosetta-stone/how-it-works">
+    Understand the normalization model in depth
+  </Card>
+  <Card title="Mapping Schemas Guide" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Advanced mapping techniques and API usage
+  </Card>
+  <Card title="Edge Cases" icon="triangle-exclamation" href="/guides/rosetta-stone/edge-cases">
+    Handle complex mapping scenarios
+  </Card>
+</CardGroup>
