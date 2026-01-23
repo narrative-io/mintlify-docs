@@ -20,82 +20,7 @@
               "getting-started/upload-data",
               "getting-started/normalize-data",
               "getting-started/first-nql-query",
-              "getting-started/first-data-collaboration",
-              "getting-started/sdk-quickstart"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Guides",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "guides/index"
-            ]
-          },
-          {
-            "group": "Data Ingestion",
-            "pages": [
-              "guides/ingestion/hashing-pii"
-            ]
-          },
-          {
-            "group": "Querying with NQL",
-            "pages": [
-              "guides/nql/filtering-transforming",
-              "guides/nql/joining-datasets",
-              "guides/nql/creating-materialized-views",
-              "guides/nql/incremental-upserts",
-              {
-                "group": "Query Optimization",
-                "pages": [
-                  "guides/nql/query-optimization",
-                  "guides/nql/query-optimization/avoid-or-in-join"
-                ]
-              },
-              {
-                "group": "Troubleshooting",
-                "pages": [
-                  "guides/nql/troubleshooting",
-                  "guides/nql/troubleshooting/cross-data-plane-queries",
-                  "guides/nql/troubleshooting/unsupported-type-error"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Data Collaboration",
-            "pages": [
-              "guides/collaboration/using-narrative-id"
-            ]
-          },
-          {
-            "group": "Rosetta Stone",
-            "pages": [
-              "guides/rosetta-stone/mapping-schemas",
-              "guides/rosetta-stone/validating-mappings",
-              "guides/rosetta-stone/edge-cases"
-            ]
-          },
-          {
-            "group": "Account Settings",
-            "pages": [
-              "account-settings/api-keys",
-              "account-settings/sso"
-            ]
-          },
-          {
-            "group": "SDKs",
-            "pages": [
-              "guides/sdk/index",
-              "guides/sdk/authentication",
-              "guides/sdk/executing-queries",
-              "guides/sdk/managing-datasets",
-              "guides/sdk/uploading-data",
-              "guides/sdk/tracking-jobs",
-              "guides/sdk/error-handling"
+              "getting-started/first-data-collaboration"
             ]
           }
         ]
@@ -184,6 +109,111 @@
         ]
       },
       {
+        "tab": "Guides",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "guides/index"
+            ]
+          },
+          {
+            "group": "Data Ingestion",
+            "pages": [
+              "guides/ingestion/hashing-pii"
+            ]
+          },
+          {
+            "group": "Querying with NQL",
+            "pages": [
+              "guides/nql/filtering-transforming",
+              "guides/nql/joining-datasets",
+              "guides/nql/creating-materialized-views",
+              "guides/nql/incremental-upserts",
+              {
+                "group": "Query Optimization",
+                "pages": [
+                  "guides/nql/query-optimization",
+                  "guides/nql/query-optimization/avoid-or-in-join"
+                ]
+              },
+              {
+                "group": "Troubleshooting",
+                "pages": [
+                  "guides/nql/troubleshooting",
+                  "guides/nql/troubleshooting/cross-data-plane-queries",
+                  "guides/nql/troubleshooting/unsupported-type-error"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Data Collaboration",
+            "pages": [
+              "guides/collaboration/using-narrative-id"
+            ]
+          },
+          {
+            "group": "Rosetta Stone",
+            "pages": [
+              "guides/rosetta-stone/mapping-schemas",
+              "guides/rosetta-stone/validating-mappings",
+              "guides/rosetta-stone/edge-cases"
+            ]
+          },
+          {
+            "group": "Account Settings",
+            "pages": [
+              "account-settings/api-keys",
+              "account-settings/sso"
+            ]
+          },
+          {
+            "group": "SDKs",
+            "pages": [
+              "guides/sdk/index",
+              "guides/sdk/authentication",
+              "guides/sdk/executing-queries",
+              "guides/sdk/managing-datasets",
+              "guides/sdk/uploading-data",
+              "guides/sdk/tracking-jobs",
+              "guides/sdk/error-handling"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Cookbooks",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "cookbooks/index"
+            ]
+          },
+          {
+            "group": "NQL Patterns",
+            "pages": [
+              "cookbooks/nql/common-queries",
+              "cookbooks/nql/performance-patterns",
+              "cookbooks/nql/complex-joins"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "cookbooks/use-cases/retail-collaboration"
+            ]
+          },
+          {
+            "group": "SDK Recipes",
+            "pages": [
+              "cookbooks/sdk/typescript-automation"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Reference",
         "groups": [
           {
@@ -196,6 +226,7 @@
             "group": "NQL Reference",
             "pages": [
               "reference/nql/syntax",
+              "reference/nql/explicit-columns",
               "reference/nql/data-types",
               "reference/nql/operators",
               "reference/nql/functions",
@@ -245,39 +276,8 @@
         ]
       },
       {
-        "tab": "API Reference",
+        "tab": "API Documentation",
         "openapi": "api-reference/openapi.json"
-      },
-      {
-        "tab": "Cookbooks",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "cookbooks/index"
-            ]
-          },
-          {
-            "group": "NQL Patterns",
-            "pages": [
-              "cookbooks/nql/common-queries",
-              "cookbooks/nql/performance-patterns",
-              "cookbooks/nql/complex-joins"
-            ]
-          },
-          {
-            "group": "Use Cases",
-            "pages": [
-              "cookbooks/use-cases/retail-collaboration"
-            ]
-          },
-          {
-            "group": "SDK Recipes",
-            "pages": [
-              "cookbooks/sdk/typescript-automation"
-            ]
-          }
-        ]
       }
     ],
     "global": {
