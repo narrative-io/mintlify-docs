@@ -1,0 +1,248 @@
+---
+title: 'SSO Configuration'
+description: 'Configure SAML 2.0 single sign-on for your Narrative I/O organization'
+icon: 'shield-keyhole'
+---
+
+This guide walks enterprise administrators through configuring SSO for their organization. Once configured, your team members can authenticate to Narrative using your corporate identity provider.
+
+<Note>
+To understand how SSO works and why organizations use it, see [Single Sign-On (SSO)](/concepts/security/sso).
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure:
+
+- Your organization has an enterprise contract that includes SSO
+- Narrative has provisioned your organization and provided your **Organization Slug** (e.g., `yourcompany`)
+- You have received an email invitation from Narrative and completed initial registration
+- Your Narrative account has the **Stytch Admin** role (contact Narrative support if unsure)
+- You have administrative access to your organization's identity provider
+
+## First-time login
+
+Before SSO is configured, you'll use a magic link to access the admin portal.
+
+<Steps>
+  <Step title="Access Enterprise Login">
+    Navigate to [app.narrative.io/platform/login](https://app.narrative.io/platform/login) and click **Enterprise Login** at the bottom of the login page.
+  </Step>
+  <Step title="Enter your organization slug">
+    Enter your organization's slug (provided by Narrative) to identify which organization you're authenticating against.
+  </Step>
+  <Step title="Authenticate via magic link">
+    Enter your email address and click **Send Magic Link**. Check your email for the login link and click it to complete authentication.
+  </Step>
+</Steps>
+
+Once SSO is configured, you'll authenticate directly through your organization's identity provider instead.
+
+## Configure your SSO connection
+
+### Gather IdP information
+
+From your identity provider (Okta, Azure AD, etc.), collect:
+
+| Information | Description |
+|-------------|-------------|
+| **IdP SSO URL** | The endpoint where SAML requests are sent |
+| **IdP Entity ID** | Unique identifier for your IdP |
+| **X.509 Certificate** | Public certificate for signature verification |
+
+### Create the connection in Narrative
+
+<Steps>
+  <Step title="Open SSO settings">
+    In Narrative, go to **Settings > Enterprise Login Settings**.
+  </Step>
+  <Step title="Create new connection">
+    Click **New SSO Connection**.
+  </Step>
+  <Step title="Enter IdP information">
+    Enter the IdP SSO URL, Entity ID, and X.509 certificate you collected.
+  </Step>
+</Steps>
+
+## Configure your identity provider
+
+In your identity provider, create a new SAML application with the following settings from Narrative:
+
+| Field | Description | Where to find |
+|-------|-------------|---------------|
+| **ACS URL / Single Sign-On URL** | The endpoint where your IdP sends SAML assertions | Narrative UI (SSO Settings > New Connection) |
+| **Entity ID / Audience URI** | Unique identifier for Narrative as the service provider | Narrative UI (SSO Settings > New Connection) |
+| **Name ID Format** | Must be set to `EmailAddress` | — |
+
+### Okta configuration
+
+In Okta, when creating the SAML application:
+
+1. Check **Use this for Recipient URL and Destination URL** when entering the Single sign-on URL
+2. Set **Application username** to `Email`
+3. Set **Update application username on** to `Create and update`
+
+Configure these attribute statements with **Name format** set to `Basic`:
+
+| Attribute name | Value |
+|----------------|-------|
+| `first_name` | `user.firstName` |
+| `last_name` | `user.lastName` |
+| `id` | `user.id` |
+
+### Azure AD (Microsoft Entra ID) configuration
+
+Configure these attribute statements:
+
+| Attribute name | Value |
+|----------------|-------|
+| `first_name` | `user.givenname` |
+| `last_name` | `user.surname` |
+| `id` | `user.objectid` |
+
+### OneLogin configuration
+
+Configure these attribute statements:
+
+| Attribute name | Value |
+|----------------|-------|
+| `first_name` | `{firstname}` |
+| `last_name` | `{lastname}` |
+| `id` | `{id}` |
+
+<Warning>
+**Attribute names must match exactly**
+
+The attribute names sent to Narrative (`first_name`, `last_name`, `id`) must match exactly as shown. Attribute value syntax varies by identity provider—consult your IdP's documentation if you encounter issues.
+</Warning>
+
+## Complete the SSO connection
+
+After creating the SAML application in your IdP:
+
+<Steps>
+  <Step title="Locate metadata">
+    Find the **Metadata URL** (or download the metadata XML) from your identity provider.
+
+    - **Okta**: Find the Metadata URL in the **Sign On** tab. Click **Actions** under SAML Signing Certificates and select **View IdP metadata**.
+    - **Azure AD**: Download the **Federation Metadata XML** from the SAML configuration page, or use the **App Federation Metadata Url**.
+  </Step>
+  <Step title="Add metadata to Narrative">
+    Return to Narrative's SSO Settings tab, paste the Metadata URL, and click **Create**.
+  </Step>
+  <Step title="Verify connection">
+    Your SSO connection should appear in the list with status **Active**.
+  </Step>
+</Steps>
+
+## Assign users in your IdP
+
+Users must be explicitly assigned to the Narrative SAML application in your IdP before they can authenticate.
+
+**Okta**: Go to **Applications > Your Narrative App > Assignments**. Click **Assign > Assign to People** (or **Assign to Groups** for bulk assignment).
+
+**Azure AD**: Go to **Enterprise Applications > Your Narrative App > Users and groups**. Click **Add user/group** and select users or groups.
+
+<Tip>
+Users not assigned to the application will see an error: "User is not assigned to this application."
+</Tip>
+
+## Enforce SSO-only authentication
+
+By default, Narrative allows multiple authentication methods (email magic links and SSO). To require SSO for all users:
+
+<Steps>
+  <Step title="Open organization settings">
+    Go to **Settings > Enterprise Login Settings > Organization Settings**.
+  </Step>
+  <Step title="Edit authentication settings">
+    Under **Authentication settings**, click **Edit**.
+  </Step>
+  <Step title="Disable other methods">
+    Uncheck **Allow all primary auth methods** to reveal individual method checkboxes. Check only **Single Sign-On** and leave **Email Magic Links** unchecked.
+  </Step>
+  <Step title="Save changes">
+    Click **Save**.
+  </Step>
+</Steps>
+
+<Warning>
+**SSO-only mode**
+
+All users in your organization will be required to authenticate via SSO. Email magic links will no longer work for standard users.
+</Warning>
+
+## Just-in-time (JIT) provisioning
+
+JIT provisioning is enabled by default. When enabled, any user assigned to your IdP's SAML application can automatically create a Narrative account on their first login—no invitation required.
+
+To disable JIT provisioning:
+
+1. Go to **Organization Settings > User onboarding**
+2. Click **Edit**
+3. Under **JIT Provisioning**, uncheck SSO connections
+4. Click **Save**
+
+When JIT is disabled, users must be explicitly invited via the Member Management tab before they can access Narrative.
+
+## Managing members
+
+### Inviting members
+
+To invite a new user (when JIT is disabled, or to pre-provision users):
+
+1. Go to **Member Management**
+2. Click **Invite**
+3. Enter the user's name and email address
+4. Optionally assign a role (leave blank for standard user access)
+5. Click **Invite**
+
+The user will receive an email invitation. When they click the link and authenticate via SSO, their account will be activated.
+
+<Tip>
+The invited email address must match the email configured in your identity provider.
+</Tip>
+
+### Revoking access
+
+To remove a user's access:
+
+1. In your identity provider, remove the user from the Narrative SAML application (or remove them from an assigned group)
+2. The user will immediately lose access and see an error on their next login attempt
+
+You can also archive the member in Narrative's **Member Management** tab to fully remove their account from the platform.
+
+## API token security
+
+<Warning>
+**API tokens are not affected by SSO**
+
+Long-lived API tokens (provisioned under **Settings > API Keys**) are not tied to an individual user and are not automatically revoked when a user's SSO access is revoked.
+
+If a user leaves your company or should no longer have access to a long-lived API token, you must manually revoke that API token. See [API Keys](/account-settings/api-keys) for instructions.
+</Warning>
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "User is not assigned to this application" | Add the user to the Narrative SAML application in your identity provider |
+| "This project is not authorized to call this endpoint" | Contact Narrative support—SSO products may not be enabled for your organization |
+| User prompted to register after clicking invite link | This is expected for first-time users. They'll complete a brief registration flow before accessing the platform |
+
+## Support
+
+For assistance with SSO configuration, contact Narrative support at support@narrative.io or reach out to your account representative.
+
+If you use an identity provider not covered in this guide, our team can provide configuration assistance specific to your IdP.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Single Sign-On (SSO)" icon="shield-keyhole" href="/concepts/security/sso">
+    Understand how SSO works and why organizations use it
+  </Card>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Create and manage API keys for programmatic access
+  </Card>
+</CardGroup>

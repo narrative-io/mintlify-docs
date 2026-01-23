@@ -1,0 +1,65 @@
+---
+title: 'Single Sign-On (SSO)'
+description: 'Understand how SSO works with Narrative I/O and why it matters for enterprise security'
+icon: 'shield-keyhole'
+---
+
+Single Sign-On (SSO) allows your team to access Narrative using your organization's existing identity provider. Instead of managing separate login credentials, your team authenticates through the same system they use for other enterprise applications.
+
+## Why use SSO
+
+Organizations choose SSO for three main reasons:
+
+**Simplified access management.** When employees join your organization, granting Narrative access is as simple as adding them to the appropriate group in your identity provider. When they leave, removing their IdP access immediately revokes their Narrative access. No separate password resets or account deactivations required.
+
+**Enhanced security.** SSO integrates with your existing security policies, including multi-factor authentication requirements enforced by your identity provider. Your security team maintains centralized control over authentication standards across all enterprise applications, including Narrative.
+
+**Streamlined user experience.** Your team uses one set of credentials for everything. No more password fatigue from managing application-specific logins—just a consistent authentication experience that matches how they access other enterprise tools.
+
+## How SAML 2.0 authentication works
+
+Narrative uses SAML 2.0, the industry standard for enterprise single sign-on. SAML (Security Assertion Markup Language) enables secure communication between your identity provider and Narrative.
+
+When a user attempts to access Narrative:
+
+1. **User initiates login** — They enter your organization's slug on the Narrative login page
+2. **Redirect to your IdP** — Narrative redirects them to your identity provider (Okta, Azure AD, etc.)
+3. **User authenticates** — They log in using your organization's credentials and MFA requirements
+4. **Access granted** — Your IdP confirms their identity, and Narrative grants access
+
+This flow ensures your identity provider remains the single source of truth for user authentication. Narrative never sees or stores your users' passwords.
+
+## Supported identity providers
+
+Narrative supports any SAML 2.0-compliant identity provider. We provide specific configuration guidance for:
+
+- **Okta** — Full support with detailed attribute mapping
+- **Microsoft Azure AD (Entra ID)** — Full support with detailed attribute mapping
+- **OneLogin** — Full support with detailed attribute mapping
+
+Using a different provider? Our support team can assist with configuration for any SAML-compliant IdP.
+
+## Key features
+
+| Feature | Description |
+|---------|-------------|
+| **SAML 2.0** | Industry-standard secure authentication protocol |
+| **Just-in-time provisioning** | Automatically create Narrative accounts on first login |
+| **SSO enforcement** | Optionally require SSO for all users—no password fallback |
+| **Role-based access** | Assign admin or standard roles to organization members |
+| **Self-service admin portal** | Your admins manage SSO configuration and members directly |
+
+## Availability
+
+SSO is available to enterprise customers with qualifying contracts. Contact your Narrative account manager to confirm eligibility and provision your organization.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="SSO Configuration" icon="shield-keyhole" href="/account-settings/sso">
+    Step-by-step instructions for configuring SSO with your identity provider
+  </Card>
+  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
+    Manage API keys for programmatic access to Narrative
+  </Card>
+</CardGroup>

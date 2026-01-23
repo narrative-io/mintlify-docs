@@ -1,0 +1,141 @@
+---
+title: 'Data Pseudonymization'
+description: 'How Narrative uses hashed identifiers to enable privacy-preserving data collaboration'
+icon: 'user-secret'
+---
+
+Data collaboration often involves matching records across different organizations—connecting a customer in your database to their activity in a partner's dataset. But sharing raw email addresses or phone numbers creates privacy and compliance risks. Pseudonymization solves this problem by replacing identifiable information with hashed values that enable matching without exposing the underlying data.
+
+## Why pseudonymization matters
+
+When organizations collaborate on data, they need a way to identify common records without sharing sensitive information. Consider two companies that want to find overlapping customers:
+
+- **Company A** has email addresses for their customers
+- **Company B** has email addresses for their customers
+- Both want to find the intersection without revealing their full customer lists
+
+By hashing email addresses before sharing, both companies can find matches (identical hashes indicate identical emails) without either party seeing the other's raw data.
+
+### Regulatory compliance
+
+Privacy regulations like GDPR and CCPA recognize pseudonymization as a data protection technique. While pseudonymized data is still considered personal data under these regulations, it receives favorable treatment because:
+
+- The data cannot be attributed to a specific individual without additional information
+- It reduces risk if the data is exposed or breached
+- It demonstrates a commitment to data minimization principles
+
+### Reduced breach impact
+
+If hashed data is exposed, attackers cannot directly use it to contact or identify individuals. While hashing is not encryption and determined attackers could attempt to reverse common values, it significantly raises the barrier compared to raw PII.
+
+---
+
+## How hashing works
+
+A hash function is a one-way mathematical transformation that converts input data into a fixed-length string of characters. The key properties that make hashing useful for pseudonymization:
+
+### Deterministic
+
+The same input always produces the same output. This is essential for matching—if two organizations hash the same email address, they get identical hashes.
+
+```
+johndoe@gmail.com → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+johndoe@gmail.com → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3  (same hash)
+```
+
+### One-way (non-reversible)
+
+You cannot mathematically reverse a hash to recover the original input. There is no "unhash" function.
+
+```
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3 → ???  (cannot reverse)
+```
+
+### Collision-resistant
+
+It is computationally infeasible to find two different inputs that produce the same hash. This ensures that matching hashes truly indicate matching inputs.
+
+### Sensitive to input changes
+
+Even tiny changes to the input produce completely different hashes. This is why pre-formatting (lowercase, whitespace removal) is critical—`JohnDoe@gmail.com` and `johndoe@gmail.com` produce entirely different hashes.
+
+```
+johndoe@gmail.com  → 06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+JohnDoe@gmail.com  → 8f5a8e5e9a8f5e8a9e5f8a5e9a8f5e8a9e5f8a5e9a8f5e8a9e5f8a5e9a8f5e8a  (completely different)
+```
+
+---
+
+## Supported hash algorithms
+
+Narrative supports three widely-used hash algorithms. Each produces a different output length and has different characteristics:
+
+| Algorithm | Output | Status | Notes |
+|-----------|--------|--------|-------|
+| **MD5** | 128-bit (32 hex chars) | Legacy | Fast, widely supported. Cryptographically broken but acceptable for non-security use cases like identifier matching. |
+| **SHA-1** | 160-bit (40 hex chars) | Legacy | More secure than MD5. Also cryptographically deprecated but acceptable for identifier matching. |
+| **SHA-256** | 256-bit (64 hex chars) | Recommended | Part of the SHA-2 family. Currently considered secure and is the preferred choice for new implementations. |
+
+<Tip>
+For maximum compatibility when matching across datasets, generate all three hash formats. Different organizations may have standardized on different algorithms.
+</Tip>
+
+---
+
+## Pseudonymization vs. anonymization
+
+These terms are often confused but have important distinctions:
+
+| Aspect | Pseudonymization | Anonymization |
+|--------|------------------|---------------|
+| **Reversibility** | Possible with additional information | Irreversible by design |
+| **Matching capability** | Yes—same input produces same output | No—cannot match records |
+| **Regulatory status** | Still personal data (GDPR) | Not personal data |
+| **Use case** | Data collaboration, matching | Aggregate analytics, public datasets |
+
+Hashing is a pseudonymization technique, not anonymization. The hashed value still represents a specific individual—you just cannot determine who without additional context or resources.
+
+### Why not anonymize?
+
+True anonymization would prevent record matching entirely, defeating the purpose of data collaboration. Pseudonymization strikes a balance: it protects individual privacy while enabling the business value of finding common records across datasets.
+
+---
+
+## Security considerations
+
+While hashing provides meaningful privacy protection, it's important to understand its limitations:
+
+### Dictionary attacks
+
+Common email addresses (like `john@gmail.com`) could theoretically be discovered by hashing a dictionary of likely values and comparing. This is why:
+
+- Narrative never exposes raw hash values to unauthorized parties
+- Access controls govern who can query hashed identifiers
+- The platform's security model adds additional protections
+
+### Not a substitute for access controls
+
+Pseudonymization reduces risk but doesn't eliminate the need for proper data governance. Always combine hashing with:
+
+- Role-based access controls
+- Query logging and auditing
+- Data sharing agreements
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Hashing PII for Upload" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Step-by-step guide to formatting and hashing your data
+  </Card>
+  <Card title="Security Model" icon="shield-halved" href="/concepts/architecture/security-model">
+    How Narrative protects data throughout the platform
+  </Card>
+  <Card title="Access Controls" icon="lock" href="/guides/collaboration/access-controls">
+    Configure who can access your data
+  </Card>
+  <Card title="Governance Best Practices" icon="building-columns" href="/guides/best-practices/governance">
+    Data governance recommendations
+  </Card>
+</CardGroup>
