@@ -1,0 +1,157 @@
+---
+title: 'Understanding JOIN Performance'
+description: 'How query planners optimize JOIN operations and why certain patterns cause problems'
+icon: 'chart-line'
+---
+
+Query performance is critical when working with large datasets in Narrative's Data Collaboration Platform. Understanding how query planners handle JOIN operations helps you write queries that execute efficiently at scale.
+
+## How query planners optimize JOINs
+
+When you write a JOIN in NQL, the query planner analyzes the join condition and chooses an execution strategy. For simple equality conditions like `A.key = B.key`, the planner can use highly optimized algorithms.
+
+### Hash joins
+
+The most efficient join algorithm for equality conditions is the hash join:
+
+1. The planner builds a hash table from the smaller table's join keys
+2. It scans the larger table and probes the hash table for each key
+3. Matches are found in near-constant time (O(1) per lookup)
+
+Hash joins work because a single equality condition provides a clear, unambiguous way to partition and match data. The hash function maps each key to exactly one bucket, making lookups extremely fast.
+
+### Index utilization
+
+When tables have indexes on join columns, the planner can use index lookups instead of full scans. Like hash joins, index-based strategies require predictable, single-condition lookups to work effectively.
+
+### What makes a join condition optimizable
+
+A join condition is optimizable when the planner can:
+
+- Build a hash table or index on one side
+- Probe that structure efficiently from the other side
+- Match rows without examining every possible pair
+
+Single-key equality joins (`A.key = B.key`) satisfy all these requirements. The planner knows exactly how to partition the data and find matches efficiently.
+
+## Why OR conditions prevent optimization
+
+When you introduce OR into a join condition, the optimization breaks down:
+
+```sql
+ON A.user_id = B.user_id OR A.email = B.email
+```
+
+The query planner cannot create a single hash table that handles both conditions simultaneously. The OR means a row can match through either path, but the paths are independent—there's no single key to hash.
+
+### Query planner limitations
+
+Most query planners treat OR joins as a single complex condition rather than recognizing they could be split into two efficient joins. The planner isn't sophisticated enough to automatically:
+
+- Run two separate joins and merge results
+- Build multiple hash tables and probe them in parallel
+- Recognize that UNION would produce the same result more efficiently
+
+Instead, the planner falls back to less efficient strategies.
+
+### What happens internally
+
+When faced with an OR join, the query planner typically resorts to:
+
+**Nested loop joins**: The planner iterates through one table and, for each row, scans the other table checking both conditions. This approach has O(n × m) complexity—for tables with millions of rows, this becomes computationally expensive.
+
+**Spool operations**: Some planners create temporary storage structures (spools) to materialize intermediate results. In extreme cases, these spools can grow to enormous sizes. One documented example showed a spool containing 7 billion rows (112 GB) for what should have been a straightforward join.
+
+**Constant scans and multiple passes**: The planner may create multiple internal join passes or constant scan operations to handle the OR logic, adding overhead with each pass.
+
+### The exponential cost problem
+
+The fundamental issue is that an OR join isn't really one join—it's conceptually two joins that need to be merged. When the planner treats it as one operation, the cost compounds. Instead of `cost(join1) + cost(join2)`, you get something closer to `cost(join1) × cost(join2)` due to the nested evaluation required.
+
+## Performance impact in practice
+
+The theoretical problems translate to dramatic real-world performance differences.
+
+### Orders of magnitude slower
+
+Queries that should complete in seconds can run for hours with OR in the join:
+
+| Scenario | With OR join | Without OR join | Improvement |
+|----------|-------------|-----------------|-------------|
+| Two 10k-row tables | ~4 hours | ~2 minutes | 120x faster |
+| Simple match query | 4 min 37 sec | 12 seconds | 23x faster |
+| Large dataset join | 3 hr 55 min | under 2 min | 118x faster |
+
+These aren't edge cases—they represent typical results when OR joins encounter non-trivial data volumes.
+
+### Resource consumption
+
+Beyond time, OR joins consume disproportionate resources:
+
+- **Memory**: Spool operations and intermediate results can consume gigabytes
+- **CPU**: Nested loop evaluation keeps processors busy with redundant work
+- **I/O**: Multiple passes over data increase disk reads dramatically
+
+In a shared platform environment, a single poorly-optimized query can impact other users' workloads.
+
+### When queries never finish
+
+For sufficiently large tables, OR joins may never complete. The exponential cost growth means that doubling the data size more than doubles the execution time. What works on test data may be completely impractical on production volumes.
+
+## Patterns that enable optimization
+
+Understanding what works helps you write efficient queries.
+
+### Single-key equality: the optimal path
+
+The ideal join condition is a simple equality on one column:
+
+```sql
+ON A.key = B.key
+```
+
+This pattern enables hash joins, index utilization, and predictable performance as data scales.
+
+### How UNNEST transforms OR into single-key joins
+
+The UNNEST technique works by restructuring your data so that multiple possible keys become multiple rows, each with a single key:
+
+```sql
+-- Before: Two keys per row, requiring OR
+Purchases: {user_id: 123, email: "a@b.com", ...}
+
+-- After UNNEST: Two rows, each with one key
+Purchases_flat: {key: 123, ...}
+Purchases_flat: {key: "a@b.com", ...}
+```
+
+Now the join uses a single `key` column, and the planner can apply its efficient algorithms. You've done the work of separating the conditions that the planner couldn't do automatically.
+
+### How UNION separates work efficiently
+
+The UNION approach explicitly runs two optimized joins and combines results:
+
+```sql
+(SELECT ... JOIN ON condition1)
+UNION
+(SELECT ... JOIN ON condition2)
+```
+
+Each individual join is efficient. The UNION handles deduplication. The total cost is `cost(join1) + cost(join2) + cost(dedup)`—linear, not exponential.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Avoid OR in JOIN Clauses" icon="ban" href="/guides/nql/query-optimization/avoid-or-in-join">
+    Step-by-step guide to restructuring OR conditions
+  </Card>
+  <Card title="Query Optimization" icon="gauge-high" href="/guides/nql/query-optimization">
+    More techniques for writing efficient queries
+  </Card>
+  <Card title="NQL Design Philosophy" icon="compass-drafting" href="/concepts/nql/design-philosophy">
+    Why NQL is designed the way it is
+  </Card>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries are compiled, optimized, and executed
+  </Card>
+</CardGroup>

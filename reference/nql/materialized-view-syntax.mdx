@@ -1,0 +1,267 @@
+---
+title: 'Materialized View Syntax'
+description: 'Complete reference for CREATE MATERIALIZED VIEW statement'
+icon: 'list-check'
+---
+
+The `CREATE MATERIALIZED VIEW` statement creates a stored dataset from a query result. Unlike regular queries that execute each time, materialized views persist their results for faster access.
+
+## Syntax
+
+```sql
+CREATE MATERIALIZED VIEW "view_name"
+[REFRESH_SCHEDULE = <schedule>]
+[DISPLAY_NAME = '<display_name>']
+[DESCRIPTION = '<description>']
+[EXPIRE = <retention_policy>]
+[TAGS = ( '<tag1>', '<tag2>', ... )]
+[WRITE_MODE = '<mode>']
+[EXTENDED_STATS = '<level>']
+[PARTITIONED_BY <field> <transform>[, <field2> <transform2>]]
+AS
+<select_query>
+```
+
+## Options summary
+
+| Option | Type | Required | Description |
+|--------|------|----------|-------------|
+| `REFRESH_SCHEDULE` | enum or CRON | No | When to automatically refresh the view |
+| `DISPLAY_NAME` | string | No | Human-readable name for the UI |
+| `DESCRIPTION` | string | No | Documentation text |
+| `EXPIRE` | ISO 8601 period or enum | No | Data retention policy |
+| `TAGS` | array | No | Labels for organization and filtering |
+| `WRITE_MODE` | enum | No | How refresh operations write data |
+| `EXTENDED_STATS` | enum | No | Whether to compute additional statistics |
+| `PARTITIONED_BY` | field + transform | No | How to partition stored data |
+
+---
+
+## REFRESH_SCHEDULE
+
+Defines when the materialized view automatically refreshes with new data.
+
+**Syntax:**
+```sql
+REFRESH_SCHEDULE = '@daily'
+REFRESH_SCHEDULE = '0 2 * * *'
+```
+
+**Values:**
+
+| Value | Description |
+|-------|-------------|
+| `@hourly` | Refresh every hour |
+| `@daily` | Refresh once per day |
+| `@weekly` | Refresh once per week |
+| `@monthly` | Refresh once per month |
+| `@once` | Refresh only once (no recurring schedule) |
+| CRON expression | Custom schedule using standard CRON syntax |
+
+**CRON format:**
+
+```
+┌───────────── minute (0-59)
+│ ┌───────────── hour (0-23)
+│ │ ┌───────────── day of month (1-31)
+│ │ │ ┌───────────── month (1-12)
+│ │ │ │ ┌───────────── day of week (0-6, Sunday=0)
+│ │ │ │ │
+* * * * *
+```
+
+**Example:** Refresh every Monday at 3:15 PM UTC:
+```sql
+REFRESH_SCHEDULE = '15 15 * * 1'
+```
+
+<Note>
+For large datasets, consider using [Incremental View Maintenance](/concepts/nql/incremental-view-maintenance) to refresh only changed data.
+</Note>
+
+---
+
+## DISPLAY_NAME
+
+A human-readable name shown in the Narrative I/O interface.
+
+**Syntax:**
+```sql
+DISPLAY_NAME = 'Monthly Sales Summary'
+```
+
+If not specified, the view name is used as the display name.
+
+---
+
+## DESCRIPTION
+
+Documentation text describing the view's purpose and contents.
+
+**Syntax:**
+```sql
+DESCRIPTION = 'Aggregated sales metrics by month for the executive dashboard'
+```
+
+---
+
+## EXPIRE
+
+Sets a data retention policy that determines how long data is kept.
+
+**Syntax:**
+```sql
+EXPIRE = 'P30D'
+EXPIRE = 'retain_everything'
+EXPIRE = 'expire_everything'
+```
+
+**Values:**
+
+| Value | Description |
+|-------|-------------|
+| ISO 8601 duration | Data expires after the specified period (e.g., `P30D` for 30 days, `P1Y` for 1 year) |
+| `retain_everything` | Keep all data indefinitely |
+| `expire_everything` | Expire data immediately (effectively clears on each refresh) |
+
+**ISO 8601 duration format:**
+- `P30D` - 30 days
+- `P6M` - 6 months
+- `P1Y` - 1 year
+- `P1Y6M` - 1 year and 6 months
+
+---
+
+## TAGS
+
+Labels for organizing and filtering materialized views.
+
+**Syntax:**
+```sql
+TAGS = ( '_nio_materialized_view', 'sales', 'monthly' )
+```
+
+Tags help categorize views and can be used to filter views in the UI or via API.
+
+---
+
+## WRITE_MODE
+
+Determines how data is written when the view refreshes.
+
+**Syntax:**
+```sql
+WRITE_MODE = 'overwrite'
+WRITE_MODE = 'append'
+```
+
+**Values:**
+
+| Value | Description |
+|-------|-------------|
+| `overwrite` | Replace all existing data with the new query result |
+| `append` | Add new data to the existing dataset |
+
+**When to use each:**
+
+- **overwrite**: Use when you want a complete snapshot of the current state. Good for dashboards and reports where you always want the latest data.
+- **append**: Use when building a historical record. Good for event logs or time-series data where you want to accumulate data over time.
+
+<Warning>
+When using `append` mode, ensure your query includes appropriate filters to avoid inserting duplicate records.
+</Warning>
+
+---
+
+## EXTENDED_STATS
+
+Controls whether additional statistics are computed for the dataset.
+
+**Syntax:**
+```sql
+EXTENDED_STATS = 'all'
+EXTENDED_STATS = 'none'
+```
+
+**Values:**
+
+| Value | Description |
+|-------|-------------|
+| `all` | Compute extended statistics including cardinality estimates, value distributions, and null counts |
+| `none` | Skip extended statistics (faster refresh, less metadata) |
+
+Extended statistics help the query optimizer but increase refresh time. Use `all` for frequently queried views and `none` for large views where refresh speed is critical.
+
+---
+
+## PARTITIONED_BY
+
+Defines how the stored data is partitioned for improved query performance.
+
+**Syntax:**
+```sql
+PARTITIONED_BY <field> <transform>
+PARTITIONED_BY <field1> <transform1>, <field2> <transform2>
+```
+
+**Transforms:**
+
+| Transform | Description | Example |
+|-----------|-------------|---------|
+| `DAY` | Partition by day | `PARTITIONED_BY event_date DAY` |
+| `MONTH` | Partition by month | `PARTITIONED_BY created_at MONTH` |
+| `YEAR` | Partition by year | `PARTITIONED_BY order_date YEAR` |
+
+Partitioning improves query performance when filtering on the partitioned field. Choose a partition scheme that matches your most common query patterns.
+
+---
+
+## Complete example
+
+```sql
+CREATE MATERIALIZED VIEW "female_audience"
+REFRESH_SCHEDULE = '@daily'
+DISPLAY_NAME = 'Female Audience'
+DESCRIPTION = 'Audience containing demographic of female users.'
+EXPIRE = 'retain_everything'
+TAGS = ( '_nio_materialized_view', 'user_engagement', 'metrics' )
+WRITE_MODE = 'overwrite'
+EXTENDED_STATS = 'all'
+PARTITIONED_BY event_date DAY
+AS
+SELECT
+    "unique_identifier",
+    "hl7_gender",
+    "age"
+FROM narrative.rosetta_stone
+WHERE
+    "hl7_gender"."gender" = 'female'
+    AND "event_timestamp" > CURRENT_TIMESTAMP - INTERVAL 160 DAYS
+    AND rosetta_stone._price_cpm_usd <= 2.00
+```
+
+This example creates a materialized view that:
+- Refreshes daily
+- Stores female user demographics from the last 160 days
+- Partitions data by day for efficient time-based queries
+- Retains all historical data indefinitely
+- Computes full statistics for query optimization
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to creating your first materialized view
+  </Card>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    Understand when and why to use materialized views
+  </Card>
+  <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
+    Learn how NQL optimizes view refreshes
+  </Card>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    General NQL syntax and query structure
+  </Card>
+</CardGroup>

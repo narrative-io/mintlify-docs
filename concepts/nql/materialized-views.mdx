@@ -1,0 +1,104 @@
+---
+title: 'Materialized Views'
+description: 'How materialized views work in NQL and when to use them'
+icon: 'layer-group'
+---
+
+A materialized view is a pre-computed query result stored as a dataset. Unlike a regular query that executes each time you run it, a materialized view stores the results physically, giving you the speed of reading a table with the flexibility of a query.
+
+## Why materialized views exist
+
+Materialized views solve three common problems in data collaboration:
+
+**Query performance.** Complex queries with joins, aggregations, or filters can take significant time to execute. When you need to run the same query repeatedly—for dashboards, reports, or API responses—a materialized view lets you compute once and read many times.
+
+**Data caching for collaboration.** When sharing data with partners, you often want to provide a curated, pre-processed dataset rather than raw tables. Materialized views let you define exactly what data is shared and keep it updated automatically.
+
+**Scheduled refresh for near-real-time data.** By refreshing on a schedule, materialized views provide data that's fresh enough for most analytical workloads without the cost of real-time processing.
+
+## Stored snapshot vs. dynamic retrieval
+
+Understanding this distinction is key to using materialized views effectively:
+
+| Aspect | Regular query | Materialized view |
+|--------|---------------|-------------------|
+| Execution | Runs every time you query | Runs only on refresh |
+| Data freshness | Always current | As fresh as last refresh |
+| Speed | Depends on query complexity | Fast reads (like a table) |
+| Storage | None | Stores full result set |
+| Cost | Compute on every read | Compute on refresh only |
+
+A regular query is like making a phone call—you get live information but it takes time to connect. A materialized view is like receiving a daily newsletter—the information is only as fresh as the last edition, but it's instantly available.
+
+## When to use materialized views
+
+Materialized views are well-suited for:
+
+**Expensive aggregations that don't change frequently.** If you're computing daily summaries, monthly rollups, or other aggregations over large datasets, a materialized view can run this computation once per day instead of on every request.
+
+**Cross-organization queries.** Queries that join your data with partner data or the Rosetta Stone can be expensive. Materialize the results to avoid repeated cross-organization computation.
+
+**Dashboard and reporting data.** Dashboards often run the same queries many times as users refresh pages. A materialized view provides consistent, fast responses for analytical workloads.
+
+**Data products for partners.** When sharing curated datasets with collaborators, materialized views let you define exactly what's included and refresh it automatically.
+
+## When not to use materialized views
+
+Materialized views aren't always the right choice:
+
+**Constantly changing data.** If your underlying data changes every few seconds and you need up-to-the-second accuracy, the refresh overhead of a materialized view may not be worthwhile.
+
+**Queries that are already fast.** Simple queries against small tables don't benefit from materialization. The added complexity and storage cost isn't justified.
+
+**Storage-constrained environments.** Materialized views duplicate data. If storage costs are a concern, consider whether the performance benefits outweigh the storage requirements.
+
+**Ad-hoc analysis.** For one-time queries or exploratory analysis, just run the query directly. Materialized views are for queries you'll run repeatedly.
+
+## Refresh strategies
+
+Materialized views must be refreshed to reflect changes in underlying data. NQL supports several approaches:
+
+**Scheduled refresh.** Set a CRON expression or use presets like `@daily` or `@hourly` to refresh automatically. This is the most common approach for production workloads.
+
+**Manual refresh.** Trigger a refresh via API when you know the underlying data has changed. Useful for event-driven workflows or testing.
+
+**Incremental refresh.** For large datasets, [Incremental View Maintenance](/concepts/nql/incremental-view-maintenance) can update only the changed portions of the view rather than recomputing everything. This dramatically reduces refresh time for views over large datasets with relatively small changes.
+
+### Choosing a refresh schedule
+
+Consider these factors:
+
+- **How fresh does the data need to be?** If daily is acceptable, don't pay for hourly refreshes.
+- **How expensive is the underlying query?** Frequent refreshes of expensive queries increase costs.
+- **When do underlying datasets update?** Schedule refreshes after upstream data is available.
+
+## How materialized views relate to datasets
+
+When you create a materialized view, the result becomes a dataset in Narrative I/O. This means:
+
+- The view appears in your dataset catalog
+- You can apply access controls and sharing rules
+- Partners can query it like any other dataset
+- You can see statistics, row counts, and schema information
+- The view inherits the governance and compliance features of the platform
+
+This makes materialized views a powerful tool for data products—you define the query once, and the platform handles keeping it fresh and making it available to authorized consumers.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to creating your first materialized view
+  </Card>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete reference for all CREATE MATERIALIZED VIEW options
+  </Card>
+  <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
+    How NQL optimizes refreshes by updating only changed data
+  </Card>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries are compiled, optimized, and executed
+  </Card>
+</CardGroup>

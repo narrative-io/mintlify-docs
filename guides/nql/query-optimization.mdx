@@ -1,0 +1,36 @@
+---
+title: 'Query Optimization'
+description: 'Write faster, more efficient NQL queries'
+icon: 'gauge-high'
+---
+
+Efficient queries are essential for working with large datasets in Narrative. This section covers optimization techniques and patterns to help your queries run faster and use fewer resources.
+
+## Prerequisites
+
+Before diving into optimization, you should have:
+
+- Basic familiarity with [NQL syntax](/reference/nql/syntax)
+- Understanding of [JOIN operations](/guides/nql/joining-datasets)
+
+## Optimization guides
+
+<CardGroup cols={2}>
+  <Card title="Avoid OR in JOIN Clauses" icon="ban" href="/guides/nql/query-optimization/avoid-or-in-join">
+    Restructure OR conditions into single-key joins for dramatically better performance
+  </Card>
+</CardGroup>
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Understanding JOIN Performance" icon="chart-line" href="/concepts/nql/join-performance">
+    Learn why certain JOIN patterns cause performance problems
+  </Card>
+  <Card title="NQL Functions Reference" icon="code" href="/reference/nql/functions">
+    Complete reference for NQL functions including UNNEST
+  </Card>
+  <Card title="Joining Datasets" icon="code-merge" href="/guides/nql/joining-datasets">
+    Fundamentals of combining data from multiple datasets
+  </Card>
+</CardGroup>

@@ -1,0 +1,252 @@
+---
+title: 'Creating Materialized Views'
+description: 'Pre-compute and cache query results for improved performance'
+icon: 'layer-plus'
+---
+
+If you're running the same expensive query repeatedly—for dashboards, reports, or data sharing—a materialized view lets you compute once and read many times. This guide walks through creating and managing materialized views in NQL.
+
+## Prerequisites
+
+Before creating a materialized view, you should have:
+
+- Basic familiarity with [NQL syntax](/reference/nql/syntax)
+- A dataset to query (your own or one you have access to)
+- Understanding of what [materialized views](/concepts/nql/materialized-views) are and when to use them
+
+## Basic syntax
+
+A materialized view is created with the `CREATE MATERIALIZED VIEW` statement:
+
+```sql
+CREATE MATERIALIZED VIEW "view_name"
+AS
+<your_query>
+```
+
+The query can be any valid NQL SELECT statement. The result is stored as a dataset that you can query like any other table.
+
+## Creating your first materialized view
+
+Let's create a simple materialized view that aggregates user counts by region.
+
+### Step 1: Write and test your query
+
+Start by writing the query you want to materialize. Run it to verify it returns the expected results:
+
+```sql
+SELECT
+    region,
+    COUNT(*) as user_count,
+    COUNT(DISTINCT company_id) as company_count
+FROM user_data
+WHERE status = 'active'
+GROUP BY region
+```
+
+### Step 2: Wrap it in CREATE MATERIALIZED VIEW
+
+Once your query works, add the `CREATE MATERIALIZED VIEW` wrapper:
+
+```sql
+CREATE MATERIALIZED VIEW "active_users_by_region"
+AS
+SELECT
+    region,
+    COUNT(*) as user_count,
+    COUNT(DISTINCT company_id) as company_count
+FROM user_data
+WHERE status = 'active'
+GROUP BY region
+```
+
+### Step 3: Execute the statement
+
+Run the statement to create the view. The query executes immediately and stores the results.
+
+### Step 4: Query the materialized view
+
+Once created, query it like any other table:
+
+```sql
+SELECT * FROM active_users_by_region
+WHERE user_count > 1000
+```
+
+## Adding metadata options
+
+You can configure how the view behaves using metadata options. The most common are:
+
+### Setting a refresh schedule
+
+To keep your view updated automatically:
+
+```sql
+CREATE MATERIALIZED VIEW "daily_sales_summary"
+REFRESH_SCHEDULE = '@daily'
+AS
+SELECT
+    DATE(order_timestamp) as order_date,
+    COUNT(*) as order_count,
+    SUM(total_amount) as total_revenue
+FROM orders
+GROUP BY DATE(order_timestamp)
+```
+
+Available schedules include `@hourly`, `@daily`, `@weekly`, `@monthly`, and custom CRON expressions.
+
+### Adding a display name and description
+
+Make your view easier to find in the UI:
+
+```sql
+CREATE MATERIALIZED VIEW "monthly_revenue"
+DISPLAY_NAME = 'Monthly Revenue Report'
+DESCRIPTION = 'Total revenue aggregated by month, refreshed daily'
+REFRESH_SCHEDULE = '@daily'
+AS
+SELECT
+    DATE_TRUNC('month', order_timestamp) as month,
+    SUM(total_amount) as revenue
+FROM orders
+GROUP BY DATE_TRUNC('month', order_timestamp)
+```
+
+### Partitioning for performance
+
+For time-series data, partition by date to improve query performance:
+
+```sql
+CREATE MATERIALIZED VIEW "event_metrics"
+REFRESH_SCHEDULE = '@hourly'
+PARTITIONED_BY event_date DAY
+AS
+SELECT
+    DATE(event_timestamp) as event_date,
+    event_type,
+    COUNT(*) as event_count
+FROM events
+GROUP BY DATE(event_timestamp), event_type
+```
+
+<Tip>
+For complete details on all available options, see the [Materialized View Syntax Reference](/reference/nql/materialized-view-syntax).
+</Tip>
+
+## Refreshing materialized views
+
+Views refresh according to their schedule. You can also trigger manual refreshes via the API when you need immediate updates.
+
+### Scheduled refresh
+
+Use the `REFRESH_SCHEDULE` option to set automatic refresh intervals:
+
+| Schedule | When it runs |
+|----------|--------------|
+| `@hourly` | Every hour |
+| `@daily` | Once per day |
+| `@weekly` | Once per week |
+| `@monthly` | Once per month |
+| CRON expression | Custom schedule |
+
+### Custom CRON schedules
+
+For more control, use a CRON expression:
+
+```sql
+-- Refresh every Monday at 3:15 PM UTC
+REFRESH_SCHEDULE = '15 15 * * 1'
+
+-- Refresh at 2 AM on the first day of each month
+REFRESH_SCHEDULE = '0 2 1 * *'
+```
+
+### Incremental refresh
+
+For large datasets, NQL can refresh incrementally by processing only changed data. This happens automatically when the query pattern supports it. To learn more, see [Incremental View Maintenance](/concepts/nql/incremental-view-maintenance).
+
+## Write modes
+
+Control how refreshes update the view data:
+
+### Overwrite mode (default)
+
+Each refresh replaces the entire view with fresh results:
+
+```sql
+CREATE MATERIALIZED VIEW "current_inventory"
+WRITE_MODE = 'overwrite'
+AS
+SELECT product_id, SUM(quantity) as stock_level
+FROM inventory
+GROUP BY product_id
+```
+
+### Append mode
+
+Each refresh adds new data to the existing view:
+
+```sql
+CREATE MATERIALIZED VIEW "event_log"
+WRITE_MODE = 'append'
+AS
+SELECT *
+FROM events
+WHERE event_timestamp > CURRENT_TIMESTAMP - INTERVAL 1 HOUR
+```
+
+<Warning>
+When using append mode, ensure your query includes filters to avoid inserting duplicate records on each refresh.
+</Warning>
+
+## Example: Complete materialized view
+
+Here's a complete example combining multiple options:
+
+```sql
+CREATE MATERIALIZED VIEW "female_audience"
+REFRESH_SCHEDULE = '@daily'
+DISPLAY_NAME = 'Female Audience'
+DESCRIPTION = 'Audience containing demographic of female users.'
+EXPIRE = 'retain_everything'
+TAGS = ( '_nio_materialized_view', 'user_engagement', 'metrics' )
+WRITE_MODE = 'overwrite'
+EXTENDED_STATS = 'all'
+PARTITIONED_BY event_date DAY
+AS
+SELECT
+    "unique_identifier",
+    "hl7_gender",
+    "age"
+FROM narrative.rosetta_stone
+WHERE
+    "hl7_gender"."gender" = 'female'
+    AND "event_timestamp" > CURRENT_TIMESTAMP - INTERVAL 160 DAYS
+    AND rosetta_stone._price_cpm_usd <= 2.00
+```
+
+This creates a view that:
+- Refreshes daily with fresh data
+- Stores 160 days of female user demographics
+- Partitions by day for efficient date-range queries
+- Computes extended statistics for query optimization
+- Retains all data indefinitely
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    Understand when and why to use materialized views
+  </Card>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete reference for all available options
+  </Card>
+  <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
+    How NQL optimizes refreshes for large datasets
+  </Card>
+  <Card title="Query Optimization" icon="gauge-high" href="/guides/nql/query-optimization">
+    Techniques for writing faster, more efficient queries
+  </Card>
+</CardGroup>

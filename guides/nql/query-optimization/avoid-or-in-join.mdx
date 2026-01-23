@@ -1,0 +1,138 @@
+---
+title: 'Avoid OR in JOIN Clauses'
+description: 'Restructure OR conditions into single-key joins for dramatically better query performance'
+icon: 'ban'
+---
+
+When joining datasets on multiple possible keys, you might be tempted to use OR in your JOIN condition. This pattern prevents the query planner from optimizing the join, often causing queries to run for hours instead of seconds.
+
+<Warning>
+Using OR in JOIN conditions can make queries 100x slower or more. Always restructure OR conditions into single-key joins using the techniques in this guide.
+</Warning>
+
+## The anti-pattern
+
+This query attempts to match records where either `user_id` or `email` matches:
+
+```sql
+SELECT *
+FROM Purchases p
+JOIN Users u
+  ON p.user_id = u.id
+  OR p.email = u.email;
+```
+
+While logically correct, this pattern prevents the query planner from using efficient join algorithms. The planner cannot build a hash table or use indexes effectively when it must evaluate two conditions with OR.
+
+## Solution 1: Array flattening with UNNEST
+
+The recommended approach is to combine your join keys into an array, flatten it with UNNEST, and then join on a single key column.
+
+### How it works
+
+1. **Combine keys into an array** on each side of the join
+2. **UNNEST the arrays** to create one row per potential key
+3. **JOIN on the single key column** using standard equality
+
+### Example
+
+```sql
+WITH Purchases_flat AS (
+    SELECT
+      p.*,
+      key
+    FROM Purchases p
+    CROSS JOIN UNNEST([p.user_id, p.email]) AS t(key)
+),
+Users_flat AS (
+    SELECT
+      u.*,
+      key
+    FROM Users u
+    CROSS JOIN UNNEST([u.id, u.email]) AS t(key)
+)
+SELECT DISTINCT
+  pf.purchase_id,
+  pf.item,
+  pf.amount,
+  uf.user_name,
+  uf.email
+FROM Purchases_flat pf
+JOIN Users_flat uf
+  ON pf.key = uf.key;
+```
+
+This query:
+- Creates arrays containing both possible join keys
+- Uses UNNEST to expand each row into multiple rows (one per key)
+- Joins on a single `key` column, which the planner can optimize efficiently
+- Uses `SELECT DISTINCT` to remove duplicate matches
+
+<Tip>
+The UNNEST approach works well when you have more than two possible join keys or when the keys are already stored as arrays.
+</Tip>
+
+## Solution 2: Using UNION
+
+For simple cases with exactly two join conditions, UNION provides a cleaner alternative:
+
+```sql
+SELECT
+  p.purchase_id,
+  p.item,
+  p.amount,
+  u.user_name,
+  u.email
+FROM Purchases p
+JOIN Users u ON p.user_id = u.id
+
+UNION
+
+SELECT
+  p.purchase_id,
+  p.item,
+  p.amount,
+  u.user_name,
+  u.email
+FROM Purchases p
+JOIN Users u ON p.email = u.email;
+```
+
+This approach:
+- Runs two optimized single-key joins separately
+- Combines the results and automatically removes duplicates with UNION
+- May be easier to read for simple two-condition cases
+
+<Note>
+Use `UNION ALL` instead of `UNION` if you want to keep duplicates, but be aware this may produce unexpected results when both conditions match the same record.
+</Note>
+
+## Choosing the right approach
+
+| Approach | Best for | Trade-offs |
+|----------|----------|------------|
+| **UNNEST** | Multiple keys, complex queries, keys already in arrays | Requires explicit DISTINCT, slightly more complex syntax |
+| **UNION** | Exactly two conditions, readability is priority | Repeats query logic, harder to maintain with many conditions |
+
+Both approaches transform the problematic OR condition into single-key joins that the query planner can optimize using hash joins or indexes.
+
+<Note>
+To understand why OR conditions cause these performance problems, see [Understanding JOIN Performance](/concepts/nql/join-performance).
+</Note>
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Understanding JOIN Performance" icon="chart-line" href="/concepts/nql/join-performance">
+    Learn why OR in JOINs prevents optimization
+  </Card>
+  <Card title="Query Optimization" icon="gauge-high" href="/guides/nql/query-optimization">
+    More techniques for writing efficient queries
+  </Card>
+  <Card title="Joining Datasets" icon="code-merge" href="/guides/nql/joining-datasets">
+    Fundamentals of combining data from multiple datasets
+  </Card>
+  <Card title="NQL Functions" icon="code" href="/reference/nql/functions">
+    Reference for UNNEST and other NQL functions
+  </Card>
+</CardGroup>

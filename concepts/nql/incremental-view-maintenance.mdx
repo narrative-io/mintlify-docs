@@ -1,0 +1,114 @@
+---
+title: 'Incremental View Maintenance'
+description: 'How NQL optimizes materialized view refreshes by updating only changed data'
+icon: 'arrows-rotate'
+---
+
+Incremental View Maintenance (IVM) is an optimization technique that updates materialized views by processing only the changes in underlying data, rather than recomputing the entire result from scratch.
+
+## Why IVM matters
+
+Consider a materialized view over a billion-row dataset. If only 10,000 rows changed since the last refresh, a full refresh would reprocess all billion rows to incorporate those changes. IVM processes just the 10,000 changed rows and merges them into the existing result.
+
+The benefits scale with dataset size:
+
+**Performance.** IVM can reduce refresh time from hours to minutes or seconds. When only a small fraction of data changes between refreshes, the savings are dramatic.
+
+**Resource efficiency.** Processing less data means lower compute costs. For views that refresh frequently, IVM can significantly reduce your infrastructure spend.
+
+**Faster refresh cycles.** Because incremental refreshes are faster, you can refresh more frequently without proportionally increasing costs. This enables near-real-time analytics for workloads that would otherwise require daily batches.
+
+## How IVM works
+
+IVM tracks changes to underlying data and applies those changes to the materialized view result:
+
+### Change detection
+
+The system identifies which rows in the source data have been inserted, updated, or deleted since the last refresh. This is typically done by tracking timestamps or using change data capture mechanisms.
+
+### Delta computation
+
+Rather than running the full query, IVM computes only how the result should change based on the detected changes. For an aggregation like `SUM(amount) GROUP BY category`, an inserted row adds to the sum for its category; a deleted row subtracts from it.
+
+### Merge strategies
+
+The computed deltas are merged into the existing materialized view:
+
+- **Insertions** add new rows or update aggregations
+- **Deletions** remove rows or adjust aggregations
+- **Updates** are typically handled as a deletion followed by an insertion
+
+The result is mathematically equivalent to a full refresh, but computed much more efficiently.
+
+## When IVM applies
+
+Not all queries can be incrementally maintained. IVM works well for certain patterns:
+
+**Simple projections and filters.** Selecting columns and filtering rows is straightforward to maintain incrementally—new rows that pass the filter are added, deleted rows are removed.
+
+**Group-by aggregations.** Common aggregations like `COUNT`, `SUM`, `AVG`, `MIN`, and `MAX` can often be maintained incrementally. The system tracks partial aggregates per group and updates them as data changes.
+
+**Inner joins.** When the join keys don't change, new matching pairs can be identified and added without reprocessing existing matches.
+
+### Requirements for IVM
+
+For IVM to work effectively, certain conditions must be met:
+
+- **Deterministic change tracking**: The system must reliably identify what changed
+- **Associative operations**: Aggregations must be computable from partial results
+- **Stable keys**: Join and group keys should not change for existing rows
+
+## When full refresh is needed
+
+Some scenarios require recomputing the entire view:
+
+**Schema changes.** If you alter the view definition, underlying tables, or query structure, a full refresh ensures consistency.
+
+**Complex aggregations.** Operations like `MEDIAN`, `PERCENTILE`, or custom window functions may not support incremental computation because they depend on the entire dataset, not just deltas.
+
+**Historical corrections.** When backfilling or correcting historical data that spans the entire view, a full refresh may be simpler and more reliable than computing complex deltas.
+
+**Non-monotonic changes.** If changes invalidate previously computed results in non-obvious ways (like changing a dimension value that affects many groups), full refresh avoids subtle correctness issues.
+
+## IVM and refresh scheduling
+
+IVM complements scheduled refreshes. Consider this pattern:
+
+| Refresh frequency | Without IVM | With IVM |
+|-------------------|-------------|----------|
+| Daily | Processes full dataset daily | Processes only daily changes |
+| Hourly | 24x daily compute | Only new hourly data each time |
+| Every 15 minutes | Very expensive | Efficient, near-real-time |
+
+With IVM, you can often increase refresh frequency without proportionally increasing costs, because each refresh processes only a fraction of the data.
+
+## Trade-offs
+
+IVM isn't free—it introduces some complexity:
+
+**Change tracking overhead.** The system must track what changed, which has some storage and processing cost.
+
+**Query restrictions.** Not all query patterns support incremental maintenance. Complex queries may fall back to full refresh.
+
+**Correctness complexity.** Incremental computation must produce results identical to full refresh. For complex queries, this requires careful implementation.
+
+For most analytical workloads with regular data updates, IVM provides significant benefits. For small datasets or infrequent refreshes, the overhead may not be worthwhile.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    When and why to use materialized views
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to creating materialized views
+  </Card>
+  <Card title="Materialized View Syntax" icon="list-check" href="/reference/nql/materialized-view-syntax">
+    Complete reference for REFRESH_SCHEDULE and other options
+  </Card>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How NQL compiles and optimizes queries
+  </Card>
+</CardGroup>
