@@ -19,24 +19,231 @@ This tutorial is part of the First Steps series. Complete [Normalize with Rosett
 
 - How to access the query editor
 - How to write a basic NQL query
+- How to preview results with EXPLAIN
 - How to run a query and interpret results
+
+---
 
 ## Steps
 
 <Steps>
   <Step title="Open the query editor">
-    Content placeholder
+    From your Narrative I/O dashboard, navigate to the **Query** section in the left sidebar. This opens the NQL query editor where you can write and execute queries.
+
+    The query editor has three main areas:
+    - **Editor pane**: Where you write your NQL queries
+    - **Schema browser**: Shows available datasets and their columns
+    - **Results pane**: Displays query output after execution
   </Step>
+
+  <Step title="Find your dataset ID">
+    Before writing a query, you need your dataset's ID. In the schema browser, expand **My Datasets** to see your datasets. Each dataset shows its name and numeric ID.
+
+    Note the dataset ID—you'll use it in your query. For this tutorial, we'll use `"123"` as an example. Replace it with your actual dataset ID.
+
+    <Tip>
+    Dataset IDs are numeric and must be quoted in queries: `company_data."123"`
+    </Tip>
+  </Step>
+
   <Step title="Write a SELECT query">
-    Content placeholder
+    In the editor pane, write a simple query to select data from your dataset:
+
+    ```sql
+    SELECT
+      *
+    FROM
+      company_data."123"
+    LIMIT 10 ROWS
+    ```
+
+    This query:
+    - Selects all columns (`*`)
+    - From your dataset (`company_data."123"`)
+    - Limits results to 10 rows
+
+    Replace `"123"` with your actual dataset ID.
   </Step>
-  <Step title="Run your query">
-    Content placeholder
+
+  <Step title="Preview with EXPLAIN">
+    Before running the query, preview what data matches your criteria using `EXPLAIN`:
+
+    ```sql
+    EXPLAIN
+    SELECT
+      *
+    FROM
+      company_data."123"
+    LIMIT 10 ROWS
+    ```
+
+    Click **Run** or press `Cmd+Enter` (Mac) / `Ctrl+Enter` (Windows).
+
+    The results pane shows:
+    - **Estimated row count**: How many rows match your query
+    - **Estimated cost**: The data cost based on your pricing
+    - **Schema**: The columns that will be returned
+
+    `EXPLAIN` doesn't execute the query or incur costs—it only forecasts the results.
   </Step>
+
+  <Step title="Run the query">
+    Remove the `EXPLAIN` keyword and run your query:
+
+    ```sql
+    SELECT
+      *
+    FROM
+      company_data."123"
+    LIMIT 10 ROWS
+    ```
+
+    Click **Run** or press `Cmd+Enter` / `Ctrl+Enter`.
+
+    The results pane now shows your actual data in a table format. You can:
+    - Scroll through rows and columns
+    - Sort by clicking column headers
+    - Resize columns as needed
+  </Step>
+
+  <Step title="Refine your query">
+    Now try a more specific query. Select specific columns and add a filter:
+
+    ```sql
+    SELECT
+      company_data."123".user_id,
+      company_data."123".email,
+      company_data."123".created_at
+    FROM
+      company_data."123"
+    WHERE
+      company_data."123".created_at >= CURRENT_DATE - INTERVAL '30' DAY
+    LIMIT 100 ROWS
+    ```
+
+    This query:
+    - Selects specific columns instead of all
+    - Uses fully qualified column names (recommended practice)
+    - Filters to records from the last 30 days
+    - Returns up to 100 rows
+
+    Adjust the column names to match your dataset's schema.
+  </Step>
+
   <Step title="Export your results">
-    Content placeholder
+    To save your query results:
+
+    1. Run your query to populate the results pane
+    2. Click the **Export** button above the results
+    3. Choose your export format (CSV, JSON, or Parquet)
+    4. Download the file to your local machine
+
+    For larger result sets or recurring exports, consider [creating a materialized view](/guides/nql/creating-materialized-views) instead.
   </Step>
 </Steps>
+
+---
+
+## Understanding the query structure
+
+Let's break down the query you wrote:
+
+```sql
+SELECT                                    -- What columns to return
+  company_data."123".user_id,
+  company_data."123".email,
+  company_data."123".created_at
+FROM                                      -- Where to get the data
+  company_data."123"
+WHERE                                     -- How to filter rows
+  company_data."123".created_at >= CURRENT_DATE - INTERVAL '30' DAY
+LIMIT 100 ROWS                           -- How many rows to return
+```
+
+| Clause | Purpose |
+|--------|---------|
+| `SELECT` | Specifies which columns to include in results |
+| `FROM` | Identifies the dataset(s) to query |
+| `WHERE` | Filters rows based on conditions |
+| `LIMIT` | Restricts the number of rows returned |
+
+---
+
+## Tips for getting started
+
+### Use EXPLAIN first
+
+Always preview queries with `EXPLAIN` before running them, especially for large datasets. This helps you understand data availability and estimate costs.
+
+### Start with LIMIT
+
+Add `LIMIT` to your queries while exploring data. This prevents accidentally querying millions of rows.
+
+### Use fully qualified column names
+
+When you start joining datasets, fully qualified names prevent ambiguity:
+
+```sql
+-- Fully qualified (recommended)
+SELECT company_data."123".email
+
+-- Short form (works but can be ambiguous)
+SELECT email
+```
+
+### Filter by price
+
+Control costs by filtering on `_price_cpm_usd`:
+
+```sql
+WHERE company_data."123"._price_cpm_usd <= 1.00
+```
+
+---
+
+## Try these queries
+
+### Count records by category
+
+```sql
+SELECT
+  company_data."123".category,
+  COUNT(*) AS count
+FROM
+  company_data."123"
+GROUP BY
+  company_data."123".category
+ORDER BY
+  count DESC
+LIMIT 20 ROWS
+```
+
+### Find recent records
+
+```sql
+SELECT
+  *
+FROM
+  company_data."123"
+WHERE
+  company_data."123".created_at >= CURRENT_DATE - INTERVAL '7' DAY
+ORDER BY
+  company_data."123".created_at DESC
+LIMIT 50 ROWS
+```
+
+### Check for missing data
+
+```sql
+SELECT
+  COUNT(*) AS total,
+  COUNT(company_data."123".email) AS has_email,
+  COUNT(company_data."123".phone) AS has_phone
+FROM
+  company_data."123"
+```
+
+---
 
 ## Next steps
 
@@ -44,7 +251,13 @@ This tutorial is part of the First Steps series. Complete [Normalize with Rosett
   <Card title="Start Your First Collaboration" icon="handshake" href="/getting-started/first-data-collaboration">
     Share data with another organization
   </Card>
-  <Card title="NQL Reference" icon="book" href="/reference/nql/syntax">
-    Explore the full NQL syntax and functions
+  <Card title="Filtering Data" icon="filter" href="/guides/nql/filtering-transforming">
+    Learn to filter and transform your data
+  </Card>
+  <Card title="NQL Syntax Reference" icon="code" href="/reference/nql/syntax">
+    Explore the complete query syntax
+  </Card>
+  <Card title="Create a Materialized View" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Save query results for recurring use
   </Card>
 </CardGroup>
