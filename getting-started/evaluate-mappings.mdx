@@ -1,0 +1,215 @@
+---
+title: 'Evaluate Your Mappings'
+description: 'Use AI to assess and improve your schema mappings'
+icon: 'sparkles'
+---
+
+In this tutorial, you'll use AI-powered evaluation to assess your mapping quality and accept AI-generated suggestions to improve your normalizations.
+
+<Info>
+This tutorial is part of the First Steps series. Complete [Normalize with Rosetta Stone](/getting-started/normalize-data) before starting.
+</Info>
+
+## Prerequisites
+
+- A Narrative I/O account
+- At least one dataset with active Rosetta Stone mappings
+
+## What you'll learn
+
+- How to navigate to the Normalized Datasets interface
+- How to run an AI evaluation on your mappings
+- How to interpret confidence scores
+- How to generate and accept AI mapping suggestions
+
+## What you'll build
+
+By the end of this tutorial, you'll have:
+- Evaluated your existing mappings for quality issues
+- Identified any low-confidence mappings needing attention
+- Accepted AI suggestions to expand your normalizations
+
+## Steps
+
+<Steps>
+  <Step title="Navigate to Normalized Datasets">
+    In the left sidebar, click **Rosetta Stone** → **Normalized Datasets**.
+
+    This shows all datasets that have Rosetta Stone mappings. You'll see a table with columns for dataset name, mapping count, row count, average confidence, and last updated date.
+
+    <Tip>
+    The **Avg. Confidence** column shows the average quality score across all evaluated mappings. Gray indicates the dataset hasn't been evaluated yet.
+    </Tip>
+  </Step>
+
+  <Step title="Select your dataset">
+    Click on the dataset you normalized in the previous tutorial.
+
+    This opens the dataset detail page with two tabs:
+    - **Evaluate**: View quality scores for existing mappings
+    - **Normalize**: Generate AI suggestions for new mappings
+
+    The Evaluate tab is selected by default.
+  </Step>
+
+  <Step title="Run your first evaluation">
+    Click the **Evaluate Mappings** button in the top right.
+
+    The AI analyzes each mapping on your dataset. It examines:
+    - Column names and how well they match target attributes
+    - Actual data samples to verify patterns
+    - Transformation logic for completeness and correctness
+
+    Wait for the evaluation to complete. The icon animates while processing.
+  </Step>
+
+  <Step title="Interpret the confidence gradient">
+    When evaluation completes, you'll see a **confidence gradient bar** at the top. This visualizes how your mappings are distributed:
+
+    | Color | Meaning |
+    |-------|---------|
+    | Green | High confidence (80-100%)—mappings are likely correct |
+    | Yellow | Medium confidence (50-79%)—worth reviewing |
+    | Red | Low confidence (0-49%)—needs attention |
+    | Gray | Not scored |
+
+    Below the gradient, **confidence level cards** show the count of mappings in each tier.
+
+    A dataset with mostly green indicates your mappings are in good shape. Any red sections mean some mappings need review.
+  </Step>
+
+  <Step title="Review mapping details">
+    Scroll down to see individual **transformation cards** for each mapping.
+
+    Each card shows:
+    - The source column and target attribute
+    - A confidence score badge
+    - The mapping type (system, AI, or user)
+
+    Click on any card to expand it and see:
+    - Why the AI gave that score
+    - Any issues it identified
+    - Recommendations for improvement
+    - Sample data showing before/after values
+
+    <Note>
+    System mappings (for internal columns) are always correct and typically show as "Not Scored" since they don't need evaluation.
+    </Note>
+  </Step>
+
+  <Step title="Filter to low confidence mappings">
+    If you have any low-confidence mappings, click the **Low** confidence card to filter the list.
+
+    For each low-confidence mapping:
+    1. Read the AI feedback to understand the issue
+    2. Check the sample data to see specific problems
+    3. Decide whether to fix the transformation or accept the current behavior
+
+    Common issues include:
+    - Missing `ELSE` clauses in `CASE` statements
+    - Ambiguous column names
+    - Source data that doesn't match expected patterns
+  </Step>
+
+  <Step title="Switch to the Normalize tab">
+    Click the **Normalize** tab to generate AI suggestions for columns that aren't yet mapped.
+
+    Click **Start Analysis** to begin.
+
+    The AI examines your unmapped columns and proposes mappings based on:
+    - Column names and patterns
+    - Sample data values
+    - Similarity to known attribute types
+  </Step>
+
+  <Step title="Review a suggestion">
+    When analysis completes, suggestions appear grouped by confidence level.
+
+    Click to expand the **High Confidence** section if it's not already open.
+
+    For each suggestion, review:
+    - **Source column**: The column in your dataset
+    - **Target attribute**: What the AI recommends mapping to
+    - **Reasoning**: Why it made this suggestion
+    - **Before/after samples**: How your data would be transformed
+
+    For example, if you have a column named `user_email` with values like `JOHN@EXAMPLE.COM`, the AI might suggest:
+    - Target: `raw_email`
+    - Transformation: `LOWER(TRIM(user_email))`
+    - After: `john@example.com`
+  </Step>
+
+  <Step title="Accept a high-confidence suggestion">
+    If the suggestion looks correct:
+
+    1. Verify the before/after samples make sense
+    2. Click **Accept** on the suggestion card
+
+    The suggestion becomes an active mapping immediately.
+
+    <Tip>
+    If you have multiple high-confidence suggestions and they all look good, you can click **Accept All High Confidence** to accept them in bulk. Review a few first to make sure the AI understands your data correctly.
+    </Tip>
+  </Step>
+
+  <Step title="Verify your new mapping">
+    Switch back to the **Evaluate** tab.
+
+    Click **Evaluate Mappings** again to include your newly created mapping in the evaluation.
+
+    Your new mapping should appear with a confidence score. If it scores high, you're all set. If it scores lower than expected, click on it to see why and consider adjusting the transformation.
+  </Step>
+</Steps>
+
+## Verify it worked
+
+Query your newly mapped attribute to confirm data flows correctly:
+
+```sql
+SELECT
+    raw_email,
+    COUNT(1) as count
+FROM narrative.rosetta_stone
+WHERE _nio_source_dataset_id = 'YOUR_DATASET_ID'
+GROUP BY raw_email
+LIMIT 10
+```
+
+Replace `YOUR_DATASET_ID` with your actual dataset ID and `raw_email` with the attribute you mapped.
+
+You should see values in the expected format—lowercased and trimmed if you accepted that transformation.
+
+## What you accomplished
+
+- Navigated to the Normalized Datasets interface
+- Ran an AI evaluation on your mappings
+- Interpreted confidence scores and the gradient visualization
+- Generated AI suggestions for unmapped columns
+- Accepted a high-confidence suggestion
+- Verified the new mapping works correctly
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Dataset doesn't appear in Normalized Datasets | Ensure you have at least one active mapping on the dataset |
+| Evaluation runs but shows no results | Check that your dataset has actual data, not just a schema |
+| All suggestions are low confidence | Your data may use non-standard formats; consider manual mappings |
+| Accepted mapping scores lower than expected | Review the AI feedback and adjust the transformation if needed |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Managing Evaluations" icon="gauge" href="/guides/rosetta-stone/managing-evaluations">
+    Deep dive into evaluation workflows
+  </Card>
+  <Card title="Accepting AI Suggestions" icon="wand-magic-sparkles" href="/guides/rosetta-stone/accepting-ai-suggestions">
+    Advanced suggestion review techniques
+  </Card>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/concepts/rosetta-stone/confidence-scoring">
+    Understand how scores are calculated
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Manual testing techniques
+  </Card>
+</CardGroup>

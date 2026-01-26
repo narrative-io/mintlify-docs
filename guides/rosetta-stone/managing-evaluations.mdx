@@ -1,0 +1,227 @@
+---
+title: 'Managing Mapping Evaluations'
+description: 'Run AI evaluations, filter by confidence, and understand mapping quality'
+icon: 'gauge'
+---
+
+This guide covers how to evaluate your Rosetta Stone mappings using AI-powered confidence scoring. Evaluations help you identify which mappings are working well and which need attention.
+
+<Note>
+Before running evaluations, you'll need a dataset with existing mappings. See [Mapping Schemas](/guides/rosetta-stone/mapping-schemas) to create mappings first.
+</Note>
+
+## Why evaluate mappings
+
+Manual validation tests specific cases you define, but it can't anticipate every issue. AI evaluation analyzes your mappings holistically, looking for:
+
+**Transformation gaps**: Cases your transformation doesn't handle, like unexpected input values or edge cases.
+
+**Pattern mismatches**: Source data that doesn't align with the target attribute's expected format.
+
+**Quality indicators**: Signals that suggest a mapping might produce incorrect results under certain conditions.
+
+Evaluations complement manual validation—they surface issues you might not have thought to test for.
+
+## Running an evaluation
+
+### Using the UI
+
+1. Navigate to **Rosetta Stone** → **Normalized Datasets**
+2. Click on a dataset to open its detail page
+3. On the **Evaluate** tab, click **Evaluate Mappings**
+
+The system analyzes all mappings on the dataset. This process examines column names, samples actual data, and analyzes transformation logic. Depending on the number of mappings, evaluation may take a few moments.
+
+When complete, you'll see:
+- A **confidence gradient bar** showing the distribution across quality tiers
+- **Confidence level cards** with counts for High, Medium, Low, and Not Scored
+- **Individual mapping cards** with scores and AI feedback
+
+## Understanding evaluation results
+
+### The confidence gradient
+
+The gradient bar provides a visual summary of your dataset's mapping quality:
+
+| Color | Score Range | Meaning |
+|-------|-------------|---------|
+| Green | 80-100% | High confidence—mappings are likely correct |
+| Yellow | 50-79% | Medium confidence—review recommended |
+| Red | 0-49% | Low confidence—manual review required |
+| Gray | Not scored | Mappings that couldn't be evaluated |
+
+A dataset with mostly green indicates well-configured mappings. Significant yellow or red sections suggest areas needing attention.
+
+### Confidence level cards
+
+Each card shows the count of mappings in that tier:
+
+**High confidence (80-100%)**: These mappings show strong alignment between source columns and target attributes. The AI found consistent patterns and appropriate transformations. You can generally trust these, though spot-checking critical data flows is still recommended.
+
+**Medium confidence (50-79%)**: The mapping is probably correct but has characteristics worth reviewing. Common reasons include partial transformation coverage or ambiguous column names.
+
+**Low confidence (0-49%)**: The AI identified significant concerns. These mappings require human verification before relying on them.
+
+**Not scored**: Mappings that couldn't be evaluated, typically system-generated mappings for internal columns.
+
+### Individual mapping feedback
+
+Click on any mapping card to see detailed AI feedback:
+
+- **Score breakdown**: Factors contributing to the confidence score
+- **Identified issues**: Specific concerns the AI found
+- **Recommendations**: Suggested improvements
+- **Sample analysis**: How the mapping performs on actual data samples
+
+## Filtering mappings
+
+### By confidence level
+
+Click any confidence level card to filter the mapping list:
+
+1. Click the **Low** card to see only low-confidence mappings
+2. Click the **Medium** card to see medium-confidence mappings
+3. Click **All** to clear the filter
+
+This helps you focus on mappings that need attention without being distracted by well-functioning ones.
+
+### By mapping type
+
+Filter by how the mapping was created:
+
+| Type | Description |
+|------|-------------|
+| System | Auto-generated for internal columns (always correct) |
+| AI | Created from AI suggestions |
+| User | Manually created by users |
+| Lineage | Inherited from parent datasets |
+
+Click the corresponding overview card to filter. You can combine type and confidence filters—for example, view only low-confidence user mappings.
+
+## Understanding low confidence scores
+
+When a mapping scores low, the AI provides specific feedback. Common issues include:
+
+### Missing transformation cases
+
+The transformation doesn't handle all values in the source data:
+
+```
+Issue: Transformation covers 85% of values.
+Unhandled values: "N/A", "Not Specified", ""
+Recommendation: Add cases for missing values or map to default.
+```
+
+**Resolution**: Update the transformation to handle additional cases:
+
+```sql
+CASE UPPER(status)
+  WHEN 'ACTIVE' THEN 'active'
+  WHEN 'INACTIVE' THEN 'inactive'
+  WHEN 'N/A' THEN 'unknown'
+  WHEN 'NOT SPECIFIED' THEN 'unknown'
+  WHEN '' THEN 'unknown'
+  ELSE 'unknown'
+END
+```
+
+### Type mismatch concerns
+
+The source data contains values that might not convert correctly:
+
+```
+Issue: Source column contains non-numeric values but maps to integer attribute.
+Samples failing conversion: "N/A", "TBD", "-"
+Recommendation: Add validation or filter invalid values.
+```
+
+**Resolution**: Add explicit handling for non-numeric values:
+
+```sql
+CASE
+  WHEN REGEXP_LIKE(value_col, '^[0-9]+$') THEN CAST(value_col AS INTEGER)
+  ELSE NULL
+END
+```
+
+### Ambiguous column mapping
+
+The column name doesn't clearly indicate its content:
+
+```
+Issue: Column "field_7" mapped to "email".
+Pattern analysis inconclusive—only 60% of values match email format.
+Recommendation: Verify this column contains email addresses.
+```
+
+**Resolution**: Verify the mapping is correct by examining sample data. If it's wrong, update or remove the mapping.
+
+### Edge case failures
+
+The transformation fails for certain input patterns:
+
+```
+Issue: Date parsing fails for some formats.
+Successful: "2024-01-15" (ISO format)
+Failed: "01/15/2024" (US format), "15-Jan-2024" (text month)
+Recommendation: Update transformation to handle multiple date formats.
+```
+
+**Resolution**: Use a more flexible date parsing approach or normalize source data before mapping.
+
+## Refreshing stale evaluations
+
+Evaluation results can become outdated when:
+- You modify transformation expressions
+- The source data changes significantly
+- Significant time has passed since the last evaluation
+
+### Recognizing stale evaluations
+
+The UI indicates when results may be stale:
+- **Last evaluated** timestamp shows when evaluation ran
+- A **Stale** badge appears if mappings changed since evaluation
+- Confidence scores may show a warning indicator
+
+### Re-running evaluations
+
+To refresh results:
+
+1. Navigate to the dataset's **Evaluate** tab
+2. Click **Evaluate Mappings** to run a new evaluation
+3. The new results replace the previous evaluation
+
+Re-evaluate after:
+- Modifying any transformation expression
+- Accepting or rejecting AI suggestions
+- Observing unexpected query results
+- Major updates to source data
+
+## Best practices
+
+**Evaluate regularly**: Run evaluations periodically, especially after changes to mappings or source data.
+
+**Address low confidence first**: Focus on low-confidence mappings before medium-confidence ones.
+
+**Don't ignore medium confidence**: While not urgent, medium-confidence mappings may have subtle issues worth investigating.
+
+**Combine with manual validation**: Use AI evaluation to identify potential issues, then validate specific cases manually.
+
+**Document your decisions**: When you verify a low-confidence mapping is actually correct, document why so future reviewers understand.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/concepts/rosetta-stone/confidence-scoring">
+    Understand how confidence scores are calculated
+  </Card>
+  <Card title="Accepting AI Suggestions" icon="wand-magic-sparkles" href="/guides/rosetta-stone/accepting-ai-suggestions">
+    Generate and accept AI mapping recommendations
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Manual validation techniques
+  </Card>
+  <Card title="Normalized Datasets UI" icon="table-columns" href="/reference/rosetta-stone/normalized-datasets-ui">
+    Reference for the interface elements
+  </Card>
+</CardGroup>

@@ -1,0 +1,255 @@
+---
+title: 'Accepting AI Mapping Suggestions'
+description: 'Review, accept, and reject AI-generated mapping recommendations'
+icon: 'wand-magic-sparkles'
+---
+
+This guide covers how to generate AI mapping suggestions and decide which to accept. AI suggestions help you expand your normalizations by proposing mappings for columns that aren't yet mapped to Rosetta Stone attributes.
+
+<Note>
+Before generating suggestions, your dataset should be in the Normalized Datasets interface. If you don't see your dataset there, you may need to create at least one mapping first. See [Mapping Schemas](/guides/rosetta-stone/mapping-schemas).
+</Note>
+
+## Why use AI suggestions
+
+Creating mappings manually requires understanding both your source data and the target attribute schema. AI suggestions accelerate this process by:
+
+**Analyzing column content**: The AI examines actual data values, not just column names, to propose appropriate attributes.
+
+**Generating transformations**: Suggestions include complete transformation expressions that handle format conversion.
+
+**Providing confidence ratings**: Each suggestion includes a confidence score so you can prioritize your review.
+
+**Showing reasoning**: The AI explains why it proposed each mapping, helping you evaluate its accuracy.
+
+## Generating suggestions
+
+### Using the UI
+
+1. Navigate to **Rosetta Stone** → **Normalized Datasets**
+2. Click on a dataset to open its detail page
+3. Switch to the **Normalize** tab
+4. Click **Start Analysis**
+
+The AI analyzes unmapped columns in your dataset. This process:
+- Samples data from each column
+- Compares patterns against known attribute types
+- Generates transformation expressions
+- Assigns confidence scores
+
+When complete, suggestions appear grouped by confidence level.
+
+## Understanding suggestion cards
+
+Each suggestion card displays:
+
+| Element | Description |
+|---------|-------------|
+| Source column | The column in your dataset |
+| Target attribute | The Rosetta Stone attribute the AI recommends |
+| Confidence score | 0-100% indicating how certain the AI is |
+| Transformation | The expression that will convert source values |
+| Reasoning | Why the AI proposed this mapping |
+| Before/after samples | Example values showing the transformation effect |
+
+### Confidence groupings
+
+Suggestions are organized into collapsible sections by confidence:
+
+**High confidence (80-100%)**: Strong matches where column content clearly aligns with the attribute. These are generally safe to accept.
+
+**Medium confidence (50-79%)**: Reasonable matches with some uncertainty. Review the reasoning and samples before accepting.
+
+**Low confidence (0-49%)**: Uncertain matches that require careful evaluation. The AI found some alignment but isn't confident.
+
+## Reviewing before/after samples
+
+Before accepting any suggestion, examine the sample transformations:
+
+### What to check
+
+**Value accuracy**: Do the "after" values look correct? Is the transformation producing expected output?
+
+**Edge case handling**: Look for unusual values in the samples. Does the transformation handle them appropriately?
+
+**Null behavior**: If samples include null or empty values, verify they're handled as you expect.
+
+**Format consistency**: Are all output values in the correct format for the attribute?
+
+### Example review
+
+A suggestion to map `gender_code` to `hl7_gender`:
+
+| Before | After |
+|--------|-------|
+| `"1"` | `"male"` |
+| `"2"` | `"female"` |
+| `"0"` | `"unknown"` |
+| `"3"` | `"other"` |
+| `null` | `null` |
+
+Review questions:
+- Are the numeric codes mapped correctly? (Verify with your data documentation)
+- Is `"0"` → `"unknown"` the right interpretation?
+- Should `null` remain `null` or become `"unknown"`?
+
+If the mapping looks correct, accept it. If something seems off, reject it and create a manual mapping instead.
+
+## Accepting suggestions
+
+### Individual acceptance
+
+1. Review the suggestion card
+2. Examine the before/after samples
+3. Click **Accept**
+
+The suggestion becomes an active mapping immediately. You can verify by switching to the **Evaluate** tab or checking the mapping in your dataset's Rosetta Stone configuration.
+
+### Bulk accepting high-confidence suggestions
+
+When you have many high-confidence suggestions:
+
+1. Review a sample of the high-confidence suggestions to verify quality
+2. Click **Accept All High Confidence**
+3. Confirm the bulk action
+
+This creates mappings for all suggestions scoring 80% or above. Use this when you've verified that high-confidence suggestions are consistently accurate for your dataset.
+
+<Warning>
+Bulk accept creates multiple mappings at once. While high-confidence suggestions are generally reliable, review at least a few before bulk accepting to ensure the AI understands your data correctly.
+</Warning>
+
+## Rejecting suggestions
+
+Reject suggestions that don't fit your use case:
+
+1. Click **Reject** on the suggestion card
+2. The suggestion is dismissed
+
+Rejected suggestions won't reappear in future analysis runs for the same column.
+
+### Reasons to reject
+
+**Incorrect attribute**: The AI suggested mapping to the wrong attribute. For example, a phone number column suggested for an email attribute.
+
+**Wrong transformation**: The mapping logic doesn't match your data's semantics. For example, gender codes that use different values than the AI assumed.
+
+**Intentionally unmapped**: You don't want this column normalized, perhaps because it contains internal identifiers or data you'll handle differently.
+
+**Duplicate coverage**: Another mapping already covers this data adequately.
+
+## When AI suggestions don't fit
+
+Sometimes none of the AI suggestions work for a column. This happens when:
+
+- Your data uses non-standard formats or encodings
+- Column names don't reflect content
+- The data requires complex business logic to map correctly
+- No standard attribute matches your data's semantics
+
+### Creating manual mappings instead
+
+When AI suggestions miss the mark:
+
+1. Reject the suggestion (if one was proposed)
+2. Navigate to your dataset's **Rosetta Stone** tab
+3. Click **Add Mapping**
+4. Select the source column and target attribute
+5. Write your transformation expression
+6. Test and activate the mapping
+
+See [Mapping Schemas](/guides/rosetta-stone/mapping-schemas) for detailed guidance on manual mapping creation.
+
+### Requesting custom attributes
+
+If no existing attribute fits your data:
+
+1. Check the [attribute catalog](/reference/rosetta-stone/attribute-types) to confirm no suitable attribute exists
+2. Contact Narrative support to discuss creating a custom attribute
+3. Once the attribute exists, create your mapping manually
+
+### Improving future suggestions
+
+AI suggestions improve over time. To help:
+
+- Use descriptive column names when possible
+- Ensure data quality in source columns
+- Accept accurate suggestions—this trains the system on your data patterns
+
+## Validating accepted suggestions
+
+After accepting suggestions, verify they work correctly:
+
+### Run an evaluation
+
+1. Switch to the **Evaluate** tab
+2. Click **Evaluate Mappings**
+3. Check that newly created mappings score well
+
+New mappings from accepted suggestions should typically score high. If they score medium or low, review the evaluation feedback.
+
+### Query the normalized data
+
+Test that your mappings produce expected results:
+
+```sql
+SELECT
+    raw_email,
+    hl7_gender,
+    COUNT(1) as count
+FROM narrative.rosetta_stone
+WHERE _nio_source_dataset_id = 'your-dataset-id'
+GROUP BY raw_email, hl7_gender
+LIMIT 100
+```
+
+Spot-check that values look correct.
+
+### Monitor over time
+
+As new data flows through your mappings, periodically:
+- Re-run evaluations to catch emerging issues
+- Check for unexpected null rates
+- Verify distribution of enum values
+
+## Global warnings
+
+The AI analysis may produce dataset-level warnings that appear at the top of the suggestions list:
+
+| Warning | Meaning |
+|---------|---------|
+| High null rate | Many columns have significant null values |
+| Inconsistent formats | Same column contains multiple data formats |
+| Low coverage | Few columns could be mapped to known attributes |
+| Duplicate columns | Multiple columns appear to contain the same data |
+
+Address these warnings to improve overall data quality, independent of individual mapping decisions.
+
+## Best practices
+
+**Review before accepting**: Even high-confidence suggestions deserve a quick review of the samples.
+
+**Accept incrementally**: Accept a few suggestions, validate them, then continue. This catches issues early.
+
+**Document rejections**: When rejecting suggestions, note why so future team members understand your decisions.
+
+**Re-run after changes**: If you modify source data or add columns, generate new suggestions to capture the changes.
+
+**Combine with evaluation**: After accepting suggestions, run an evaluation to verify quality holistically.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Managing Evaluations" icon="gauge" href="/guides/rosetta-stone/managing-evaluations">
+    Assess mapping quality with AI scoring
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Create mappings manually
+  </Card>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/concepts/rosetta-stone/confidence-scoring">
+    Understand how confidence scores work
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Test mappings before production use
+  </Card>
+</CardGroup>

@@ -19,6 +19,7 @@
               "getting-started/create-account",
               "getting-started/upload-data",
               "getting-started/normalize-data",
+              "getting-started/evaluate-mappings",
               "getting-started/first-nql-query",
               "getting-started/first-data-collaboration"
             ]
@@ -47,7 +48,8 @@
             "pages": [
               "concepts/rosetta-stone/overview",
               "concepts/rosetta-stone/how-it-works",
-              "concepts/rosetta-stone/normalization-model"
+              "concepts/rosetta-stone/normalization-model",
+              "concepts/rosetta-stone/confidence-scoring"
             ]
           },
           {
@@ -168,7 +170,9 @@
             "pages": [
               "guides/rosetta-stone/mapping-schemas",
               "guides/rosetta-stone/validating-mappings",
-              "guides/rosetta-stone/edge-cases"
+              "guides/rosetta-stone/edge-cases",
+              "guides/rosetta-stone/managing-evaluations",
+              "guides/rosetta-stone/accepting-ai-suggestions"
             ]
           },
           {
@@ -275,7 +279,8 @@
             "group": "Rosetta Stone Reference",
             "pages": [
               "reference/rosetta-stone/attribute-types",
-              "reference/rosetta-stone/transformation-functions"
+              "reference/rosetta-stone/transformation-functions",
+              "reference/rosetta-stone/normalized-datasets-ui"
             ]
           },
           {

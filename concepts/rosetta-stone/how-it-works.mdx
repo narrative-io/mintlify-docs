@@ -108,6 +108,16 @@ Mappings are created through a combination of machine learning and human curatio
 
 This iterative process ensures accuracy while minimizing manual effort. As more data flows through the system, the ML models improve their suggestions.
 
+### AI-assisted quality evaluation
+
+After mappings are created, you can use AI to evaluate their quality and suggest improvements:
+
+1. **Confidence scoring**: AI analyzes each mapping and assigns a confidence score (0-100%) indicating how likely the mapping is to produce correct results
+2. **Issue identification**: The system highlights potential problems with transformations, such as missing case handling or type mismatches
+3. **Suggestion generation**: AI proposes new mappings for columns that aren't yet normalized
+
+This ongoing refinement helps maintain data quality as source schemas evolve or new data patterns emerge. See [Confidence Scoring](/concepts/rosetta-stone/confidence-scoring) for details on how the AI evaluation works.
+
 ### Stage 3: Query-time translation
 
 When you query the `narrative.rosetta_stone` table:
@@ -216,10 +226,10 @@ This ensures the normalized view contains clean, consistent data.
   <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
     Deep dive into the type system and attribute hierarchy
   </Card>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/concepts/rosetta-stone/confidence-scoring">
+    How AI evaluates mapping quality
+  </Card>
   <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
     Step-by-step guide to creating mappings
-  </Card>
-  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
-    Test and verify your mappings
   </Card>
 </CardGroup>

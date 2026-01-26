@@ -1,0 +1,288 @@
+---
+title: 'Normalized Datasets Interface'
+description: 'Reference for the Normalized Datasets listing and detail pages'
+icon: 'table-columns'
+---
+
+This reference documents the UI elements, metrics, and actions available in the Normalized Datasets interface.
+
+## Listing page
+
+**Path:** Rosetta Stone → Normalized Datasets
+
+The listing page displays all datasets that have Rosetta Stone mappings applied.
+
+### Columns
+
+| Column | Description | Sortable |
+|--------|-------------|----------|
+| **Dataset name** | Display name of the dataset; click to navigate to detail page | Yes |
+| **Mappings** | Count of non-system mappings on the dataset | Yes |
+| **Rows** | Total record count in the dataset | Yes |
+| **Avg. Confidence** | Average confidence score across all evaluated mappings | Yes |
+| **Updated** | Timestamp of the last modification to the dataset or its mappings | Yes |
+
+### Average confidence display
+
+The average confidence column uses color coding:
+
+| Color | Score range | Interpretation |
+|-------|-------------|----------------|
+| Green | 80-100% | Mappings are generally high quality |
+| Yellow | 50-79% | Some mappings may need attention |
+| Red | 0-49% | Significant mapping issues likely |
+| Gray | Not evaluated | No evaluation has been run |
+
+### Empty state
+
+When no datasets have mappings, the listing displays a message with a link to the mapping documentation.
+
+---
+
+## Detail page
+
+**Path:** Rosetta Stone → Normalized Datasets → {dataset_name}
+
+The detail page shows evaluation results and mapping suggestions for a specific dataset. It has two tabs: **Evaluate** and **Normalize**.
+
+---
+
+## Evaluate tab
+
+The Evaluate tab displays AI-powered quality scores for existing mappings.
+
+### Confidence gradient bar
+
+A horizontal bar at the top showing the distribution of mappings across confidence tiers:
+
+| Section | Color | Represents |
+|---------|-------|------------|
+| High confidence | Green | Mappings scoring 80-100% |
+| Medium confidence | Yellow | Mappings scoring 50-79% |
+| Low confidence | Red | Mappings scoring 0-49% |
+| Not scored | Gray | Mappings without scores |
+
+The bar width of each section is proportional to the count of mappings in that tier.
+
+### Confidence level cards
+
+Four clickable cards showing mapping counts by confidence tier:
+
+| Card | Score range | Click action |
+|------|-------------|--------------|
+| **High** | 80-100% | Filter to show only high-confidence mappings |
+| **Medium** | 50-79% | Filter to show only medium-confidence mappings |
+| **Low** | 0-49% | Filter to show only low-confidence mappings |
+| **Not Scored** | N/A | Filter to show only unscored mappings |
+
+Click the active filter again or click **All** to clear the filter.
+
+### Overview cards
+
+Five cards displaying dataset statistics:
+
+| Card | Description |
+|------|-------------|
+| **Total Columns** | Number of columns in the source dataset |
+| **Attributes Mapped** | Count of distinct Rosetta Stone attributes with mappings |
+| **System Mappings** | Mappings auto-generated for internal columns |
+| **AI Mappings** | Mappings created from accepted AI suggestions |
+| **User Mappings** | Mappings created manually by users |
+
+Click a mapping type card to filter the mapping list to that type.
+
+### LLM summary section
+
+When an evaluation completes, this section displays an AI-generated analysis including:
+
+- Overall quality assessment
+- Key issues identified
+- Recommended actions
+- Patterns observed across mappings
+
+### Transformation cards
+
+Each mapping displays as a card showing:
+
+| Element | Description |
+|---------|-------------|
+| Source column | The column being mapped |
+| Arrow indicator | Visual showing the mapping direction |
+| Target attribute | The Rosetta Stone attribute |
+| Confidence badge | Score with color indicator |
+| Mapping type | Icon indicating system/AI/user/lineage |
+| Expand button | Shows detailed AI feedback when clicked |
+
+**Expanded card view:**
+
+| Element | Description |
+|---------|-------------|
+| Score breakdown | Factors contributing to the confidence score |
+| Issues | Specific problems identified by the AI |
+| Recommendations | Suggested improvements |
+| Sample analysis | Before/after values from the dataset |
+
+### Evaluate mappings button
+
+**Location:** Top right of the Evaluate tab
+
+**Action:** Triggers a new AI evaluation of all mappings on the dataset
+
+**States:**
+- **Ready:** Button displays "Evaluate Mappings"
+- **Running:** Button shows loading animation; icon animates
+- **Complete:** Results display in the interface
+
+---
+
+## Normalize tab
+
+The Normalize tab generates and displays AI mapping suggestions for unmapped columns.
+
+### Start analysis button
+
+**Location:** Top of the Normalize tab (when no suggestions exist)
+
+**Action:** Triggers AI analysis to generate mapping suggestions for unmapped columns
+
+**States:**
+- **Ready:** Button displays "Start Analysis"
+- **Running:** Button shows loading animation
+- **Complete:** Suggestions appear grouped by confidence
+
+### Global warnings section
+
+Displays dataset-level warnings from the AI analysis:
+
+| Warning type | Description |
+|--------------|-------------|
+| High null rate | Many columns have significant null values |
+| Inconsistent formats | Same column contains multiple data formats |
+| Low coverage | Few columns could be mapped to known attributes |
+| Duplicate columns | Multiple columns appear to contain the same data |
+
+### Confidence group sections
+
+Suggestions are organized into collapsible sections by confidence tier:
+
+| Section | Initial state | Contains |
+|---------|---------------|----------|
+| **High Confidence** | Expanded | Suggestions scoring 80-100% |
+| **Medium Confidence** | Collapsed | Suggestions scoring 50-79% |
+| **Low Confidence** | Collapsed | Suggestions scoring 0-49% |
+
+Click section headers to expand or collapse.
+
+### Accept all high confidence button
+
+**Location:** Header of the High Confidence section
+
+**Action:** Bulk accepts all suggestions in the high-confidence tier
+
+**Confirmation:** Displays count of mappings to be created before proceeding
+
+### Suggestion cards
+
+Each suggestion displays as a card showing:
+
+| Element | Description |
+|---------|-------------|
+| Source column | The unmapped column in your dataset |
+| Target attribute | The AI-recommended Rosetta Stone attribute |
+| Confidence score | 0-100% with color indicator |
+| Reasoning | Brief explanation of why the AI proposed this mapping |
+| Before/after samples | Example values showing transformation results |
+| Accept button | Creates the mapping |
+| Reject button | Dismisses the suggestion |
+
+**Sample display format:**
+
+| Before | After |
+|--------|-------|
+| Original value from source | Transformed value for attribute |
+
+Up to 5 sample pairs are shown per suggestion.
+
+---
+
+## Actions reference
+
+### Dataset-level actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Evaluate Mappings** | Evaluate tab | Run AI quality analysis on all mappings | Confidence scores and feedback displayed |
+| **Start Analysis** | Normalize tab | Generate AI suggestions for unmapped columns | Suggestions displayed by confidence tier |
+
+### Mapping-level actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **View Details** | Transformation card | Expand to see AI feedback | Detailed analysis displayed |
+| **Edit Mapping** | Transformation card menu | Modify the mapping | Opens mapping editor |
+| **Delete Mapping** | Transformation card menu | Remove the mapping | Mapping deleted after confirmation |
+
+### Suggestion-level actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Accept** | Suggestion card | Create mapping from suggestion | Mapping created; suggestion removed |
+| **Reject** | Suggestion card | Dismiss the suggestion | Suggestion removed; won't reappear |
+| **Accept All High** | High Confidence section | Bulk accept all high-confidence suggestions | Multiple mappings created |
+
+---
+
+## Status indicators
+
+### Evaluation status
+
+| Indicator | Meaning |
+|-----------|---------|
+| **No results** | Evaluation has never been run |
+| **Evaluating...** | Evaluation in progress |
+| **Last evaluated: {date}** | Results are from the indicated date |
+| **Stale** badge | Mappings changed since last evaluation |
+
+### Suggestion status
+
+| Indicator | Meaning |
+|-----------|---------|
+| **No suggestions** | Analysis has never been run |
+| **Generating...** | Analysis in progress |
+| **{N} suggestions** | Suggestions available for review |
+| **All processed** | All suggestions accepted or rejected |
+
+---
+
+## Filtering and sorting
+
+### Listing page
+
+- Click column headers to sort by that column
+- Default sort: Updated (descending)
+
+### Detail page mappings
+
+- Click confidence cards to filter by confidence tier
+- Click overview cards to filter by mapping type
+- Filters can be combined (e.g., low-confidence user mappings)
+- Click **All** to clear filters
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Managing Evaluations" icon="gauge" href="/guides/rosetta-stone/managing-evaluations">
+    How to run and interpret evaluations
+  </Card>
+  <Card title="Accepting AI Suggestions" icon="wand-magic-sparkles" href="/guides/rosetta-stone/accepting-ai-suggestions">
+    How to review and accept suggestions
+  </Card>
+  <Card title="Confidence Scoring" icon="gauge-high" href="/concepts/rosetta-stone/confidence-scoring">
+    How confidence scores are calculated
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Creating mappings manually
+  </Card>
+</CardGroup>

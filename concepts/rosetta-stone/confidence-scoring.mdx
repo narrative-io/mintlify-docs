@@ -1,0 +1,116 @@
+---
+title: 'Confidence Scoring'
+description: 'How AI evaluates mapping quality and generates confidence scores'
+icon: 'gauge-high'
+---
+
+When you create mappings in Rosetta Stone, how do you know they're correct? A mapping might look reasonable but produce unexpected results with certain data values. Confidence scoring uses AI to evaluate your mappings and identify potential issues before they affect your data.
+
+## What is a confidence score?
+
+A confidence score is an AI-generated rating from 0-100% that indicates how likely a mapping is to produce correct results. Higher scores mean the AI found strong evidence that the mapping is accurate; lower scores indicate potential issues that warrant review.
+
+Confidence scores differ from manual validation in important ways:
+
+| Approach | What it checks | When it runs |
+|----------|----------------|--------------|
+| Manual validation | Specific test cases you define | On demand |
+| Confidence scoring | Pattern analysis across all data | Automatically |
+
+Manual validation confirms mappings work for known cases. Confidence scoring identifies issues you might not have anticipated—unusual data patterns, edge cases, or transformation logic that could fail under certain conditions.
+
+## How scores are calculated
+
+The AI evaluates each mapping by analyzing multiple factors:
+
+**Column name analysis**
+The AI examines whether the source column name semantically matches the target attribute. A column named `email_address` mapping to the `raw_email` attribute scores higher than a column named `field_7`.
+
+**Data sample inspection**
+The system samples actual data values and checks whether they match expected patterns for the target attribute. If the `hl7_gender` attribute expects values like `male` or `female`, but the source column contains `1` and `2`, the AI will flag this unless there's an appropriate transformation.
+
+**Transformation logic evaluation**
+When a mapping includes a transformation expression, the AI analyzes whether the logic correctly handles the conversion. It looks for:
+- Missing case handling (what happens to unexpected values?)
+- Type mismatches (is a string being cast to a number correctly?)
+- Edge cases (null values, empty strings, special characters)
+
+**Historical patterns**
+The AI learns from mappings across the platform. If similar columns from other datasets map to the same attribute using a particular transformation, it uses this pattern to inform scoring.
+
+## Understanding score ranges
+
+Confidence scores fall into three tiers:
+
+| Score range | Classification | Recommended action |
+|-------------|----------------|-------------------|
+| 80-100% | High confidence | Generally reliable; spot-check if desired |
+| 50-79% | Medium confidence | Review the mapping and AI feedback |
+| 0-49% | Low confidence | Manual review required before use |
+
+**High confidence (80-100%)** indicates strong alignment between the source column and target attribute. The AI found consistent patterns, appropriate transformations, and no significant edge cases. These mappings are likely correct, though you should still validate critical data flows.
+
+**Medium confidence (50-79%)** suggests the mapping is probably correct but has characteristics worth reviewing. Common reasons include:
+- Partial transformation coverage (handles most but not all values)
+- Column names that don't clearly indicate content
+- Data patterns that vary from typical examples
+
+**Low confidence (0-49%)** means the AI identified significant concerns. The mapping might still be correct, but requires human verification. Low scores often result from:
+- Missing or incomplete transformations
+- Source data that doesn't match expected patterns
+- Ambiguous column names with multiple possible interpretations
+
+## Evaluation vs. suggestions
+
+Confidence scoring powers two distinct workflows:
+
+**Mapping evaluation** analyzes your existing mappings. Run an evaluation to:
+- Assess the overall quality of your normalizations
+- Identify specific mappings that need attention
+- Get AI-generated explanations for quality issues
+
+**Mapping suggestions** proposes new mappings for columns that aren't yet normalized. The AI examines unmapped columns and recommends:
+- Which attribute each column should map to
+- What transformation expression to use
+- Sample output showing before/after values
+
+Both workflows use the same underlying AI analysis, but evaluation focuses on improving what exists while suggestions help you expand your normalizations.
+
+## The confidence gradient
+
+In the Normalized Datasets interface, confidence is visualized as a gradient bar showing the distribution of your mappings across quality tiers:
+
+| Color | Meaning |
+|-------|---------|
+| Green | High confidence mappings |
+| Yellow | Medium confidence mappings |
+| Red | Low confidence mappings |
+| Gray | Not yet scored |
+
+This visualization helps you quickly assess the overall health of a dataset's normalizations. A dataset with mostly green indicates well-configured mappings; significant red suggests the dataset needs attention.
+
+## When to re-evaluate
+
+Confidence scores can become stale when:
+- You modify transformation expressions
+- The source data changes significantly
+- New data samples reveal patterns not present in the original evaluation
+
+Re-run evaluations periodically, especially after schema changes or when you notice unexpected query results. The AI will incorporate new data samples and may adjust scores based on current conditions.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Managing Evaluations" icon="gauge" href="/guides/rosetta-stone/managing-evaluations">
+    Run evaluations and interpret results
+  </Card>
+  <Card title="Accepting AI Suggestions" icon="wand-magic-sparkles" href="/guides/rosetta-stone/accepting-ai-suggestions">
+    Review and accept AI-generated mapping recommendations
+  </Card>
+  <Card title="Normalized Datasets UI" icon="table-columns" href="/reference/rosetta-stone/normalized-datasets-ui">
+    Reference for the Normalized Datasets interface
+  </Card>
+  <Card title="Validating Mappings" icon="circle-check" href="/guides/rosetta-stone/validating-mappings">
+    Manual validation techniques for mappings
+  </Card>
+</CardGroup>
