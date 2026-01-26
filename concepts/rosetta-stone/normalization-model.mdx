@@ -167,7 +167,7 @@ In this example, `$ref: 300` references the `event_timestamp` attribute and `$re
 
 ## Validations
 
-Validations enforce data quality at the attribute level. Validations are specified as an array of strings.
+Validations enforce data quality at the attribute level. Validations are NQL expressions where `$this` represents the value being validated. These expressions are injected into compiled NQL queries to filter out invalid values.
 
 ### Required fields in objects
 
@@ -191,14 +191,14 @@ In this example, `middle_name` is optional because it's not in the `required` ar
 
 ### Range constraints
 
-Numeric fields can have minimum and maximum bounds using the `validations` array:
+Numeric fields can have minimum and maximum bounds using comparison operators with `$this`:
 
 ```json
 {
   "id": 201,
   "name": "age",
   "type": "long",
-  "validations": ["min:0", "max:150"]
+  "validations": ["$this >= 0", "$this <= 150"]
 }
 ```
 
@@ -206,20 +206,20 @@ Values outside the range are rejected.
 
 ### String length
 
-Constrain string length:
+Use the `LENGTH()` function to constrain string length:
 
 ```json
 {
   "id": 400,
   "name": "country_code",
   "type": "string",
-  "validations": ["min_length:2", "max_length:2"]
+  "validations": ["LENGTH($this) = 2"]
 }
 ```
 
 ### Pattern matching
 
-Validate strings against regular expressions:
+Use `LIKE` for pattern validation or combine with length checks:
 
 ```json
 {
@@ -227,7 +227,7 @@ Validate strings against regular expressions:
   "name": "email_sha256",
   "type": "string",
   "is_join_key": true,
-  "validations": ["min_length:64", "max_length:64", "pattern:^[a-f0-9]{64}$"]
+  "validations": ["LENGTH($this) = 64"]
 }
 ```
 
@@ -245,7 +245,7 @@ Multiple validations can be combined in a single array:
     "end_date": { "type": "timestamptz" }
   },
   "required": ["start_date", "end_date"],
-  "validations": ["custom:end_date >= start_date"]
+  "validations": ["end_date >= start_date"]
 }
 ```
 

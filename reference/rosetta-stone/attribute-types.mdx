@@ -17,7 +17,7 @@ All attributes share a common structure based on the platform's type system:
   "display_name": "Human Readable Name",
   "description": "Description of the attribute",
   "type": "string",
-  "validations": ["min:1", "max:255"]
+  "validations": ["LENGTH($this) >= 1", "LENGTH($this) <= 255"]
 }
 ```
 
@@ -65,7 +65,7 @@ Variable-length Unicode text. Can optionally include an `enum` property to restr
   "name": "email_sha256",
   "type": "string",
   "description": "SHA-256 hash of email address",
-  "validations": ["min_length:64", "max_length:64", "pattern:^[a-f0-9]{64}$"]
+  "validations": ["LENGTH($this) = 64"]
 }
 ```
 
@@ -93,7 +93,7 @@ When a string attribute has an `enum` property, only those values are allowed. V
   "name": "age",
   "type": "long",
   "description": "Age in years",
-  "validations": ["min:0", "max:150"]
+  "validations": ["$this >= 0", "$this <= 150"]
 }
 ```
 
@@ -108,7 +108,7 @@ Double-precision (64-bit) floating-point numbers.
   "name": "latitude",
   "type": "double",
   "description": "Geographic latitude",
-  "validations": ["min:-90", "max:90"]
+  "validations": ["$this >= -90", "$this <= 90"]
 }
 ```
 
@@ -342,24 +342,48 @@ References link to other attribute definitions using their numeric ID. This enab
 
 ---
 
-## Validation strings
+## Validation expressions
 
-Validations are specified as an array of strings. Common validation patterns:
-
-### String validations
-
-| Validation | Description | Example |
-|------------|-------------|---------|
-| `min_length:N` | Minimum character count | `"min_length:1"` |
-| `max_length:N` | Maximum character count | `"max_length:255"` |
-| `pattern:REGEX` | Regex the value must match | `"pattern:^[a-z]+$"` |
+Validations are NQL expressions that filter out invalid values. Use `$this` to reference the value being validated. These expressions are injected into compiled NQL queries to enforce data quality.
 
 ### Numeric validations
 
-| Validation | Description | Example |
-|------------|-------------|---------|
-| `min:N` | Minimum value (inclusive) | `"min:0"` |
-| `max:N` | Maximum value (inclusive) | `"max:100"` |
+Comparison operators check value ranges:
+
+```json
+{
+  "id": 10,
+  "name": "birth_year",
+  "type": "long",
+  "description": "The year that an entity was born",
+  "validations": ["LENGTH($this) = 4", "$this >= 1900"]
+}
+```
+
+| Expression | Description |
+|------------|-------------|
+| `$this >= 0` | Value must be at least 0 |
+| `$this <= 100` | Value must be at most 100 |
+| `$this > 0 AND $this < 1000` | Combined range check |
+
+### String length validations
+
+Use `LENGTH()` to validate string length:
+
+| Expression | Description |
+|------------|-------------|
+| `LENGTH($this) >= 1` | At least 1 character |
+| `LENGTH($this) <= 255` | At most 255 characters |
+| `LENGTH($this) = 2` | Exactly 2 characters |
+
+### Pattern matching
+
+Use `LIKE` for pattern validation:
+
+| Expression | Description |
+|------------|-------------|
+| `$this LIKE 'A%'` | Starts with "A" |
+| `$this LIKE '%@%.%'` | Contains @ and . (email-like) |
 
 ### Examples
 
@@ -368,7 +392,7 @@ Validations are specified as an array of strings. Common validation patterns:
   "id": 5001,
   "name": "age",
   "type": "long",
-  "validations": ["min:0", "max:150"]
+  "validations": ["$this >= 0", "$this <= 150"]
 }
 ```
 
@@ -377,7 +401,7 @@ Validations are specified as an array of strings. Common validation patterns:
   "id": 5002,
   "name": "country_code",
   "type": "string",
-  "validations": ["min_length:2", "max_length:2", "pattern:^[A-Z]{2}$"]
+  "validations": ["LENGTH($this) = 2"]
 }
 ```
 
