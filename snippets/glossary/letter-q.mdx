@@ -1,0 +1,13 @@
+## Q
+
+### Query compilation
+
+The process by which the [control plane](#control-plane) transforms an [NQL](#nql-narrative-query-language) query into executable SQL for a target [data plane](#data-plane). Query compilation includes parsing, permission validation, optimization, and [transpilation](#transpilation) to the target database's SQL dialect.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Transpilation](#transpilation)
+
+### Query template
+
+A reusable NQL query pattern with configurable [placeholders](#placeholder-query-template) that users fill in at execution time. Templates enable users to run customized queries without writing NQL directly, making complex queries accessible to non-technical users while ensuring consistent query structure.
+
+**Related:** [Query Templates](/concepts/nql/query-templates), [Using Query Templates](/guides/nql/using-query-templates), [Query Template Syntax](/reference/nql/query-template-syntax)

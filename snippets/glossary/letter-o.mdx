@@ -1,0 +1,7 @@
+## O
+
+### Operator (data plane)
+
+A software component running within a customer-hosted [data plane](#data-plane) that bridges the [control plane](#control-plane) and the customer's data infrastructure. The operator polls the control plane's [job queue](#job-queue) for compiled queries, executes them against the local database engine (Snowflake, Spark, etc.), and reports results back. Because the operator runs in the customer's infrastructure, raw data never leaves the data plane.
+
+**Related:** [Data Planes](/concepts/primitives/data-planes), [Query Processing](/concepts/architecture/query-processing)

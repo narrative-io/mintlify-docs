@@ -1,0 +1,65 @@
+## D
+
+### Data collaboration
+
+The process by which multiple organizations share, query, and analyze each other's data while maintaining control and compliance. Data collaboration in Narrative enables organizations to unlock value from combined datasets without sacrificing data governance.
+
+### Data controller
+
+Under GDPR, an entity that determines the purposes and means of processing personal data. The controller decides what data to collect, why to collect it, and how it will be used. Controllers bear primary responsibility for compliance with data protection principles.
+
+**Related:** [Data processor](#data-processor), [GDPR](/concepts/compliance/gdpr)
+
+### Data plane
+
+The infrastructure where data physically resides and where queries execute. Data planes can be hosted by Narrative (Narrative-hosted) or deployed within a customer's own infrastructure (customer-hosted) for maximum control over data residency.
+
+**Related:** [Data Planes](/concepts/primitives/data-planes)
+
+### Data portability
+
+A data subject right under GDPR allowing individuals to receive their personal data in a structured, commonly used, machine-readable format and to transmit that data to another controller. This right supports individuals' ability to switch between service providers.
+
+**Related:** [GDPR](/concepts/compliance/gdpr)
+
+### Data processor
+
+Under GDPR, an entity that processes personal data on behalf of a data controller. Processors act only on the controller's documented instructions and must maintain appropriate security measures. Service providers under CCPA serve a similar role.
+
+**Related:** [Data controller](#data-controller), [GDPR](/concepts/compliance/gdpr)
+
+### Data Processing Agreement (DPA)
+
+A legally binding contract between a data controller and data processor that governs the processing of personal data. Required under GDPR, DPAs specify the subject matter, duration, nature, and purpose of processing, as well as the processor's obligations regarding data security, sub-processors, and data subject rights.
+
+**Related:** [Data controller](#data-controller), [Data processor](#data-processor), [GDPR](/concepts/compliance/gdpr)
+
+### Data products
+
+Curated, packaged datasets designed for sharing with partner organizations. Data products include relevant metadata, access controls, and documentation to enable effective data collaboration.
+
+### Data subject
+
+Under GDPR, an identified or identifiable natural person whose personal data is being processed. Data subjects have various rights including access, rectification, erasure, and data portability.
+
+**Related:** [GDPR](/concepts/compliance/gdpr)
+
+### Dataset
+
+A collection of structured data registered in Narrative that can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
+
+### Data sample
+
+A preview of up to 1,000 rows from a dataset, retrieved via a sampling job and stored in the [control plane](#control-plane) for quick access through the API or UI. Samples are used to view [interactive query](#interactive-query) results and inspect dataset contents without downloading the full dataset from the [data plane](#data-plane). Samples can be requested on demand and cleared when no longer needed.
+
+**Related:** [Data Flow](/concepts/architecture/data-flow#how-you-view-query-results), [Managing Datasets](/guides/sdk/managing-datasets#sampling-data)
+
+### Device alias
+
+A data field that provides details about a user's device, broken out into make, model, and operating system. Device alias data helps categorize user devices and is collected through SDKs or real-time bidding environments. Examples include "iPhone X, iOS 13.3.1" or "Pixel 3, Android 10.0".
+
+### Encoding space
+
+The per-partner namespace for Narrative IDs. The same clear text identifier encoded for different partners produces different Narrative IDs, ensuring that identifiers cannot be correlated across partners without going through Narrative's translation functionality.
+
+**Related:** [Narrative ID](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)

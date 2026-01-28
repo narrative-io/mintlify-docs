@@ -1,0 +1,13 @@
+## J
+
+### Job queue
+
+A [control plane](#control-plane) component that coordinates work between the control plane and [data planes](#data-plane). The job queue holds various types of jobs—including compiled queries, dataset operations, and system tasks—that data plane [operators](#operator-data-plane) poll and execute. This pull-based architecture ensures the control plane never needs direct access to data plane infrastructure.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Operator](#operator-data-plane), [Job Types](/reference/architecture/job-types)
+
+### Just-in-time provisioning (JIT)
+
+The automatic creation of user accounts on first login, eliminating the need for manual account creation before SSO access. When enabled, Narrative creates user accounts automatically when users authenticate through SSO for the first time.
+
+**Related:** [SSO Configuration](/account-settings/sso)

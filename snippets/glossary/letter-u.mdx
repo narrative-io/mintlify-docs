@@ -1,0 +1,33 @@
+## U
+
+### UID2 (Unified ID 2.0)
+
+A privacy-focused user identifier developed by the Identity Consortium (including The Trade Desk) that enables cross-platform data matching without compromising user privacy. UID2 is an open-source, standalone solution that can be generated from hashed emails or phone numbers. Narrative supports automatic UID2 generation from uploaded data.
+
+**Related:** [UID2](/concepts/identifiers/uid2)
+
+### UNNEST
+
+An NQL function that expands an array column into multiple rows, with one row generated for each element in the array. UNNEST is commonly used to flatten multi-key matching scenarios into single-key joins that the query planner can optimize efficiently.
+
+**Related:** [NQL Functions Reference](/reference/nql/functions), [Avoid OR in JOIN Clauses](/guides/nql/query-optimization/avoid-or-in-join)
+
+### Unix time
+
+The number of seconds (or milliseconds) elapsed since January 1st, 1970 at 00:00:00 UTC (the Unix epoch). Narrative's Data Streaming Platform uses Unix time in milliseconds for all timestamp fields, providing millisecond-level precision for data collaboration.
+
+**Related:** [Unix Time](/concepts/data-formats/unix-time)
+
+### Upsert
+
+A database operation that inserts a new record if it does not exist, or updates the existing record if it does. The term combines "update" and "insert." In NQL, upsert behavior is achieved using the `MERGE ON` clause within `CREATE MATERIALIZED VIEW` statements.
+
+**Related:** [Incremental Upserts with MERGE ON](/guides/nql/incremental-upserts), [Materialized View Syntax](/reference/nql/materialized-view-syntax)
+
+### URI (Uniform Resource Identifier)
+
+A string that represents a particular resource. Common resources include web pages (full URLs like `http://example.org/page`) and mobile applications (iOS app IDs like `553834731` or Android package names like `com.example.app`). In Narrative, URI is a required attribute in the Digital Consumption data type, denoting where a digital behavior took place.
+
+### User agent
+
+A string from a user's device that identifies the operating system, browser, carrier, and hardware information. User agent strings are collected in digital consumption scenarios and help identify device characteristics. Example: `Mozilla/5.0 (iPhone; CPU iPhone OS 13_3 like Mac OS X) AppleWebKit/605.1.15`.

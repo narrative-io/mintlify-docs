@@ -1,0 +1,53 @@
+## M
+
+### Mapping (Rosetta Stone)
+
+A translation rule that associates a Rosetta Stone attribute with a specific column in a dataset. Mappings can include transformation expressions to convert source data formats to the standard attribute format. Each mapping connects a source column to a target attribute and optionally includes NQL logic to transform values.
+
+**Related:** [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Mapping evaluation
+
+The AI-powered analysis process that assesses the quality of existing Rosetta Stone mappings. Evaluations generate confidence scores for each mapping and identify potential issues such as missing transformation cases, type mismatches, or edge case handling. Run evaluations to understand the overall health of your normalizations.
+
+**Related:** [Confidence Scoring](/concepts/rosetta-stone/confidence-scoring), [Managing Evaluations](/guides/rosetta-stone/managing-evaluations)
+
+### Mapping suggestion
+
+An AI-generated recommendation for mapping a dataset column to a Rosetta Stone attribute. Suggestions include the proposed transformation expression, confidence score, reasoning, and sample output preview showing before/after values. Users can accept suggestions to create mappings or reject them if they don't fit the use case.
+
+**Related:** [Accepting AI Suggestions](/guides/rosetta-stone/accepting-ai-suggestions)
+
+### Marketplace
+
+The Narrative platform's catalog where organizations discover available datasets from other organizations. The marketplace enables data discovery and facilitates data collaboration relationships.
+
+### Mobile Advertising ID (MAID)
+
+A unique pseudo-anonymous identifier tied to a mobile device, provided by the mobile operating system. iOS calls this the Identifier For Advertisers (IDFA), while Android calls it the Advertising ID (GAID or Ad ID). Both consist of 32 hyphen-separated characters. MAIDs are resettable and users can opt out of their collection.
+
+**Related:** [Mobile Ad IDs](/concepts/identifiers/mobile-ad-ids)
+
+### Match table
+
+A pre-generated table that pairs Narrative IDs with clear text identifiers, allowing partners to use Narrative IDs for matching independently of the Narrative platform. Match tables enable offline workflows while maintaining privacy through the encoding.
+
+**Related:** [Narrative ID](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id)
+
+### MD5
+
+Message-Digest Algorithm 5—a widely-used hash function that produces a 128-bit (32-character hexadecimal) hash value. While cryptographically broken for security purposes, MD5 remains acceptable for non-security applications like identifier matching in data collaboration. Narrative supports MD5 alongside SHA-1 and SHA-256 for hashing PII.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Materialized view
+
+A pre-computed query result stored as a dataset. Unlike executing a query each time, a materialized view stores results physically for faster access. Views can be refreshed on a schedule or manually to incorporate changes in underlying data.
+
+**Related:** [Materialized Views](/concepts/nql/materialized-views), [Creating Materialized Views](/guides/nql/creating-materialized-views), [Materialized View Syntax](/reference/nql/materialized-view-syntax)
+
+### Model Inference
+
+A job type that enables AI-powered operations by running LLM inference within a customer's [data plane](#data-plane). Model Inference supports multiple models from Anthropic (Claude Haiku, Sonnet, Opus) and OpenAI (GPT-4.1, o4-mini) and guarantees [structured output](#structured-output-inference) via JSON Schema. Because inference runs within the data plane, data never leaves customer-controlled infrastructure—no external API calls are made to model providers.
+
+**Related:** [Model Inference Overview](/concepts/model-inference/overview), [Running Model Inference](/guides/sdk/running-model-inference), [Supported Models](/reference/model-inference/supported-models)

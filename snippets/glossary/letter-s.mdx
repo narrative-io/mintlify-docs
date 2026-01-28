@@ -1,0 +1,61 @@
+## S
+
+### SAML 2.0
+
+Security Assertion Markup Language 2.0—the industry standard protocol enabling secure authentication between an identity provider and Narrative. SAML 2.0 is used for enterprise single sign-on integrations.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Schema inference
+
+The automated process by which Narrative analyzes uploaded data to identify column types and suggest appropriate Rosetta Stone attribute mappings. Schema inference uses pattern recognition and machine learning to propose mappings that can be accepted, modified, or rejected.
+
+**Related:** [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Schema mapping
+
+The process of defining how fields from one data schema correspond to fields in another schema or to a standard schema. Schema mapping is a key component of Narrative's Rosetta Stone functionality.
+
+**Related:** [Rosetta Stone Overview](/concepts/rosetta-stone/overview), [Mapping Schemas](/guides/rosetta-stone/mapping-schemas)
+
+### Schema normalization
+
+The process of mapping different data schemas to a common standardized format, enabling organizations to work with data in consistent ways regardless of how it was originally structured.
+
+**Related:** [The Normalization Model](/concepts/rosetta-stone/normalization-model), [Rosetta Stone Overview](/concepts/rosetta-stone/overview)
+
+### SDK (Software Development Kit)
+
+A collection of libraries, tools, and documentation that enables developers to integrate with the Narrative platform programmatically. The official TypeScript SDK (`@narrative.io/data-collaboration-sdk-ts`) provides type-safe access to all Narrative APIs, including dataset management, NQL query execution, and job tracking.
+
+**Related:** [TypeScript SDK Reference](/reference/sdks/typescript), [SDK Quickstart](/getting-started/sdk-quickstart), [SDK Guides](/guides/sdk)
+
+### Schema preset
+
+A pre-defined collection of Rosetta Stone attributes designed for common use cases such as demographic data, marketing events, or identity resolution. Organizations can use public presets to accelerate mapping or create private presets to standardize across teams.
+
+**Related:** [The Normalization Model](/concepts/rosetta-stone/normalization-model)
+
+### SHA-1
+
+Secure Hash Algorithm 1—a hash function that produces a 160-bit (40-character hexadecimal) hash value. More secure than MD5 but now considered cryptographically deprecated for security purposes. Still acceptable for identifier matching in data collaboration. Narrative supports SHA-1 alongside MD5 and SHA-256 for hashing PII.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### SHA-256
+
+Secure Hash Algorithm 256-bit—a member of the SHA-2 family that produces a 256-bit (64-character hexadecimal) hash value. Currently considered cryptographically secure and is the recommended algorithm for new implementations. Narrative supports SHA-256 as the preferred hashing algorithm alongside MD5 and SHA-1.
+
+**Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### SSO (Single Sign-On)
+
+An authentication method that allows users to access Narrative using their organization's existing credentials and identity provider. SSO eliminates the need for separate Narrative-specific passwords and enables centralized access management.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Structured output (inference)
+
+A [Model Inference](#model-inference) response that conforms to a predefined JSON Schema. Structured output ensures the LLM returns data in a predictable, typed format suitable for programmatic consumption. The schema is specified in the `output_format_schema` field of the [inference configuration](#inference-configuration) and can define required fields, data types, enums, and nested structures.
+
+**Related:** [Structured Output Concepts](/concepts/model-inference/structured-output), [JSON Schema Reference](/reference/model-inference/json-schema-reference)

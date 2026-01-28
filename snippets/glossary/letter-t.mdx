@@ -1,0 +1,13 @@
+## T
+
+### Transpilation
+
+The process of converting [NQL](#nql-narrative-query-language) code to equivalent native SQL code for a specific database system. The [control plane](#control-plane) transpiles NQL to Snowflake SQL, Spark SQL, or other dialects depending on where the target [data plane](#data-plane) stores its data. Transpilation is distinct from compilation in that it produces human-readable code in another query language rather than machine code.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Query compilation](#query-compilation)
+
+### Transformation expression
+
+An NQL expression used within a Rosetta Stone mapping to convert source data to the target attribute format. Transformation expressions can include type conversions, string manipulation, conditional logic (CASE statements), and null handling. They enable mappings to normalize diverse source formats into consistent attribute values.
+
+**Related:** [Mapping Schemas](/guides/rosetta-stone/mapping-schemas), [Transformation Functions](/reference/rosetta-stone/transformation-functions), [Edge Cases](/guides/rosetta-stone/edge-cases)

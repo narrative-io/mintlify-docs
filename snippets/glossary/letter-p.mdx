@@ -1,0 +1,19 @@
+## P
+
+### PII (Personally Identifiable Information)
+
+Data that can be used to identify a specific individual, either directly or in combination with other data. Common examples include email addresses, phone numbers, names, addresses, and government-issued IDs. Narrative requires that PII be pseudonymized (hashed) before upload to protect individual privacy.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Pseudonymization
+
+A data protection technique that replaces directly identifying information with artificial identifiers (pseudonyms). In Narrative's context, pseudonymization is achieved by hashing PII such as email addresses and phone numbers. Unlike anonymization, pseudonymized data can still be matched across datasets (same input produces same hash) while protecting individual privacy.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
+
+### Placeholder (query template)
+
+A variable element in a [query template](#query-template) marked with `{{name}}` syntax that is replaced with a user-provided value at execution time. Placeholder types include literal values (strings, numbers, dates), columns, filters, and output fields. Each placeholder has metadata including name, type, description, and whether it is required.
+
+**Related:** [Query Template Syntax](/reference/nql/query-template-syntax), [Using Query Templates](/guides/nql/using-query-templates)

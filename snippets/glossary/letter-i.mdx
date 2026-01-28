@@ -1,0 +1,31 @@
+## I
+
+### Identity provider (IdP)
+
+An enterprise system (such as Okta, Azure AD, or OneLogin) that manages user authentication and maintains the authoritative record of user identities and credentials. Organizations can integrate their IdP with Narrative for single sign-on access.
+
+**Related:** [SSO Configuration](/account-settings/sso), [SSO Concepts](/concepts/security/sso)
+
+### Interactive query
+
+A query executed through the Query Editor or NQL API that stores results as a temporary dataset. Interactive queries are implemented as [materialized views](#materialized-view) with a 24-hour retention policy and an automatic row limit. Users view results through [data sampling](#data-sample) rather than receiving the full result set directly.
+
+**Related:** [Query Processing](/concepts/architecture/query-processing), [Data Flow](/concepts/architecture/data-flow), [Write Your First Query](/getting-started/first-nql-query)
+
+### Incremental View Maintenance (IVM)
+
+An optimization technique that updates materialized views by processing only changed data rather than recomputing the entire result. IVM dramatically reduces refresh time for views over large datasets with relatively small changes between refreshes.
+
+**Related:** [Incremental View Maintenance](/concepts/nql/incremental-view-maintenance), [Materialized view](#materialized-view)
+
+### Inference configuration
+
+A set of parameters that control how an LLM processes a [Model Inference](#model-inference) request. Configuration options include `output_format_schema` (JSON Schema defining the expected response structure), `max_tokens` (maximum response length), `temperature` (response randomness from 0-1), `top_p` (nucleus sampling parameter), and `stop_sequences` (tokens that terminate generation).
+
+**Related:** [Model Inference Overview](/concepts/model-inference/overview), [Running Model Inference](/guides/sdk/running-model-inference)
+
+### Inference job
+
+A [job](#job-queue) type that submits a prompt to an LLM hosted within a [data plane](#data-plane) and returns a [structured output](#structured-output-inference). Unlike external AI API calls, inference jobs keep data within customer infrastructure—no data is sent to external model providers. The job returns token usage statistics and a response conforming to the specified JSON Schema.
+
+**Related:** [Model Inference Overview](/concepts/model-inference/overview), [Job Types](/reference/architecture/job-types)

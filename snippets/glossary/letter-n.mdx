@@ -1,0 +1,25 @@
+## N
+
+### Nested loop join
+
+A join algorithm that iterates through each row of one table and, for each row, scans the other table for matches. Less efficient than hash joins, nested loops are often the fallback when query conditions prevent hash join optimization, such as when OR operators appear in JOIN clauses.
+
+**Related:** [Understanding JOIN Performance](/concepts/nql/join-performance)
+
+### Narrative ID
+
+A secure, pseudonymous identifier derived from a clear text identifier (such as an email or hashed email) through Narrative's secure encoding methodology. Unlike simple hashing, Narrative IDs are encoded per-partner, meaning the same identifier produces different Narrative IDs for different partners. This enables privacy-safe data collaboration without exposing underlying identifiers.
+
+**Related:** [Narrative ID Concepts](/concepts/security/narrative-id), [Using Narrative ID](/guides/collaboration/using-narrative-id), [Pseudonymization](#pseudonymization)
+
+### Normalized dataset
+
+A dataset with active Rosetta Stone mappings, making its data queryable through the `narrative.rosetta_stone` table. Normalized datasets appear in the Normalized Datasets interface where you can evaluate mapping quality using AI-powered confidence scoring and review AI-generated mapping suggestions.
+
+**Related:** [Rosetta Stone Overview](/concepts/rosetta-stone/overview), [Managing Evaluations](/guides/rosetta-stone/managing-evaluations)
+
+### NQL (Narrative Query Language)
+
+Narrative's proprietary query language designed specifically for data collaboration and normalization. NQL is an interpreted language—queries are parsed by the [control plane](#control-plane) and transpiled to native SQL dialects (Snowflake SQL, Spark SQL, etc.) depending on the target [data plane](#data-plane). This abstraction enables a single query to run against data in different database systems while enforcing permissions and integrating [Rosetta Stone](#rosetta-stone) normalization.
+
+**Related:** [NQL Design Philosophy](/concepts/nql/design-philosophy), [Query Processing](/concepts/architecture/query-processing)
