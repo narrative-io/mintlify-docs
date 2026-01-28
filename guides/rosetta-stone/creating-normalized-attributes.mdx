@@ -1,0 +1,265 @@
+---
+title: 'Creating Normalized Attributes'
+description: 'Best practices for designing and proposing Rosetta Stone attributes'
+icon: 'pen-ruler'
+---
+
+This guide covers how to design well-formed, reusable normalized attributes for Rosetta Stone. A good attribute is unambiguous, well-documented, and mappable from real-world data sources.
+
+<Note>
+For the complete attribute type system and structure, see [Attribute Types](/reference/rosetta-stone/attribute-types) and [The Normalization Model](/concepts/rosetta-stone/normalization-model).
+</Note>
+
+## Before you begin
+
+Answer these three questions before proposing a new attribute:
+
+1. **Does this attribute already exist?** Search by aliases, descriptions, and examples---not just names. An attribute called `purchase_channel` might already cover what you plan to name `buy_source`.
+2. **Is the meaning unambiguous?** If two reasonable interpretations exist, you need two attributes, not one fuzzy compromise.
+3. **Do you have real demand?** At least two concrete use cases from different parties should need this attribute.
+
+If you cannot answer yes to all three, stop and reconsider.
+
+## Naming your attribute
+
+The `name` field uses the pattern `<attribute>[.<qualifier>]`. Names should be specific enough to understand without additional context.
+
+| Good | Bad | Why bad |
+|------|-----|---------|
+| `email` | `address` | Ambiguous---postal or email? |
+| `email.hashed_sha256` | `hashed_value` | Hashed what? |
+| `total_amount.gross` | `total` | Total of what? |
+| `purchase_channel` | `channel` | Marketing channel? Distribution channel? |
+| `birth_year` | `year` | Year of what event? |
+
+The `display_name` field is the human-readable label shown in UIs. It should be concise but clear---for example, `"Email (SHA-256 Hash)"` for the attribute named `email.hashed_sha256`.
+
+## Writing the description
+
+The description is the most important piece of documentation for an attribute. A good description eliminates ambiguity for anyone creating mappings.
+
+**Bad:**
+
+> Email address
+
+**Good:**
+
+> The electronic mail address associated with an individual, formatted per RFC 5321, representing a point of contact for that person. Does not include addresses associated with businesses, roles, or distribution lists.
+
+Your description should answer:
+
+- **What does this attribute represent?** Define the concept precisely.
+- **What does it explicitly NOT represent?** Call out common confusions. If `email` does not include business or role addresses, say so.
+- **What does null mean?** Distinguish between unknown (data was not collected), not applicable (concept does not apply to this record), and intentionally blank (value was collected but is empty).
+
+### Join key designation
+
+Set `is_join_key` to `true` if the attribute is suitable for identity resolution or record linkage. Only primitive types can be join keys.
+
+```json
+{
+  "id": 101,
+  "name": "email.hashed_sha256",
+  "type": "string",
+  "is_join_key": true,
+  "description": "SHA-256 hash of an individual's email address, used for identity resolution. Lowercase and trimmed before hashing.",
+  "validations": ["LENGTH($this) = 64"]
+}
+```
+
+## Choosing a type
+
+Select the type that most accurately represents the attribute's semantics. Do not default to `string` when a more specific type exists.
+
+| Type | Use when | Examples |
+|------|----------|---------|
+| `string` | Text values, identifiers, codes | Names, hashed emails, country codes |
+| `boolean` | True/false flags | Opt-in status, active/inactive |
+| `double` | Decimal numbers, measurements, currency amounts | Price, latitude, temperature |
+| `long` | Integers, counts, whole-number IDs | Age, row counts, sequence numbers |
+| `timestamptz` | Points in time (always with timezone) | Event timestamps, signup dates |
+| `array` | Repeated values of a single type | Interest categories, identifier lists |
+| `object` | Nested structure with named properties | Addresses, coordinates, composite identifiers |
+
+For primitive types, also consider:
+
+- **`enum`**: Use when the attribute has a closed set of allowed values. Add an `enum` array to a `string` type.
+- **`validations`**: Use to enforce the canonical format (length constraints, range bounds, patterns).
+
+For arrays, define the element type in `items`. For objects, define the field structure in `properties` and list mandatory fields in `required`.
+
+See the [Attribute Types Reference](/reference/rosetta-stone/attribute-types) for full type definitions and examples.
+
+## Enum governance
+
+When your attribute uses an `enum`, define each value with clear semantics. Every enum value should be a deliberate, documented choice---not an afterthought.
+
+### Example: purchase channel
+
+| Value | Meaning | Common source mappings |
+|-------|---------|----------------------|
+| `in_store` | Purchase at a physical retail location | "retail", "brick_and_mortar", "pos", "1" |
+| `online_web` | Purchase via a web browser | "web", "ecommerce", "website", "2" |
+| `online_app` | Purchase via a native mobile app | "app", "mobile_app", "mobile", "3" |
+| `other` | Purchase through a channel not listed above | Any unrecognized value |
+| `unknown` | Purchase channel was not collected or is unavailable | NULL, empty string, "N/A" |
+
+### Enum rules
+
+- **Case-sensitive and lowercase.** All enum values use `snake_case`.
+- **Always include fallback values.** Use `other` when the source value is known but does not match any defined option. Use `unknown` when the source value is missing or indeterminate.
+- **Document when to use `other` vs. `unknown`.** `other` means "we know the value but it doesn't fit our categories." `unknown` means "we don't have the information."
+
+```json
+{
+  "id": 250,
+  "name": "purchase_channel",
+  "type": "string",
+  "enum": ["in_store", "online_web", "online_app", "other", "unknown"],
+  "description": "The sales channel through which a purchase was completed. Does not describe marketing attribution or traffic source."
+}
+```
+
+## Using references
+
+Use `$ref` with a numeric attribute ID when an object property should conform to an existing attribute's definition. References avoid duplicating validation rules and semantics, and changes to the referenced attribute propagate automatically.
+
+```json
+{
+  "id": 600,
+  "name": "purchase_event",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "$ref": 1007
+    },
+    "amount": {
+      "type": "double"
+    },
+    "channel": {
+      "$ref": 250
+    }
+  },
+  "required": ["timestamp", "amount"]
+}
+```
+
+In this example, `timestamp` inherits the full definition of the `event_timestamp` attribute (ID 1007) and `channel` inherits from `purchase_channel` (ID 250), including their types, validations, and enum constraints.
+
+See [Reference Type](/reference/rosetta-stone/attribute-types#reference-type) for full details.
+
+## Setting collaborators
+
+The `collaborators` property controls which companies can view or map to your attribute. Use it for organization-specific attributes shared with selected partners.
+
+```json
+{
+  "id": 700,
+  "name": "loyalty_tier",
+  "type": "string",
+  "enum": ["bronze", "silver", "gold", "platinum"],
+  "description": "Customer loyalty program tier level.",
+  "collaborators": [
+    { "company_id": 42, "access": "read" },
+    { "company_id": 87, "access": "map" }
+  ]
+}
+```
+
+When `collaborators` is omitted, the attribute follows default visibility rules for your organization.
+
+## Documenting beyond the schema
+
+The schema defines structure. Documentation captures intent. Include the following alongside your attribute definition to help others create accurate mappings.
+
+### Good examples
+
+Provide 3--5 real values with context explaining why they belong:
+
+- `"user@example.com"` --- a personal email address (valid)
+- `"jane.doe+newsletter@gmail.com"` --- plus-addressed email (valid, the plus suffix is part of the address)
+- `"info@company.org"` --- a role address (invalid for this attribute; use a business email attribute instead)
+
+### Anti-examples
+
+Values that do NOT belong and where they should go instead:
+
+- `"not-an-email"` --- fails format validation, should be null
+- `"support@company.com"` --- role address, belongs in `business_email` attribute
+- `""` (empty string) --- should be null, not empty
+
+### Mapping guidance
+
+Document common source representations and the expected transformations:
+
+- **Email**: Lowercase, trim whitespace, validate against pattern `$this LIKE '%@%.%'`
+- **Phone**: Convert to E.164 format (e.g., `+15551234567`), strip parentheses, dashes, and spaces
+- **Currency**: Decimal with two-digit precision, strip currency symbols and thousands separators
+
+### Canonical representation
+
+For ambiguous types, specify the expected serialization:
+
+- **Timestamps**: ISO 8601 in UTC (`2024-01-15T14:30:00Z`)
+- **Decimals**: Precision expectations (e.g., currency amounts use two decimal places)
+- **Booleans**: `true` / `false` (not `1`/`0`, not `"yes"`/`"no"`)
+
+## Validation checklist
+
+Before submitting a new attribute, verify:
+
+- `name` is unambiguous without additional context
+- `description` explains what it means AND what it does not mean
+- `type` is appropriate (not just defaulting to `string`)
+- `enum` values are defined with clear semantics (if applicable)
+- `validations` enforce the canonical format (if applicable)
+- `is_join_key` is set correctly for identity attributes
+- The attribute can be mapped from at least 2--3 real datasets
+- No existing attribute already covers this concept
+
+## Recommended governance workflow
+
+The following workflow is a recommended team process for introducing new attributes. It is not enforced by the platform.
+
+<Steps>
+  <Step title="Proposal">
+    A champion creates a specification using this guide. The spec includes the full attribute definition, description, examples, anti-examples, and mapping guidance.
+  </Step>
+  <Step title="Triage">
+    Review the proposal for duplicates, ambiguity, and overly company-specific scope. If the attribute only makes sense for one organization, it may belong as an organization attribute rather than a shared one.
+  </Step>
+  <Step title="Draft">
+    Create the attribute with limited `collaborators` access. This restricts visibility while the attribute is being validated.
+  </Step>
+  <Step title="Validation">
+    Prove mapping feasibility by mapping the attribute across at least two real datasets. Confirm that the type, enum values, and validations work with actual source data.
+  </Step>
+  <Step title="Acceptance">
+    After production use by multiple parties, expand access. Update the description and mapping guidance based on what you learned during validation.
+  </Step>
+</Steps>
+
+## Design principles
+
+- **Names are presentation, not identity.** The `id` is immutable; `name` and `display_name` can evolve.
+- **Separate semantics from syntax.** `description` captures meaning; `type`, `enum`, and `validations` capture structure.
+- **Prefer two specific attributes over one vague one.** Ambiguity is a bug, not a feature.
+- **Every attribute is maintenance burden.** Only create what has real, demonstrated demand.
+- **Use references to avoid duplication.** If a property should match an existing attribute, use `$ref`.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Attribute Types Reference" icon="shapes" href="/reference/rosetta-stone/attribute-types">
+    Complete type system documentation
+  </Card>
+  <Card title="The Normalization Model" icon="layer-group" href="/concepts/rosetta-stone/normalization-model">
+    How Rosetta Stone structures types and validations
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Map your dataset columns to attributes
+  </Card>
+  <Card title="How Rosetta Stone Works" icon="gears" href="/concepts/rosetta-stone/how-it-works">
+    Understand the normalization pipeline
+  </Card>
+</CardGroup>

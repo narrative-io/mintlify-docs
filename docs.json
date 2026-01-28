@@ -165,6 +165,7 @@
 					{
 						"group": "Rosetta Stone",
 						"pages": [
+							"guides/rosetta-stone/creating-normalized-attributes",
 							"guides/rosetta-stone/mapping-schemas",
 							"guides/rosetta-stone/validating-mappings",
 							"guides/rosetta-stone/edge-cases",
