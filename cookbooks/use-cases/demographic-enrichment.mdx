@@ -1,0 +1,429 @@
+---
+title: 'Demographic Enrichment'
+description: 'Enrich customer lists with age and gender data using identity matching and automated refresh'
+icon: 'users'
+---
+
+A mobile gaming company has rapidly grown to 2 million users but knows very little about who those users are. Since the game doesn't require account registration, they lack basic demographic information needed for effective ad targeting and audience insights. Through Narrative, they can enrich their user base with age and gender data from identity providers, then automate monthly refreshes for new users.
+
+## What you will build
+
+This cookbook walks through creating a demographic enrichment pipeline that:
+
+1. Uploads a seed dataset of mobile advertising IDs (MAIDs) from your customer base
+2. Matches those MAIDs against demographic data providers using Rosetta Stone
+3. Enriches records with raw age values (not pre-bucketed segments) and gender
+4. Automates recurring enrichment for new users added each month
+
+The result is a continuously refreshed customer dataset with demographic attributes that you own outright and can use across any platform.
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+- A dataset of customer identifiers (MAIDs, hashed emails, or other supported identifier types)
+- Access to demographic data through data collaboration or marketplace providers
+- Familiarity with [NQL syntax](/reference/nql/syntax)
+- Understanding of [materialized views](/concepts/nql/materialized-views)
+- Understanding of [Mobile Ad IDs](/concepts/identifiers/mobile-ad-ids)
+
+---
+
+## Step 1: Upload your seed dataset
+
+First, upload your customer identifier file to Narrative. This dataset serves as the seed list you want to enrich.
+
+Your dataset should include at minimum:
+- A unique identifier column (MAID, hashed email, etc.)
+- An identifier type column if you have mixed identifier types
+
+Example schema for a MAID-based seed file:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `maid` | string | Mobile advertising ID (IDFA or GAID) |
+| `maid_type` | string | Identifier type: `idfa` or `gaid` |
+| `internal_user_id` | string | Your internal user ID for joining back to source systems |
+| `first_seen_date` | date | When the user first appeared in your system |
+
+<Note>
+Upload your seed dataset through the Narrative UI or [SDK](/guides/sdk/uploading-data). Map the identifier column to the `unique_identifier` Rosetta Stone attribute for identity matching.
+</Note>
+
+### Normalize identifiers with Rosetta Stone
+
+Ensure your identifier column is mapped to Rosetta Stone's `unique_identifier` attribute:
+
+```sql
+-- Verify your dataset has Rosetta Stone mappings
+SELECT
+    seed."_rosetta_stone"."unique_identifier"."value" AS maid,
+    seed."_rosetta_stone"."unique_identifier"."type" AS maid_type,
+    seed.internal_user_id
+FROM company_data."your_seed_dataset" seed
+LIMIT 10
+```
+
+---
+
+## Step 2: Identify available demographic sources
+
+Query the Rosetta Stone to understand which demographic attributes are available across your data collaborations:
+
+```sql
+-- Preview available demographic data
+SELECT
+    rs."unique_identifier"."type" AS id_type,
+    rs."demographics"."age" AS age,
+    rs."demographics"."gender" AS gender,
+    COUNT(1) AS record_count
+FROM narrative.rosetta_stone rs
+WHERE
+    rs."demographics"."age" IS NOT NULL
+    OR rs."demographics"."gender" IS NOT NULL
+GROUP BY
+    rs."unique_identifier"."type",
+    rs."demographics"."age",
+    rs."demographics"."gender"
+LIMIT 100
+```
+
+This shows you the identifier types and demographic coverage across available providers.
+
+---
+
+## Step 3: Match and enrich with demographics
+
+Create a materialized view that joins your seed dataset with demographic data through Rosetta Stone identity matching.
+
+```sql
+CREATE MATERIALIZED VIEW "customers_demographics_enriched"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Customer Demographics - Enriched'
+DESCRIPTION = 'Seed customer list enriched with age and gender from data providers'
+TAGS = ('enrichment', 'demographics', 'audience')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    seed.internal_user_id,
+    seed."_rosetta_stone"."unique_identifier"."value" AS maid,
+    seed."_rosetta_stone"."unique_identifier"."type" AS maid_type,
+    seed.first_seen_date,
+    demo."demographics"."age" AS age,
+    demo."demographics"."gender" AS gender,
+    demo."_ni_event_timestamp" AS demo_observed_at
+FROM company_data."your_seed_dataset" seed
+INNER JOIN narrative.rosetta_stone demo
+    ON seed."_rosetta_stone"."unique_identifier"."value" = demo."unique_identifier"."value"
+    AND seed."_rosetta_stone"."unique_identifier"."type" = demo."unique_identifier"."type"
+WHERE
+    demo."demographics"."age" IS NOT NULL
+    AND demo."demographics"."age" BETWEEN 13 AND 100
+    AND demo."event_timestamp" > CURRENT_TIMESTAMP - INTERVAL '180' DAY
+```
+
+**Key patterns used:**
+
+| Pattern | Purpose |
+|---------|---------|
+| `INNER JOIN narrative.rosetta_stone` | Matches seed identifiers to demographic records |
+| `unique_identifier.value` and `unique_identifier.type` | Ensures exact identifier matching |
+| `demographics.age BETWEEN 13 AND 100` | Filters to valid age ranges |
+| `INTERVAL '180' DAY` | Uses recent demographic observations for accuracy |
+| `REFRESH_SCHEDULE = '@monthly'` | Automates recurring enrichment |
+
+<Tip>
+Unlike pre-bucketed audience segments (e.g., "25-34"), Rosetta Stone provides raw age values. This gives you flexibility to create your own segments, perform precise analytics, or build custom targeting strategies.
+</Tip>
+
+---
+
+## Step 4: Handle multiple demographic observations
+
+A single identifier may have demographic data from multiple sources or observation times. To get the most recent or most common value:
+
+### Most recent observation
+
+```sql
+CREATE MATERIALIZED VIEW "customers_demographics_latest"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Customer Demographics - Latest Observation'
+DESCRIPTION = 'Enriched demographics using most recent observation per customer'
+TAGS = ('enrichment', 'demographics', 'deduplicated')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    internal_user_id,
+    maid,
+    maid_type,
+    first_seen_date,
+    age,
+    gender,
+    demo_observed_at
+FROM (
+    SELECT
+        seed.internal_user_id,
+        seed."_rosetta_stone"."unique_identifier"."value" AS maid,
+        seed."_rosetta_stone"."unique_identifier"."type" AS maid_type,
+        seed.first_seen_date,
+        demo."demographics"."age" AS age,
+        demo."demographics"."gender" AS gender,
+        demo."_ni_event_timestamp" AS demo_observed_at,
+        ROW_NUMBER() OVER (
+            PARTITION BY seed.internal_user_id
+            ORDER BY demo."_ni_event_timestamp" DESC
+        ) AS row_num
+    FROM company_data."your_seed_dataset" seed
+    INNER JOIN narrative.rosetta_stone demo
+        ON seed."_rosetta_stone"."unique_identifier"."value" = demo."unique_identifier"."value"
+        AND seed."_rosetta_stone"."unique_identifier"."type" = demo."unique_identifier"."type"
+    WHERE
+        demo."demographics"."age" IS NOT NULL
+        AND demo."demographics"."age" BETWEEN 13 AND 100
+)
+WHERE row_num = 1
+```
+
+### Consensus across sources
+
+When you want the most common demographic value across multiple providers:
+
+```sql
+CREATE MATERIALIZED VIEW "customers_demographics_consensus"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Customer Demographics - Consensus'
+DESCRIPTION = 'Enriched demographics using most frequently observed values'
+TAGS = ('enrichment', 'demographics', 'consensus')
+WRITE_MODE = 'overwrite'
+AS
+WITH age_consensus AS (
+    SELECT
+        seed.internal_user_id,
+        demo."demographics"."age" AS age,
+        COUNT(1) AS age_count,
+        ROW_NUMBER() OVER (
+            PARTITION BY seed.internal_user_id
+            ORDER BY COUNT(1) DESC
+        ) AS age_rank
+    FROM company_data."your_seed_dataset" seed
+    INNER JOIN narrative.rosetta_stone demo
+        ON seed."_rosetta_stone"."unique_identifier"."value" = demo."unique_identifier"."value"
+        AND seed."_rosetta_stone"."unique_identifier"."type" = demo."unique_identifier"."type"
+    WHERE demo."demographics"."age" IS NOT NULL
+    GROUP BY seed.internal_user_id, demo."demographics"."age"
+),
+gender_consensus AS (
+    SELECT
+        seed.internal_user_id,
+        demo."demographics"."gender" AS gender,
+        COUNT(1) AS gender_count,
+        ROW_NUMBER() OVER (
+            PARTITION BY seed.internal_user_id
+            ORDER BY COUNT(1) DESC
+        ) AS gender_rank
+    FROM company_data."your_seed_dataset" seed
+    INNER JOIN narrative.rosetta_stone demo
+        ON seed."_rosetta_stone"."unique_identifier"."value" = demo."unique_identifier"."value"
+        AND seed."_rosetta_stone"."unique_identifier"."type" = demo."unique_identifier"."type"
+    WHERE demo."demographics"."gender" IS NOT NULL
+    GROUP BY seed.internal_user_id, demo."demographics"."gender"
+)
+SELECT
+    seed.internal_user_id,
+    seed."_rosetta_stone"."unique_identifier"."value" AS maid,
+    seed."_rosetta_stone"."unique_identifier"."type" AS maid_type,
+    ac.age,
+    gc.gender
+FROM company_data."your_seed_dataset" seed
+LEFT JOIN age_consensus ac
+    ON seed.internal_user_id = ac.internal_user_id
+    AND ac.age_rank = 1
+LEFT JOIN gender_consensus gc
+    ON seed.internal_user_id = gc.internal_user_id
+    AND gc.gender_rank = 1
+```
+
+---
+
+## Step 5: Automate incremental enrichment
+
+For growing customer bases, create an incremental view that only processes new users added since the last refresh.
+
+### Create an incremental seed view
+
+First, identify new users not yet in your enriched dataset:
+
+```sql
+CREATE MATERIALIZED VIEW "customers_new_since_last_enrichment"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'New Customers - Pending Enrichment'
+DESCRIPTION = 'Customers added since last demographic enrichment'
+TAGS = ('enrichment', 'incremental', 'staging')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    seed.internal_user_id,
+    seed."_rosetta_stone"."unique_identifier"."value" AS maid,
+    seed."_rosetta_stone"."unique_identifier"."type" AS maid_type,
+    seed.first_seen_date
+FROM company_data."your_seed_dataset" seed
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM company_data."customers_demographics_enriched" enriched
+    WHERE seed.internal_user_id = enriched.internal_user_id
+)
+```
+
+### Enrich and merge new users
+
+```sql
+CREATE MATERIALIZED VIEW "customers_demographics_incremental"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Customer Demographics - Incremental Update'
+DESCRIPTION = 'Demographic enrichment for newly added customers'
+TAGS = ('enrichment', 'demographics', 'incremental')
+WRITE_MODE = 'append'
+AS
+SELECT
+    new_users.internal_user_id,
+    new_users.maid,
+    new_users.maid_type,
+    new_users.first_seen_date,
+    demo."demographics"."age" AS age,
+    demo."demographics"."gender" AS gender,
+    demo."_ni_event_timestamp" AS demo_observed_at
+FROM company_data."customers_new_since_last_enrichment" new_users
+INNER JOIN narrative.rosetta_stone demo
+    ON new_users.maid = demo."unique_identifier"."value"
+    AND new_users.maid_type = demo."unique_identifier"."type"
+WHERE
+    demo."demographics"."age" IS NOT NULL
+    AND demo."demographics"."age" BETWEEN 13 AND 100
+```
+
+<Note>
+Use `WRITE_MODE = 'append'` for incremental views that add new records to an existing dataset without overwriting historical data.
+</Note>
+
+---
+
+## Step 6: Create audience segments
+
+With enriched demographics, create targetable audience segments:
+
+### Age-based segments
+
+```sql
+CREATE MATERIALIZED VIEW "audience_segment_age_buckets"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Audience Segments - Age Buckets'
+DESCRIPTION = 'Customers segmented by age ranges for targeting'
+TAGS = ('audience', 'segmentation', 'age')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    internal_user_id,
+    maid,
+    maid_type,
+    age,
+    gender,
+    CASE
+        WHEN age BETWEEN 18 AND 24 THEN '18-24'
+        WHEN age BETWEEN 25 AND 34 THEN '25-34'
+        WHEN age BETWEEN 35 AND 44 THEN '35-44'
+        WHEN age BETWEEN 45 AND 54 THEN '45-54'
+        WHEN age >= 55 THEN '55+'
+        ELSE 'unknown'
+    END AS age_segment
+FROM company_data."customers_demographics_enriched"
+WHERE age IS NOT NULL
+```
+
+### Gender-specific segments
+
+```sql
+CREATE MATERIALIZED VIEW "audience_female_25_44"
+REFRESH_SCHEDULE = '@monthly'
+DISPLAY_NAME = 'Audience - Female 25-44'
+DESCRIPTION = 'Female customers aged 25-44'
+TAGS = ('audience', 'segmentation', 'female', '25-44')
+WRITE_MODE = 'overwrite'
+AS
+SELECT
+    internal_user_id,
+    maid,
+    maid_type
+FROM company_data."customers_demographics_enriched"
+WHERE
+    gender = 'female'
+    AND age BETWEEN 25 AND 44
+```
+
+---
+
+## Summary
+
+You have built a demographic enrichment pipeline with these components:
+
+| View | Purpose |
+|------|---------|
+| `customers_demographics_enriched` | Base enrichment with age and gender |
+| `customers_demographics_latest` | Deduplicated using most recent observation |
+| `customers_demographics_consensus` | Deduplicated using most common values |
+| `customers_new_since_last_enrichment` | Identifies users pending enrichment |
+| `customers_demographics_incremental` | Processes only new users |
+| `audience_segment_age_buckets` | Age-based targeting segments |
+
+### Use cases
+
+- **Media targeting:** Reach specific demographic segments with relevant creative
+- **Audience analytics:** Understand the composition of your customer base
+- **Lookalike modeling:** Build seed audiences based on demographic profiles
+- **Personalization:** Tailor app experiences or content by age group
+- **Attribution:** Analyze conversion rates across demographic segments
+
+### Key advantages
+
+<CardGroup cols={2}>
+  <Card title="Raw values, not buckets" icon="hashtag">
+    Receive exact age values instead of pre-defined segments, giving you flexibility to create custom ranges
+  </Card>
+  <Card title="Omni-use license" icon="infinity">
+    Data is enriched once and can be used across any platform or use case without per-use fees
+  </Card>
+  <Card title="Automated refresh" icon="arrows-rotate">
+    Monthly schedules keep your enriched data current as new users join
+  </Card>
+  <Card title="Transparent sourcing" icon="eye">
+    See which providers contribute demographic data and evaluate match quality
+  </Card>
+</CardGroup>
+
+### Important considerations
+
+<Warning>
+**MAID availability:** iOS App Tracking Transparency and Android privacy changes have reduced MAID availability. Consider supplementing with hashed email or other identifier types for broader coverage. See [Mobile Ad IDs](/concepts/identifiers/mobile-ad-ids) for details.
+</Warning>
+
+<Note>
+**Privacy compliance:** Demographic data may be subject to GDPR, CCPA, and other privacy regulations depending on source and use case. Ensure your enrichment workflow complies with applicable requirements. See [CCPA compliance](/concepts/compliance/ccpa) and [GDPR compliance](/concepts/compliance/gdpr) for details.
+</Note>
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Joining Datasets" icon="link" href="/guides/nql/joining-datasets">
+    Learn JOIN patterns for enrichment queries
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to automated views
+  </Card>
+  <Card title="Mobile Ad IDs" icon="mobile" href="/concepts/identifiers/mobile-ad-ids">
+    Understanding IDFA, GAID, and privacy considerations
+  </Card>
+  <Card title="Data Onboarding" icon="upload" href="/concepts/identifiers/data-onboarding">
+    Connecting offline data to digital identifiers
+  </Card>
+</CardGroup>
