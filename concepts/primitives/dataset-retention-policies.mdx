@@ -1,0 +1,124 @@
+---
+title: 'Dataset Retention Policies'
+description: 'Understand how retention policies manage your data lifecycle and automatic cleanup'
+icon: 'clock-rotate-left'
+---
+
+A retention policy is a set of rules that governs how long data within a dataset is kept before automatic deletion. Retention policies help organizations manage storage costs, comply with data governance requirements, and ensure data is only stored for as long as necessary.
+
+## Why retention policies matter
+
+**Cost management.** Data storage incurs ongoing costs. Retention policies automatically remove data you no longer need, preventing unbounded storage growth.
+
+**Compliance.** Many regulations (GDPR, CCPA, industry-specific rules) require organizations to delete data after a certain period. Retention policies automate this requirement.
+
+**Data hygiene.** Stale data can lead to incorrect analysis or decisions. Retention policies ensure your datasets contain only current, relevant information.
+
+## How retention policies work
+
+Retention policies are applied at the dataset level. When a retention policy is active, Narrative automatically evaluates data against the policy and removes records that have exceeded the retention period.
+
+The policy evaluates data based on **snapshot age**—the time since data was ingested into the dataset. This means retention is measured from when data arrived in Narrative, not when the underlying events occurred.
+
+<Note>
+Retention policy behavior varies by [data plane](/concepts/primitives/data-planes). See [Data plane differences](#data-plane-differences) below for details.
+</Note>
+
+## Retention policy types
+
+### Time-based retention
+
+The most common type. Data is automatically deleted after a specified period, measured from ingestion time.
+
+You can specify retention periods using ISO 8601 duration format:
+
+| Duration | Meaning |
+|----------|---------|
+| `P30D` | 30 days |
+| `P90D` | 90 days |
+| `P6M` | 6 months |
+| `P1Y` | 1 year |
+| `P1Y6M` | 1 year and 6 months |
+
+### Retain everything
+
+Data is kept indefinitely until manually deleted. Use this when you need to preserve historical records without automatic cleanup.
+
+### Expire everything
+
+Data is removed immediately. This is primarily used when you want to delete a dataset's contents without deleting the dataset itself.
+
+## Retention and dataset deletion
+
+When you delete a dataset, the retention policy determines what happens to the underlying data:
+
+**On AWS-based data planes**, Narrative applies a default 30-day retention period before permanent deletion. This grace period protects against accidental deletions and provides an opportunity to restore the dataset if needed.
+
+**On Snowflake-based data planes**, data is deleted immediately when you delete a dataset. There is no grace period.
+
+<Warning>
+Understand which data plane your dataset resides in before deleting. Snowflake-based data planes do not offer a recovery window.
+</Warning>
+
+## Data plane differences
+
+Retention policy behavior differs depending on where your data is stored:
+
+| Behavior | AWS Data Planes | Snowflake Data Planes |
+|----------|-----------------|----------------------|
+| Default deletion grace period | 30 days | None (immediate) |
+| Time-based retention | Supported | Supported |
+| Retain everything | Supported | Supported |
+| Expire everything | Supported | Supported |
+
+The difference in deletion behavior reflects the underlying storage systems. AWS-based data planes use soft-delete with a recovery window, while Snowflake-based data planes perform immediate hard deletes.
+
+## Retention policies for materialized views
+
+[Materialized views](/concepts/nql/materialized-views) support retention policies through the `EXPIRE` clause in NQL. When creating or modifying a materialized view, you can specify how long data should be retained:
+
+```sql
+CREATE MATERIALIZED VIEW "my_view"
+EXPIRE = 'P90D'
+AS
+SELECT
+    user_id,
+    event_type,
+    event_timestamp
+FROM my_dataset
+```
+
+For complete syntax details, see the [EXPIRE clause reference](/reference/nql/materialized-view-syntax#expire).
+
+## Choosing a retention period
+
+Consider these factors when setting retention policies:
+
+**Regulatory requirements.** Check what your compliance obligations require. Some regulations mandate maximum retention periods, while others require minimum retention.
+
+**Business needs.** How far back does your analysis typically need to go? Set retention to cover your longest reasonable lookback period plus a buffer.
+
+**Cost sensitivity.** Longer retention means higher storage costs. Balance completeness against budget constraints.
+
+**Data refresh patterns.** If you're regularly refreshing data (for example, daily snapshots), you may not need to retain old versions for long.
+
+<Tip>
+Start with a longer retention period and reduce it based on observed usage patterns. It's easier to shorten retention than to recover deleted data.
+</Tip>
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Datasets" icon="table" href="/concepts/primitives/datasets">
+    Understand how datasets store and organize your data
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Learn where your data physically resides
+  </Card>
+  <Card title="EXPIRE Clause Reference" icon="list-check" href="/reference/nql/materialized-view-syntax#expire">
+    Complete syntax for setting retention in materialized views
+  </Card>
+  <Card title="Managing Datasets" icon="gear" href="/guides/sdk/managing-datasets">
+    Create and configure datasets programmatically
+  </Card>
+</CardGroup>

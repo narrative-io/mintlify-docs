@@ -64,20 +64,14 @@ For procedural details on uploading data, see [Uploading Data](/guides/sdk/uploa
 
 ## Retention policies
 
-Datasets can have retention policies that automatically manage data lifecycle:
+Datasets can have [retention policies](/concepts/primitives/dataset-retention-policies) that automatically manage data lifecycle. A retention policy defines how long data is kept before automatic deletion, helping you manage storage costs and comply with data governance requirements.
 
-- **Time-based retention** — Automatically remove data older than a specified number of days
-- **No retention** — Keep all data indefinitely (or until manually deleted)
+Common retention configurations include:
 
-Retention policies help you manage storage costs and comply with data governance requirements that mandate data deletion after a certain period.
+- **Time-based retention** — Automatically remove data older than a specified period (e.g., 90 days, 1 year)
+- **Retain everything** — Keep all data indefinitely until manually deleted
 
-```typescript
-// Example retention policy configuration
-{
-  type: 'time_based',
-  retention_days: 365
-}
-```
+For details on how retention policies work, including differences between data planes and how to configure them, see [Dataset Retention Policies](/concepts/primitives/dataset-retention-policies).
 
 ## Ownership and access
 
@@ -125,6 +119,9 @@ Narrative supports two types of data containers:
 ## Related content
 
 <CardGroup cols={2}>
+  <Card title="Retention Policies" icon="clock-rotate-left" href="/concepts/primitives/dataset-retention-policies">
+    Configure automatic data lifecycle management
+  </Card>
   <Card title="Access Rules" icon="key" href="/concepts/primitives/access-rules">
     Control who can query your datasets and at what price
   </Card>
@@ -133,8 +130,5 @@ Narrative supports two types of data containers:
   </Card>
   <Card title="Managing Datasets" icon="gear" href="/guides/sdk/managing-datasets">
     Create and manage datasets with the SDK
-  </Card>
-  <Card title="Uploading Data" icon="upload" href="/guides/sdk/uploading-data">
-    Add data to your datasets
   </Card>
 </CardGroup>
