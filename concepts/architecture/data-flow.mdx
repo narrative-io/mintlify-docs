@@ -157,6 +157,48 @@ When you share data with a partner organization, they query your data through th
 
 Your raw data never leaves your data plane—only the query results authorized by your access rules.
 
+## Data egress via connectors
+
+While the architecture above keeps data within data planes, you often need to deliver data to external destinations for activation. [Connectors](/reference/connectors/index) enable delivery to platforms like advertising DSPs, cloud storage, and data warehouses.
+
+### How connectors work
+
+Connectors are pre-built integrations that handle authentication, data formatting, and delivery to external platforms. The data flow for connector-based delivery:
+
+```
+Data Plane                  Connector                External Destination
+    │                          │                            │
+    │                          │                            │
+    │──── Dataset ────────────>│                            │
+    │                          │                            │
+    │                     ┌────┴────┐                       │
+    │                     │ Format  │                       │
+    │                     │  Data   │                       │
+    │                     └────┬────┘                       │
+    │                          │                            │
+    │                          │──── Formatted Data ───────>│
+    │                          │                            │
+    │                          │<──── Confirmation ─────────│
+    │                          │                            │
+```
+
+Unlike queries (where only results leave the data plane), connector delivery sends the full dataset to the external destination. This is intentional—connectors exist specifically to move data outside the platform for activation.
+
+### Setting up delivery
+
+Connector-based delivery involves two configuration levels:
+
+| Level | What it configures | Example |
+|-------|-------------------|---------|
+| **Profile** | Account-level authentication and settings | AWS credentials, ad account ID |
+| **Delivery settings** | Job-specific parameters | Destination folder, delivery schedule |
+
+Once a connector is configured, delivery options appear automatically when creating materialized views or working with datasets.
+
+<Note>
+Each connector requires specific identifier types to match users on the destination platform. See [Connectors Reference](/reference/connectors/index) for requirements by platform.
+</Note>
+
 ---
 
 ## Related content
@@ -171,7 +213,7 @@ Your raw data never leaves your data plane—only the query results authorized b
   <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
     How queries are compiled and coordinated
   </Card>
-  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
-    How this architecture protects your data
+  <Card title="Connectors" icon="plug" href="/reference/connectors/index">
+    Available destinations for data delivery
   </Card>
 </CardGroup>

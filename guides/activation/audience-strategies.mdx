@@ -1,0 +1,263 @@
+---
+title: 'Structuring Audiences for Activation'
+description: 'Strategies for organizing your datasets to deliver audiences to advertising platforms'
+icon: 'sitemap'
+---
+
+Before delivering audience data to a connector, you need to structure your data in datasets. This guide covers three common strategies for organizing your data, with recommendations for when to use each approach.
+
+## Prerequisites
+
+Before you begin:
+
+- You have data with deliverable identifiers (hashed email, hashed phone, or mobile ad IDs)
+- Your identifiers are properly formatted and hashed (see [Hashing PII for Upload](/guides/ingestion/hashing-pii))
+- You understand which identifiers your destination requires (see [Data Activation Overview](/concepts/data-activation/overview))
+
+---
+
+## Strategy 1: One dataset per audience
+
+Create a separate dataset for each audience you want to deliver. The dataset name and description correspond directly to the audience.
+
+### Dataset structure
+
+| Field | Description |
+|-------|-------------|
+| `sha256_hashed_email` | The hashed identifier for each audience member |
+
+Example data:
+
+```csv
+sha256_hashed_email
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3
+a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd
+b2c3d4e5f6789012345678901234567890123456789012345678901234bcde
+```
+
+### When to use this strategy
+
+<AccordionGroup>
+  <Accordion title="You build audiences outside Narrative">
+    If your audience creation happens in external systems (CRM, CDP, marketing automation), then export each audience as a separate file for upload.
+  </Accordion>
+  <Accordion title="You use API automation for dataset creation">
+    If you have automated pipelines that create datasets via the [SDK](/guides/sdk/managing-datasets), creating a new dataset per audience is straightforward.
+  </Accordion>
+  <Accordion title="Audiences are static or infrequently updated">
+    If audiences don't change often, managing them as separate datasets keeps things simple.
+  </Accordion>
+</AccordionGroup>
+
+### Advantages
+
+- **Simplicity**: Each dataset maps directly to one audience
+- **Clear ownership**: Easy to track which dataset powers which audience
+- **Selective updates**: Update only the audiences that have changed
+
+### Considerations
+
+- Requires creating a new dataset for each new audience
+- Can become difficult to manage with hundreds of audiences
+- Duplicated records across datasets if users belong to multiple audiences
+
+---
+
+## Strategy 2: Master dataset with audience identifiers
+
+Maintain a single dataset containing all audience members, with columns that identify which audience each record belongs to.
+
+### Dataset structure
+
+| Field | Description |
+|-------|-------------|
+| `sha256_hashed_email` | The hashed identifier |
+| `audience_id` | Unique identifier for the audience |
+| `audience_name` | Human-readable audience name |
+
+Example data:
+
+```csv
+sha256_hashed_email,audience_id,audience_name
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3,1001,high_value_customers
+a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd,1001,high_value_customers
+b2c3d4e5f6789012345678901234567890123456789012345678901234bcde,1002,recent_purchasers
+c3d4e5f6789012345678901234567890123456789012345678901234cdef,1002,recent_purchasers
+```
+
+### Delivering specific audiences
+
+Use NQL to filter for a specific audience when delivering:
+
+```sql
+SELECT
+    sha256_hashed_email
+FROM
+    company_123.master_audiences
+WHERE
+    audience_id = '1001'
+```
+
+### When to use this strategy
+
+<AccordionGroup>
+  <Accordion title="You manage many related audiences">
+    If you have dozens or hundreds of audiences that share similar structures, a single dataset is easier to maintain.
+  </Accordion>
+  <Accordion title="You want simplified data updates">
+    Append new rows to a single dataset instead of managing uploads across many datasets.
+  </Accordion>
+  <Accordion title="You need to add new audiences without creating new datasets">
+    Adding a new audience is as simple as appending rows with a new `audience_id`.
+  </Accordion>
+</AccordionGroup>
+
+### Advantages
+
+- **Centralized management**: One dataset to maintain
+- **Easy audience additions**: New audiences are just new rows
+- **Efficient updates**: Append new data without managing multiple datasets
+
+### Considerations
+
+- Requires NQL filtering to extract specific audiences
+- Larger dataset size may affect query performance
+- Need to maintain unique audience IDs
+
+---
+
+## Strategy 3: Raw data with dynamic audience creation
+
+Upload a master dataset with all available customer attributes, then use NQL to define audiences dynamically based on any attribute combination.
+
+### Dataset structure
+
+| Field | Description |
+|-------|-------------|
+| `sha256_hashed_email` | The hashed identifier |
+| `age` | Customer age |
+| `gender` | Customer gender |
+| `estimated_household_income` | Income range or value |
+| `last_purchase_date` | Date of most recent purchase |
+| `lifetime_value` | Total customer value |
+
+Example data:
+
+```csv
+sha256_hashed_email,age,gender,estimated_household_income,last_purchase_date,lifetime_value
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3,34,male,85000,2024-01-15,1250.00
+a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd,28,female,52000,2024-02-20,890.00
+b2c3d4e5f6789012345678901234567890123456789012345678901234bcde,45,female,120000,2024-01-05,3200.00
+```
+
+### Creating audiences with NQL
+
+Define audiences on-the-fly using any attribute combination:
+
+**High-income females:**
+
+```sql
+SELECT
+    sha256_hashed_email
+FROM
+    company_123.customer_data
+WHERE
+    gender = 'female'
+    AND estimated_household_income >= 75000
+```
+
+**Recent high-value customers:**
+
+```sql
+SELECT
+    sha256_hashed_email
+FROM
+    company_123.customer_data
+WHERE
+    last_purchase_date >= '2024-01-01'
+    AND lifetime_value >= 1000
+```
+
+**Age-based segments:**
+
+```sql
+SELECT
+    sha256_hashed_email
+FROM
+    company_123.customer_data
+WHERE
+    age BETWEEN 25 AND 44
+```
+
+### When to use this strategy
+
+<AccordionGroup>
+  <Accordion title="You want maximum flexibility">
+    Create any audience segment without re-uploading data or pre-defining audiences.
+  </Accordion>
+  <Accordion title="You prefer minimal data preprocessing">
+    Send data to Narrative with minimal transformation and let the platform handle segmentation.
+  </Accordion>
+  <Accordion title="Your audience definitions change frequently">
+    Quickly iterate on audience criteria without modifying source data.
+  </Accordion>
+</AccordionGroup>
+
+### Advantages
+
+- **Maximum flexibility**: Define any audience criteria without changing data
+- **Minimal preprocessing**: Upload raw data, segment later
+- **Rapid iteration**: Test new audience definitions instantly
+
+### Considerations
+
+- Requires familiarity with NQL for audience creation
+- Complex queries may take longer to execute on large datasets
+- Attribute data must be normalized consistently
+
+---
+
+## Choosing a strategy
+
+| Factor | Strategy 1 (Per Audience) | Strategy 2 (Master + IDs) | Strategy 3 (Raw Data) |
+|--------|---------------------------|---------------------------|------------------------|
+| **Number of audiences** | Few (1-20) | Many (20-100+) | Variable/unknown |
+| **Audience definitions** | Fixed | Fixed | Dynamic |
+| **Data preprocessing** | Done externally | Partial | Minimal |
+| **NQL required** | No | Basic filtering | Advanced queries |
+| **Flexibility** | Low | Medium | High |
+
+<Info>
+You can combine strategies. For example, use Strategy 3 for your core customer data while maintaining Strategy 1 datasets for specialized audiences from external sources.
+</Info>
+
+---
+
+## Next steps
+
+After structuring your data:
+
+1. **[Normalize your data](/guides/rosetta-stone/mapping-schemas)**: Map your fields to Rosetta Stone attributes so connectors recognize your identifiers
+
+2. **Configure your connector**: Install and configure the connector for your destination platform
+
+3. **Deliver your audiences**: Use the connector to push your data to the destination
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data to destinations
+  </Card>
+  <Card title="Datasets" icon="table" href="/concepts/primitives/datasets">
+    Learn about dataset structure and management
+  </Card>
+  <Card title="Filtering & Transforming" icon="filter" href="/guides/nql/filtering-transforming">
+    NQL basics for filtering audience data
+  </Card>
+  <Card title="Managing Datasets" icon="gear" href="/guides/sdk/managing-datasets">
+    Create and manage datasets with the SDK
+  </Card>
+</CardGroup>

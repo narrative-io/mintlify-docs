@@ -1,0 +1,60 @@
+---
+title: 'Yahoo DSP Connector'
+description: 'Deliver audience data to Yahoo DSP for programmatic advertising'
+icon: 'y'
+---
+
+The Yahoo DSP Connector delivers audience data to Yahoo's demand-side platform, enabling you to activate your segments for programmatic advertising campaigns.
+
+## Overview
+
+The connector pushes your audience data to Yahoo DSP, where it becomes available for targeting in your programmatic ad campaigns across Yahoo's network.
+
+## Requirements
+
+### Account access
+
+- A Yahoo DSP account
+- API credentials from your Yahoo DSP account
+
+### Supported identifiers
+
+| Identifier Type | Rosetta Stone Attribute |
+|-----------------|------------------------|
+| SHA256 hashed email | `unique_id.hashed_email.sha256` |
+| Mobile advertising ID (MAID) | `unique_id.maid` |
+
+<Note>
+Email identifiers must be hashed with SHA256. See [Hashing PII for Upload](/guides/ingestion/hashing-pii) for formatting requirements.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** and select **Yahoo DSP Connector**.
+  </Step>
+  <Step title="Configure credentials">
+    Enter your Yahoo DSP API credentials.
+  </Step>
+  <Step title="Select your account">
+    Choose the account where audiences will be created.
+  </Step>
+</Steps>
+
+## Opt-outs
+
+Yahoo DSP supports opt-out processing. When users opt out through your data subject request workflow, those opt-outs can be propagated to Yahoo DSP.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Managing DSRs" icon="user-shield" href="/guides/compliance/managing-dsrs">
+    Handle opt-out requests
+  </Card>
+</CardGroup>

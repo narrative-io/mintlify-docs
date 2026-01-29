@@ -1,0 +1,120 @@
+---
+title: 'Ad Account Access Issues'
+description: 'Resolve issues where you can see an ad account but cannot select it when creating a Meta Connector profile'
+icon: 'circle-exclamation'
+---
+
+When setting up a Meta Connector profile, you may see your ad account listed but be unable to select it. This prevents you from completing profile creation for that ad account.
+
+This issue typically occurs due to permissions, verification, or terms of service requirements on the Meta platform.
+
+## Accept Custom Audiences Terms of Service
+
+**Cause:** You haven't accepted Meta's Custom Audiences Terms of Service for the specific ad account.
+
+<Steps>
+  <Step title="Navigate to the Terms of Service page">
+    Open the Meta Custom Audiences Terms of Service using this URL format:
+    ```
+    https://business.facebook.com/ads/manage/customaudiences/tos/?act=YOUR_ACCOUNT_ID
+    ```
+    Replace `YOUR_ACCOUNT_ID` with your Meta ad account ID (numbers only, without the `act_` prefix).
+  </Step>
+  <Step title="Accept the Terms of Service">
+    Review and accept the Terms of Service if you haven't already.
+  </Step>
+  <Step title="Retry profile creation">
+    Return to the Narrative Meta Connector and try creating the profile again.
+  </Step>
+</Steps>
+
+## Verify your role permissions
+
+**Cause:** Your Meta account doesn't have sufficient permissions on the ad account.
+
+You must have at least **Advertiser** or **Ad Account Admin** role on the ad account. The **Ad Account Advertiser** role or higher is required to create Custom Audiences.
+
+<Steps>
+  <Step title="Contact your Business Manager admin">
+    Ask them to verify your role on the ad account.
+  </Step>
+  <Step title="Request elevated permissions">
+    If you don't have sufficient access, request **Advertiser** or **Ad Account Admin** permissions.
+  </Step>
+  <Step title="Update permissions in Business Manager">
+    In Meta Business Manager, roles can be updated under **Ad Accounts** > Select your ad account > **People** > Edit user permissions.
+  </Step>
+</Steps>
+
+## Complete business verification
+
+**Cause:** The Business Manager that owns the ad account hasn't completed Meta's business verification process.
+
+<Steps>
+  <Step title="Access Business Verification">
+    Log into your Meta Business Manager and navigate to **Business Settings** > **Security Center** > **Business Verification**.
+  </Step>
+  <Step title="Complete the verification process">
+    Follow Meta's prompts to verify your business. This process may take several days to complete.
+  </Step>
+  <Step title="Retry profile creation">
+    Once verification is complete, try creating the Meta Connector profile again.
+  </Step>
+</Steps>
+
+<Note>
+Business verification is a Meta requirement, not a Narrative requirement. Learn more in [Meta's Business Help Center](https://www.facebook.com/business/help/2058515294227817).
+</Note>
+
+## Verify ad account association
+
+**Cause:** The ad account is not properly associated with the Business Manager account you're logged into.
+
+<Steps>
+  <Step title="Confirm the correct Business Manager">
+    Verify that you're logged into the correct Meta Business Manager account.
+  </Step>
+  <Step title="Check ad account assignment">
+    In Business Manager, go to **Business Settings** > **Ad Accounts** and confirm the ad account you're trying to connect is listed and properly associated.
+  </Step>
+  <Step title="Add or request access if missing">
+    If the ad account is missing, you may need to:
+    - Request access to the ad account from its owner
+    - Add the ad account to your Business Manager (if you own it)
+    - Log into the correct Business Manager that owns the ad account
+  </Step>
+</Steps>
+
+## Additional troubleshooting steps
+
+If the solutions above don't resolve your issue:
+
+- **Clear browser cache** — Clear your browser cache and cookies, then try again
+- **Try a different browser** — Some browser extensions may interfere with the connection process
+- **Check Meta status** — Verify that Meta's systems are operational at [Meta Status](https://metastatus.com/)
+- **Wait and retry** — Temporary syncing delays between Meta's systems occasionally occur
+
+## Getting support
+
+If you continue to experience issues after trying these solutions, contact [Narrative support](mailto:support@narrative.io) with the following information:
+
+- Your Meta ad account ID
+- The Business Manager ID you're using
+- Screenshots of the error or issue you're encountering
+- Confirmation that you've tried the solutions above
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Meta Connector" icon="meta" href="/reference/connectors/meta">
+    Reference documentation for the Meta Connector
+  </Card>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Hashing PII" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare identifiers for Meta
+  </Card>
+</CardGroup>

@@ -1,0 +1,120 @@
+---
+title: 'The Trade Desk Connector'
+description: 'Deliver audience data to The Trade Desk for programmatic advertising'
+icon: 'bullhorn'
+---
+
+The Trade Desk Connector delivers audience data directly to The Trade Desk (TTD) platform, enabling you to activate your segments for programmatic advertising campaigns.
+
+<iframe
+  src="https://demo.arcade.software/5Yi5ZsMX72vc8HrEyh9i?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true"
+  title="Trade Desk Connector Demo"
+  frameBorder="0"
+  loading="lazy"
+  allowFullScreen
+  allow="clipboard-write"
+  style={{ width: '100%', aspectRatio: '16/9' }}
+/>
+
+## Overview
+
+The Trade Desk Connector supports two delivery modes:
+
+- **First-party (1P)**: Share your data with your own advertiser account or with specific advertisers who have provided their credentials
+- **Third-party (3P)**: Sell data through TTD's marketplace to any advertiser
+
+## Requirements
+
+### Credentials
+
+| Credential | Description | How to obtain |
+|------------|-------------|---------------|
+| Brand ID | Identifies your organization in TTD | Request from your TTD account representative or Narrative relationship manager |
+| Advertiser ID | Required for 1P delivery | Provided by the advertiser |
+| Secret Key | Required for 1P delivery | Provided by the advertiser |
+
+### Supported identifiers
+
+| Identifier Type | Rosetta Stone Attribute |
+|-----------------|------------------------|
+| SHA256 hashed email | `unique_id.hashed_email.sha256` |
+| Mobile advertising ID (MAID) | `unique_id.maid` |
+| UID2 | Auto-generated from hashed email |
+
+<Note>
+The connector automatically generates UID2 tokens from hashed email addresses. You don't need to provide UID2 directly.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** in the left navigation and select **Trade Desk Connector**.
+  </Step>
+  <Step title="Add your Brand ID">
+    In the **Settings** tab, enter your TTD Brand ID.
+  </Step>
+  <Step title="Configure delivery mode">
+    Choose between first-party (1P) or third-party (3P) delivery based on your use case.
+  </Step>
+</Steps>
+
+## Taxonomy management
+
+The Trade Desk organizes audiences into a hierarchical taxonomy. You create and manage this taxonomy within the connector interface.
+
+### Creating a taxonomy
+
+<Steps>
+  <Step title="Open Taxonomy Management">
+    Click on the **Taxonomy Management** tab.
+  </Step>
+  <Step title="Create root folder">
+    Click **Create Manually** and enter a name for your root folder (top-level category).
+  </Step>
+  <Step title="Add structure">
+    Use the **+** icon to add folders (for organization) or datasets (for audiences).
+  </Step>
+  <Step title="Configure pricing">
+    Set rate cards on folders and datasets specifying **Percent of media cost rate** and **CPM rate**.
+  </Step>
+</Steps>
+
+### Taxonomy fields
+
+| Field | Description |
+|-------|-------------|
+| Name | Display name of the segment in The Trade Desk |
+| Description | Segment description shown in TTD |
+| Element ID | Unique identifier for this segment in TTD |
+| Parent Element ID | ID of the parent folder |
+| Rate Card | Pricing configuration (Inherited, System, Advertiser, or Partner) |
+| Received IDs | Number of unique IDs sent to TTD |
+| Active IDs | Number of IDs TTD matched successfully |
+| Sync Status | Current synchronization state |
+| Buyable | Whether the segment is purchasable (vs. organizational folder) |
+| Dataset ID | Source dataset for this segment |
+
+## Syncing your taxonomy
+
+After configuring your taxonomy:
+
+1. Click **Actions** in the top right corner
+2. Select **Sync taxonomy**
+3. Monitor the sync status for each segment
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Structuring Audiences" icon="sitemap" href="/guides/activation/audience-strategies">
+    Organize datasets for delivery
+  </Card>
+  <Card title="UID2" icon="shield-check" href="/concepts/identifiers/uid2">
+    Learn about the UID2 identifier
+  </Card>
+</CardGroup>

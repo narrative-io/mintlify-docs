@@ -1,0 +1,72 @@
+---
+title: 'Snowflake Native App'
+description: 'Push data directly to Snowflake for analytics and data collaboration'
+icon: 'snowflake'
+---
+
+The Snowflake Native App enables bidirectional data flow between Narrative and Snowflake, allowing you to push data to Snowflake and access Snowflake data within Narrative.
+
+## Overview
+
+Unlike other connectors that deliver data to advertising platforms, the Snowflake integration connects your Snowflake data warehouse to Narrative's data collaboration platform. This enables:
+
+- Pushing Narrative data to Snowflake tables
+- Accessing Snowflake data within Narrative queries
+- Bi-directional data collaboration workflows
+
+## Requirements
+
+### Snowflake configuration
+
+- A Snowflake account with appropriate permissions
+- Access to install Snowflake Native Apps
+- Warehouse resources for data processing
+
+## Installation
+
+The Snowflake Native App is installed directly from the Snowflake Marketplace.
+
+<Steps>
+  <Step title="Find the app">
+    Search for "Narrative" in the Snowflake Marketplace.
+  </Step>
+  <Step title="Install the Native App">
+    Follow Snowflake's installation process to add the app to your account.
+  </Step>
+  <Step title="Configure permissions">
+    Grant the app the necessary permissions to read from and write to your Snowflake tables.
+  </Step>
+  <Step title="Connect to Narrative">
+    Link your Snowflake installation to your Narrative account.
+  </Step>
+</Steps>
+
+## Working with data
+
+Once installed, you can:
+
+- **Export to Snowflake**: Deliver query results or dataset contents to Snowflake tables
+- **Import from Snowflake**: Access Snowflake data as datasets within Narrative
+- **Bi-directional sync**: Keep data synchronized between both platforms
+
+## Data flows
+
+The Native App supports various data flow patterns depending on your use case:
+
+- One-time data exports
+- Scheduled recurring exports
+- Event-driven data delivery
+- Real-time synchronization
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Learn about data residency options
+  </Card>
+</CardGroup>

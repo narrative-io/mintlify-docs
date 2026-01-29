@@ -1,0 +1,101 @@
+---
+title: 'Connectors'
+sidebarTitle: 'Overview'
+description: 'Reference documentation for Narrative connectors and destination platforms'
+icon: 'plug'
+---
+
+Connectors enable you to deliver data from Narrative to external platforms. Each connector is a pre-built integration that handles authentication, data formatting, and delivery to a specific destination.
+
+## Available connectors
+
+### Advertising platforms
+
+<CardGroup cols={2}>
+  <Card title="The Trade Desk" icon="bullhorn" href="/reference/connectors/the-trade-desk">
+    Deliver audiences to TTD's first-party or third-party marketplace with automatic UID2 generation
+  </Card>
+  <Card title="Meta" icon="meta" href="/reference/connectors/meta">
+    Push custom audiences to Facebook and Instagram advertising
+  </Card>
+  <Card title="Google DV360" icon="google" href="/reference/connectors/google-dv360">
+    Activate audiences in Google Display & Video 360
+  </Card>
+  <Card title="TikTok" icon="tiktok" href="/reference/connectors/tiktok">
+    Deliver custom audiences to TikTok Ads Manager
+  </Card>
+  <Card title="Yahoo DSP" icon="y" href="/reference/connectors/yahoo-dsp">
+    Activate audiences in Yahoo's demand-side platform
+  </Card>
+  <Card title="Magnite" icon="chart-line" href="/reference/connectors/magnite">
+    Deliver audience segments to Magnite's SSP
+  </Card>
+</CardGroup>
+
+### Cloud storage
+
+<CardGroup cols={2}>
+  <Card title="Amazon S3" icon="aws" href="/reference/connectors/amazon-s3">
+    Deliver data files to your Amazon S3 bucket
+  </Card>
+  <Card title="Snowflake" icon="snowflake" href="/reference/connectors/snowflake">
+    Push data directly to Snowflake via the Native App
+  </Card>
+</CardGroup>
+
+---
+
+## Connector requirements
+
+Each connector requires specific identifier types to match users on the destination platform. Ensure your data includes at least one supported identifier before delivery.
+
+| Connector | Required Identifiers |
+|-----------|---------------------|
+| The Trade Desk | SHA256 hashed email, MAID, or UID2 |
+| Meta | SHA256 hashed email, SHA256 hashed phone |
+| Google DV360 | SHA256 hashed email, SHA256 hashed phone, or hashed name + zip + country |
+| TikTok | SHA256 hashed email, SHA256 hashed phone, MAID |
+| Yahoo DSP | SHA256 hashed email, MAID |
+| Amazon S3 | Any (file delivery) |
+| Snowflake | Any (data delivery) |
+
+<Note>
+For detailed identifier formatting requirements, see [Hashing PII for Upload](/guides/ingestion/hashing-pii).
+</Note>
+
+---
+
+## Common workflows
+
+### Delivering first-party data
+
+Push your own customer data to platforms for targeting:
+
+1. [Prepare your data](/guides/ingestion/hashing-pii) with hashed identifiers
+2. [Upload to a dataset](/guides/sdk/uploading-data)
+3. [Map to Rosetta Stone](/guides/rosetta-stone/mapping-schemas) attributes
+4. Configure and deliver through the connector
+
+### Delivering acquired data
+
+Activate third-party data purchased through Narrative:
+
+1. Query data from data collaborators using NQL
+2. Materialize results into a dataset
+3. Deliver through the appropriate connector
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors fit into the activation workflow
+  </Card>
+  <Card title="Structuring Audiences" icon="sitemap" href="/guides/activation/audience-strategies">
+    Organize your data for efficient delivery
+  </Card>
+  <Card title="Rosetta Stone Mapping" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Map your schema for connector compatibility
+  </Card>
+</CardGroup>

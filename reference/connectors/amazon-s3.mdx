@@ -1,0 +1,64 @@
+---
+title: 'Amazon S3 Connector'
+description: 'Deliver data files to your Amazon S3 bucket'
+icon: 'aws'
+---
+
+The Amazon S3 Connector delivers data files directly to your S3 bucket, enabling flexible data export for custom integrations and analytics workflows.
+
+## Overview
+
+Unlike advertising platform connectors that format data for specific destinations, the S3 Connector delivers your data as files in your chosen format. This makes it ideal for:
+
+- Custom downstream processing
+- Integration with data warehouses
+- Backup and archival
+- Feeding other systems that consume files from S3
+
+## Requirements
+
+### AWS configuration
+
+| Requirement | Description |
+|-------------|-------------|
+| S3 bucket | The destination bucket for your data |
+| IAM credentials | Access key and secret with write permissions to the bucket |
+| Bucket policy | Permissions allowing Narrative to write to the bucket |
+
+### Supported formats
+
+The connector can deliver data in multiple file formats:
+- CSV
+- JSON
+- Parquet
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** and select **S3 Connector**.
+  </Step>
+  <Step title="Configure bucket access">
+    Enter your S3 bucket name and AWS credentials (access key ID and secret access key).
+  </Step>
+  <Step title="Set delivery options">
+    Configure the file format, compression, and path prefix for delivered files.
+  </Step>
+</Steps>
+
+## Managed S3 buckets
+
+If you don't have an existing S3 bucket, Narrative can provision a managed bucket for you. Contact your Narrative representative to set up a managed S3 destination.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Structuring Audiences" icon="sitemap" href="/guides/activation/audience-strategies">
+    Organize datasets for delivery
+  </Card>
+</CardGroup>

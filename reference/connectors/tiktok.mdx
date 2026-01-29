@@ -1,0 +1,58 @@
+---
+title: 'TikTok Connector'
+description: 'Deliver custom audiences to TikTok Ads Manager'
+icon: 'tiktok'
+---
+
+The TikTok Connector delivers audience data to TikTok Ads Manager, enabling you to create custom audiences for advertising on the TikTok platform.
+
+## Overview
+
+The connector pushes your audience data to TikTok, where it becomes available as a Custom Audience for targeting in your TikTok ad campaigns.
+
+## Requirements
+
+### Account access
+
+- A TikTok for Business account
+- Access to TikTok Ads Manager
+- Appropriate permissions to create Custom Audiences
+
+### Supported identifiers
+
+| Identifier Type | Rosetta Stone Attribute |
+|-----------------|------------------------|
+| SHA256 hashed email | `unique_id.hashed_email.sha256` |
+| SHA256 hashed phone | `unique_id.hashed_phone.sha256` |
+| Mobile advertising ID (MAID) | `unique_id.maid` |
+
+<Note>
+All PII identifiers must be hashed with SHA256. See [Hashing PII for Upload](/guides/ingestion/hashing-pii) for formatting requirements.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** and select **TikTok Connector**.
+  </Step>
+  <Step title="Authenticate with TikTok">
+    Click **Connect** and authorize Narrative to access your TikTok for Business account.
+  </Step>
+  <Step title="Select your Ad Account">
+    Choose the Ad Account where audiences will be created.
+  </Step>
+</Steps>
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Hashing PII" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare identifiers for TikTok
+  </Card>
+</CardGroup>

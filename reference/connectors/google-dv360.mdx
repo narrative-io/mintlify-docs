@@ -1,0 +1,69 @@
+---
+title: 'Google DV360 Connector'
+description: 'Deliver audience data to Google Display & Video 360'
+icon: 'google'
+---
+
+The Google DV360 Connector delivers audience data directly to your Google Display & Video 360 Partner Account for programmatic display and video advertising.
+
+## Overview
+
+The connector enables seamless audience data delivery to DV360, allowing you to activate your segments for targeting across Google's programmatic ecosystem.
+
+## Requirements
+
+### Account access
+
+- A Google Display & Video 360 Partner Account
+- Appropriate permissions to create audiences
+
+### Supported identifiers
+
+Google DV360 accepts multiple identifier types. Your data must include at least one of the following:
+
+| Identifier Type | Rosetta Stone Attribute |
+|-----------------|------------------------|
+| SHA256 hashed email | `unique_id.hashed_email.sha256` |
+| SHA256 hashed phone | `unique_id.hashed_phone.sha256` |
+| Hashed name + zip + country | Multiple attributes required |
+
+For the name-based matching option, you need:
+- SHA256 hashed first name
+- SHA256 hashed last name
+- Zip code
+- Country code
+
+<Note>
+All identifiers must be hashed with SHA256. See [Hashing PII for Upload](/guides/ingestion/hashing-pii) for formatting requirements.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** and select **Google DV360 Connector**.
+  </Step>
+  <Step title="Authenticate with Google">
+    Click **Connect** and authorize Narrative to access your DV360 account.
+  </Step>
+  <Step title="Select your Partner Account">
+    Choose the Partner Account where audiences will be created.
+  </Step>
+</Steps>
+
+## Creating your profile
+
+After installation, configure your delivery profile to specify how audiences should be created in DV360.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Hashing PII" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare identifiers for DV360
+  </Card>
+</CardGroup>

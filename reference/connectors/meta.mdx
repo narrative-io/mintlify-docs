@@ -1,0 +1,82 @@
+---
+title: 'Meta Connector'
+description: 'Deliver custom audiences to Facebook and Instagram advertising'
+icon: 'meta'
+---
+
+The Meta Connector delivers audience data directly to Meta's Custom Audiences feature, enabling you to target users on Facebook and Instagram.
+
+<iframe
+  src="https://demo.arcade.software/8bV6cXfCroEMV1YZTfHH?embed&embed_mobile=tab&embed_desktop=inline&show_copy_link=true"
+  title="Meta Connector Demo"
+  frameBorder="0"
+  loading="lazy"
+  allowFullScreen
+  allow="clipboard-write"
+  style={{ width: '100%', aspectRatio: '16/9' }}
+/>
+
+## Overview
+
+The Meta Connector pushes your audience data to Meta's advertising platform, where it becomes available as a Custom Audience for targeting in your ad campaigns.
+
+## Requirements
+
+### Account access
+
+- A Meta Business Manager account
+- Admin access to the Ad Account where audiences will be created
+- Appropriate permissions to create Custom Audiences
+
+### Supported identifiers
+
+| Identifier Type | Rosetta Stone Attribute |
+|-----------------|------------------------|
+| SHA256 hashed email | `unique_id.hashed_email.sha256` |
+| SHA256 hashed phone | `unique_id.hashed_phone.sha256` |
+
+<Note>
+Meta requires identifiers to be hashed with SHA256 before upload. See [Hashing PII for Upload](/guides/ingestion/hashing-pii) for formatting requirements.
+</Note>
+
+## Installation
+
+<Steps>
+  <Step title="Navigate to the connector">
+    In Narrative, go to **Installed Apps** and select **Meta Connector**.
+  </Step>
+  <Step title="Authenticate with Meta">
+    Click **Connect** and authorize Narrative to access your Meta Business Manager account.
+  </Step>
+  <Step title="Select your Ad Account">
+    Choose the Ad Account where you want audiences to be created.
+  </Step>
+</Steps>
+
+## Delivering audiences
+
+Once configured, you can deliver datasets containing hashed identifiers to create Custom Audiences in Meta.
+
+## Troubleshooting
+
+### Ad account access issues
+
+If you can see an ad account but cannot select it during profile creation, see [Ad Account Access Issues](/guides/connectors/meta/ad-account-access) for detailed troubleshooting steps covering:
+
+- Accepting Custom Audiences Terms of Service
+- Verifying role permissions
+- Completing business verification
+- Confirming ad account association
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Activation Overview" icon="bullseye-arrow" href="/concepts/data-activation/overview">
+    Understand how connectors deliver data
+  </Card>
+  <Card title="Hashing PII" icon="hashtag" href="/guides/ingestion/hashing-pii">
+    Prepare identifiers for Meta
+  </Card>
+</CardGroup>
