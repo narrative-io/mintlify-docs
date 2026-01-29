@@ -13,35 +13,96 @@ This tutorial is part of the First Steps series. Complete [Create an Account](/g
 ## Prerequisites
 
 - A Narrative I/O account
-- A dataset to upload (CSV, JSON, or connected source)
+- A CSV file to upload
+
+<Tip>
+Don't have a dataset handy? Download this [sample CSV of top domains](https://github.com/fffaraz/datasets/blob/master/top500Domains.csv) to follow along.
+</Tip>
 
 ## What you'll learn
 
-- How to upload data manually
-- How to connect external data sources
-- How to verify your upload was successful
+- How to navigate to the Datasets page
+- How to upload a CSV file
+- How to verify your dataset was created successfully
 
 ## Steps
 
 <Steps>
-  <Step title="Navigate to data upload">
-    Content placeholder
+  <Step title="Navigate to Datasets">
+    In the left sidebar, click **My Data**, then select **Datasets**.
+
+    This takes you to [https://app.narrative.io/platform/my-data/datasets](https://app.narrative.io/platform/my-data/datasets), where you can see all your existing datasets and their statuses.
   </Step>
-  <Step title="Select your upload method">
-    Content placeholder
+
+  <Step title="Start a new dataset">
+    Click **New Dataset** to begin the upload process.
+
+    You'll land on the dataset creation page at [https://app.narrative.io/platform/my-data/new-dataset](https://app.narrative.io/platform/my-data/new-dataset). This is where you'll upload your file and configure your dataset.
   </Step>
-  <Step title="Upload your data">
-    Content placeholder
+
+  <Step title="Upload your file">
+    Upload your CSV file using one of these methods:
+
+    - **Drag and drop**: Drag your file directly onto the upload area
+    - **File picker**: Click the upload area to browse and select your file
+
+    Once you select a file, the platform begins processing:
+    - The file uploads to Narrative's servers
+    - The system infers your schema from the data
+    - Initial validation checks run automatically
+
+    <Tip>
+    Narrative also supports JSON files. For connecting external data sources like cloud storage or databases, see the [Connectors reference](/reference/connectors).
+    </Tip>
   </Step>
-  <Step title="Verify your upload">
-    Content placeholder
+
+  <Step title="Review your dataset">
+    After a successful upload, you're redirected to your dataset's overview page.
+
+    The URL follows this pattern: `https://app.narrative.io/platform/my-data/dataset/{id}#overview`
+
+    On this page you'll see:
+    - **Dataset name and metadata**: Basic information about your upload
+    - **Status indicator**: Confirms the dataset was created successfully
+    - **Navigation tabs**: Access to Overview, Schema, Records, and Mappings
+
+    Your dataset now exists in Narrative and is ready for the next step: normalization.
   </Step>
 </Steps>
+
+## Verify it worked
+
+To confirm your upload succeeded:
+
+1. Navigate back to **My Data** → **Datasets**
+2. Find your new dataset in the list
+3. Check that the status shows the upload is complete
+4. Click into the dataset and select the **Records** tab to preview your data
+
+You should see your CSV data displayed with the columns the system inferred from your file.
+
+## What you accomplished
+
+- Navigated to the dataset management interface
+- Uploaded a CSV file as a new dataset
+- Verified the dataset was created and is ready for normalization
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Upload fails or times out | Check file size limits; try a smaller file or split into chunks |
+| File format not supported | Ensure your file is a valid CSV or JSON format |
+| Dataset shows 0 records | Verify the file has data rows, not just headers |
+| Schema looks incorrect | Check that your CSV uses consistent delimiters and quoting |
 
 ## Next steps
 
 <CardGroup cols={2}>
   <Card title="Normalize with Rosetta Stone" icon="language" href="/getting-started/normalize-data">
     Map your data to Narrative's standard schema
+  </Card>
+  <Card title="Connect External Sources" icon="plug" href="/reference/connectors">
+    Set up connectors for cloud storage and databases
   </Card>
 </CardGroup>
