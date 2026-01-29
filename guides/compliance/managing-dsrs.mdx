@@ -1,0 +1,188 @@
+---
+title: 'Managing Data Subject Requests'
+description: 'Submit and process opt-out and deletion requests to comply with GDPR, CCPA, and other privacy regulations'
+icon: 'user-shield'
+---
+
+When you receive a data subject request (DSR) from an individual exercising their privacy rights, you must ensure that request is honored across all systems where their data exists—including any data you've shared with partners through Narrative. This guide shows you how to submit DSRs to the platform so that opted-out identifiers are automatically excluded from queries and propagated to downstream data collaborators.
+
+<Note>
+For background on GDPR data subject rights and CCPA consumer rights, see [GDPR](/concepts/compliance/gdpr) and [CCPA](/concepts/compliance/ccpa).
+</Note>
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+- A dataset uploaded to Narrative
+- The identifier(s) from the DSR (hashed email, MAID, cookie, or other unique identifier)
+- Understanding of the request type (opt-out or data erasure)
+
+---
+
+## How DSR management works
+
+When you submit a DSR to Narrative, the platform takes two automatic actions:
+
+1. **Blocks future transactions**: The identifier is anti-joined from all NQL queries in your account, preventing the data subject's information from being queried, returned, or filtered on by any party.
+
+2. **Propagates to data buyers**: If you've previously shared data containing this identifier with other organizations, Narrative notifies those buyers so they can comply with the request wherever they've already received the data.
+
+<Info>
+As a data owner, regulatory frameworks like CCPA and GDPR hold you responsible for complying with privacy requests. Narrative's DSR management helps you fulfill your obligations to both the data subject and your downstream data collaborators.
+</Info>
+
+---
+
+## Submitting a DSR
+
+To register a privacy request with Narrative, create a dataset containing the opted-out identifiers and map it to the **Data Privacy Request Identifier** Rosetta Stone attribute.
+
+### Step 1: Prepare your DSR data
+
+Create a dataset with two fields:
+
+| Field | Description | Example values |
+|-------|-------------|----------------|
+| **Identifier** | The unique identifier from the DSR. Can be any identifier type: hashed email, mobile advertising ID (MAID), cookie, or custom ID. | `a1b2c3d4e5f6...` (SHA-256 email hash) |
+| **Request type** | The type of privacy request received. | `opt_out` or `data_erasure` |
+
+Example CSV:
+
+```csv
+identifier,request_type
+06a240d11cc201676da976f7b49341181fd180da37cbe40a77432c0a366c80c3,opt_out
+e1e8d3e4a336d4f9dc63b70a534ff10834471556,data_erasure
+abc123def456,opt_out
+```
+
+### Step 2: Upload and create the dataset
+
+<Steps>
+  <Step title="Navigate to Datasets">
+    In the Narrative UI, go to **Datasets** and click **Create Dataset**.
+  </Step>
+  <Step title="Upload your DSR file">
+    Upload the CSV file containing your privacy request identifiers.
+  </Step>
+  <Step title="Define the schema">
+    Map your columns to appropriate data types:
+    - `identifier`: String
+    - `request_type`: String (enum: `opt_out`, `data_erasure`)
+  </Step>
+  <Step title="Save and activate">
+    Save the dataset and ensure it's activated.
+  </Step>
+</Steps>
+
+### Step 3: Map to the Data Privacy Request Identifier attribute
+
+The critical step is mapping your dataset to the **Data Privacy Request Identifier** Rosetta Stone attribute. This mapping tells the platform that identifiers in this dataset represent privacy requests that should be excluded from queries.
+
+<Steps>
+  <Step title="Open the Rosetta Stone tab">
+    Navigate to your DSR dataset and click the **Rosetta Stone** tab.
+  </Step>
+  <Step title="Create a mapping">
+    Click **Add Mapping** and select the `identifier` column.
+  </Step>
+  <Step title="Select the target attribute">
+    Search for and select **Data Privacy Request Identifier** (attribute ID 232).
+  </Step>
+  <Step title="Save the mapping">
+    Click **Create** to activate the mapping.
+  </Step>
+</Steps>
+
+<Warning>
+The mapping to the Data Privacy Request Identifier attribute is what triggers the privacy enforcement. Without this mapping, your DSR dataset will be treated as regular data.
+</Warning>
+
+Once mapped, the platform automatically:
+- Anti-joins these identifiers from all NQL queries in your account
+- Propagates the requests to any organization that has previously purchased data containing these identifiers from you
+
+---
+
+## Setting a retention policy
+
+For optimal data management and compliance, set a 30-day retention policy on datasets containing DSR identifiers. This approach:
+
+- Promotes timely data deletion
+- Aligns with many privacy regulation timelines (GDPR requires response within one month; CCPA within 45 days)
+- Prevents indefinite accumulation of DSR records
+
+<Tip>
+Always tailor your retention policy to the specific regulations of your jurisdiction. Consult your legal team for guidance on appropriate retention periods.
+</Tip>
+
+---
+
+## For data buyers
+
+If you subscribe to data containing user identifiers from other organizations, Narrative automatically subscribes you to receive relevant DSRs from those suppliers.
+
+### Where to find DSRs
+
+Privacy requests passed to you appear in **My Data** under **Purchased Data**. These requests include:
+- The identifier that was opted out or requested for deletion
+- The request type (`opt_out` or `data_erasure`)
+- The supplier who originated the request
+
+### Your compliance responsibility
+
+When you receive a DSR from a supplier:
+
+1. **Review the request**: Identify the identifier and request type
+2. **Locate the data**: Find any records in your systems that match the identifier
+3. **Take appropriate action**:
+   - For `opt_out`: Remove the identifier from marketing communications and targeted advertising
+   - For `data_erasure`: Delete all personal data associated with the identifier
+4. **Document compliance**: Maintain records of your response for audit purposes
+
+<Warning>
+You are responsible for complying with DSRs in systems where you have already exfiltrated data from Narrative. The platform blocks future queries, but you must handle data that has already been exported.
+</Warning>
+
+---
+
+## Request types
+
+Narrative supports two types of privacy requests:
+
+| Request type | Value | Description | Typical use case |
+|--------------|-------|-------------|------------------|
+| **Opt-out** | `opt_out` | Data subject requests removal from marketing or advertising | CCPA "Do Not Sell" requests, GDPR right to object |
+| **Data erasure** | `data_erasure` | Data subject requests complete deletion of their personal data | GDPR right to erasure, CCPA deletion requests |
+
+Both request types result in the identifier being excluded from future queries. The distinction helps you and your data collaborators take the appropriate compliance action.
+
+---
+
+## Troubleshooting
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Identifier still appearing in query results | Dataset not mapped to Data Privacy Request Identifier attribute | Verify the Rosetta Stone mapping is active |
+| DSR not propagating to buyers | Mapping was created after data was already transacted | Contact support—the platform will backfill notifications |
+| Invalid request type error | Request type value doesn't match expected enum | Use exactly `opt_out` or `data_erasure` (lowercase, underscore) |
+| Buyers not receiving DSRs | No prior transactions on the identifier | DSRs only propagate when there's a transaction history |
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="GDPR" icon="shield-check" href="/concepts/compliance/gdpr">
+    Understand GDPR data subject rights
+  </Card>
+  <Card title="CCPA" icon="scale-balanced" href="/concepts/compliance/ccpa">
+    Understand CCPA consumer rights
+  </Card>
+  <Card title="Mapping Schemas" icon="diagram-project" href="/guides/rosetta-stone/mapping-schemas">
+    Learn how to create Rosetta Stone mappings
+  </Card>
+  <Card title="Data Pseudonymization" icon="user-secret" href="/concepts/security/data-pseudonymization">
+    Privacy-preserving data collaboration techniques
+  </Card>
+</CardGroup>
