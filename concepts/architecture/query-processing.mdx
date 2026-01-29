@@ -53,7 +53,7 @@ The control plane transforms your NQL into executable SQL through several steps:
 
 **Permission verification.** Your [access rules](/concepts/primitives/access-rules) are checked for every dataset and field in the query. If you lack permission to access any referenced data, the query fails before execution.
 
-**Optimization.** The query planner analyzes the query structure to determine an efficient execution strategy.
+**Optimization.** The query planner analyzes the query structure to determine an efficient execution strategy. For large dataset scans, this may include [chunking](/concepts/nql/chunking)—splitting the query into time-based segments for improved stability and cost efficiency.
 
 **Transpilation.** The NQL is converted to native SQL for your target data plane's database engine. A Snowflake data plane receives Snowflake SQL; a Spark data plane receives Spark SQL. See [NQL Design Philosophy](/concepts/nql/design-philosophy) for details on transpilation.
 
@@ -117,13 +117,13 @@ The separation between control plane and data plane is deliberate:
   <Card title="NQL Design Philosophy" icon="compass-drafting" href="/concepts/nql/design-philosophy">
     Why NQL is an interpreted language with transpilation
   </Card>
+  <Card title="Chunking" icon="puzzle-piece" href="/concepts/nql/chunking">
+    How large queries are split into time-based segments
+  </Card>
   <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
     The orchestration layer that compiles queries and coordinates jobs
   </Card>
   <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
     Where your data lives and queries execute
-  </Card>
-  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
-    How the architecture protects your data
   </Card>
 </CardGroup>

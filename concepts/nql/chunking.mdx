@@ -1,0 +1,118 @@
+---
+title: 'Chunking'
+description: 'How NQL splits large queries into time-based segments for stability and cost efficiency'
+icon: 'puzzle-piece'
+---
+
+Chunking is an execution strategy that processes large datasets in smaller, time-bounded segments. It improves stability and cost efficiency without changing your query syntax—you write normal NQL, and the platform decides when and how to split the work.
+
+## Why chunking matters
+
+Very large datasets—from tens of gigabytes to hundreds of terabytes—present challenges for single-shot query execution:
+
+**Stability.** Long-running scans can fail due to resource pressure, network timeouts, or cluster issues. A failure 4 hours into a 5-hour query means starting over from scratch.
+
+**Cost control.** When a query fails late in execution, you've already consumed compute resources with nothing to show for it. The later the failure, the greater the waste.
+
+**Scalability.** Single-pass processing doesn't scale predictably. A query that works for 10GB may fail at 100GB or behave differently at 1TB.
+
+Chunking addresses these problems by capping the work performed in any single step.
+
+## How chunking works
+
+When NQL determines a query is eligible for chunked execution:
+
+1. **Evaluation.** The query planner analyzes the query structure to determine if chunking can apply without changing results.
+
+2. **Time-based splitting.** The platform divides the scan into ranges based on a last-modified timestamp column (typically `nio_last_modified_at` or `last_modified_at`).
+
+3. **Independent execution.** Each chunk runs as a separate operation. If one chunk fails, only that chunk needs to retry—not the entire query.
+
+4. **Result combination.** Results from all chunks are combined to produce the final output, semantically equivalent to running the query as a single operation.
+
+This happens automatically. There are no user-facing configuration options or syntax changes required.
+
+## Eligible queries
+
+Chunking applies to queries that primarily scan a single dataset with standard projections and filters. These patterns work well:
+
+- **Simple scans** with filters and projections from `company_data` datasets
+- **Queries against `narrative.rosetta_stone`** with standard selection patterns
+- **Materialized views** that read from a single source with straightforward transformations
+
+### Example: A chunkable query
+
+This materialized view is a good candidate for chunking:
+
+```sql
+CREATE MATERIALIZED VIEW "large_user_enrichment"
+  REFRESH_SCHEDULE = '@weekly'
+  WRITE_MODE = 'overwrite'
+AS
+SELECT
+  user_id,
+  email.value AS email_sha256,
+  country_code,
+  last_seen_at
+FROM company_data."large_source_dataset"
+WHERE last_seen_at >= CURRENT_TIMESTAMP - INTERVAL '180' DAY
+```
+
+The query shape—a scan with filters and projections from a single dataset—makes it eligible. The platform may split work by last-modified ranges to improve reliability on very large inputs.
+
+## Queries not eligible for chunking
+
+To preserve correctness and keep the execution model predictable, certain query patterns are not chunked:
+
+**Complex joins.** Multi-table joins, especially when join semantics span large time ranges, require seeing all matching rows together. Chunking could produce incorrect results.
+
+**Unions and set operations.** Operations like `UNION`, `INTERSECT`, and `EXCEPT` combine results from multiple queries in ways that don't partition cleanly by time.
+
+**Global aggregations.** Operations like `SUM`, `AVG`, or `COUNT` over the entire dataset need all rows in a single pass to produce correct results. (Group-by aggregations within chunks may still work.)
+
+**Sorting and windowing.** `ORDER BY` across the full result set and window functions that depend on complete data can't be chunked without changing semantics.
+
+**Table functions.** Functions that change scan behavior may not be compatible with time-based partitioning.
+
+<Note>
+Queries that include these operations still run—they just execute as a single operation rather than being split into chunks.
+</Note>
+
+## Result consistency
+
+Chunked execution aims to produce results equivalent to a single-pass run. In practice:
+
+- **Results are materially the same** for typical analytical workloads
+- **Minor differences** can occur at chunk boundaries due to processing order or concurrent updates to source data
+- **Deterministic queries** over stable data produce identical results regardless of chunking
+
+For most use cases, you won't notice whether a query was chunked or not—which is the point.
+
+## Relationship to other optimizations
+
+Chunking complements other NQL execution strategies:
+
+**[Incremental View Maintenance](/concepts/nql/incremental-view-maintenance)** processes only changed data since the last refresh. Chunking handles the initial scan of large datasets; IVM handles ongoing updates efficiently.
+
+**[Query Processing](/concepts/architecture/query-processing)** describes the full query lifecycle. Chunking is one optimization the query planner may apply during the optimization stage.
+
+**[Materialized Views](/concepts/nql/materialized-views)** benefit from chunking when refreshing over very large source datasets. The refresh becomes more reliable without any changes to the view definition.
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Materialized Views" icon="layer-group" href="/concepts/nql/materialized-views">
+    Pre-computed query results that benefit from chunked refresh
+  </Card>
+  <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
+    Update views by processing only changed data
+  </Card>
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries are compiled, optimized, and executed
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-plus" href="/guides/nql/creating-materialized-views">
+    Step-by-step guide to creating materialized views
+  </Card>
+</CardGroup>
