@@ -4,11 +4,29 @@
 
 Connections between datasets that enable querying across multiple related data sources. Relationships allow organizations to join and analyze data across different datasets while respecting access controls.
 
+### REST API
+
+The programmatic interface for interacting with the Narrative platform. The REST API follows standard conventions including resource-oriented URLs, standard HTTP verbs (GET, POST, PUT, DELETE), JSON-encoded request and response bodies, and Bearer token authentication. All functionality available in the Web UI is also accessible via the API.
+
+**Related:** [REST API Documentation](/api-reference/introduction), [SDKs](/reference/sdks), [API Keys](/account-settings/api-keys)
+
+### Retention policy
+
+A set of rules that governs how long data within a dataset is kept before automatic deletion. Retention policies help manage storage costs, comply with data governance requirements, and ensure data is only stored for as long as necessary. Policies can specify time-based retention (using ISO 8601 durations like `P90D` for 90 days), retain everything indefinitely, or expire everything immediately.
+
+**Related:** [Dataset Retention Policies](/concepts/primitives/dataset-retention-policies), [Datasets](/concepts/primitives/datasets), [EXPIRE clause](/reference/nql/materialized-view-syntax#expire)
+
 ### Right to erasure
 
 A data subject right under GDPR (also known as the "right to be forgotten") allowing individuals to request deletion of their personal data under certain circumstances, such as when the data is no longer necessary, when consent is withdrawn, or when processing was unlawful. Similar deletion rights exist under CCPA.
 
 **Related:** [Data subject](#data-subject), [GDPR](/concepts/compliance/gdpr), [CCPA](/concepts/compliance/ccpa)
+
+### Rosetta AI Assistant
+
+An AI-powered assistant that interprets plain English instructions and executes actions within the Narrative platform. Rosetta (accessible at [rosett.st](https://rosett.st)) can help users accomplish data collaboration tasks including complex data operations like querying data. The assistant makes data collaboration more accessible by eliminating the need to learn query syntax or navigate complex interfaces.
+
+**Related:** [NQL](#nql-narrative-query-language), [Web UI](#web-ui)
 
 ### Rosetta Stone
 

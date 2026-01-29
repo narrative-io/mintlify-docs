@@ -48,6 +48,12 @@ Secure Hash Algorithm 1—a hash function that produces a 160-bit (40-character 
 
 **Related:** [Hash function](#hash-function), [Hashing PII for Upload](/guides/ingestion/hashing-pii)
 
+### Snapshot
+
+A point-in-time collection of files that were ingested together into a dataset. When you upload data, the ingestion process creates a new snapshot containing the validated records. Retention policies evaluate data based on snapshot age—the time since the snapshot was created—to determine when data should be automatically deleted.
+
+**Related:** [Datasets](/concepts/primitives/datasets), [Dataset Retention Policies](/concepts/primitives/dataset-retention-policies)
+
 ### SHA-256
 
 Secure Hash Algorithm 256-bit—a member of the SHA-2 family that produces a 256-bit (64-character hexadecimal) hash value. Currently considered cryptographically secure and is the recommended algorithm for new implementations. Narrative supports SHA-256 as the preferred hashing algorithm alongside MD5 and SHA-1.

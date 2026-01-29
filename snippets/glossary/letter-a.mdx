@@ -8,6 +8,12 @@ Access rules are enforced at query execution time by the control plane and data 
 
 **Related:** [Access Rules](/concepts/primitives/access-rules), [Security Model](/concepts/architecture/security-model)
 
+### Attribute lineage
+
+The automatic tracking and preservation of Rosetta Stone attribute mappings when creating materialized views. When source datasets have existing attribute mappings, lineage ensures these mappings persist in derived views without requiring manual re-mapping. Mappings are preserved when selecting unaltered attributes, querying from existing materialized views, or selecting all fields that constitute an attribute mapping.
+
+**Related:** [Materialized Views](/concepts/nql/materialized-views#attribute-lineage), [How Rosetta Stone Works](/concepts/rosetta-stone/how-it-works)
+
 ### Attributes
 
 Standardized field definitions in Rosetta Stone that form the common schema for data normalization. Each attribute has an immutable numeric ID, a name, description, type, and optional validations. Attributes can be global (platform-wide standards like `hl7_gender`) or organization-specific (scoped to one organization and its collaborators). Also referred to as **normalized attributes** or **Rosetta Stone attributes**.

@@ -10,6 +10,18 @@ Under GDPR, an entity that determines the purposes and means of processing perso
 
 **Related:** [Data processor](#data-processor), [GDPR](/concepts/compliance/gdpr)
 
+### Data crosswalk
+
+A method for linking or matching records across different data sources without exposing the underlying identifiers. In privacy-safe implementations, crosswalks use pseudonymization techniques like hashing to enable record matching while protecting individual privacy. Data crosswalks are essential for data collaboration scenarios where organizations need to find common records (such as overlapping customers) without sharing raw PII.
+
+**Related:** [Data Pseudonymization](/concepts/security/data-pseudonymization), [Hashing](/concepts/security/hashing)
+
+### Data enrichment
+
+The process of enhancing existing customer or audience data with additional attributes from external sources. Common enrichment attributes include demographics (age, gender), location data, purchase behavior, and interest signals. In Narrative, enrichment is performed by joining seed datasets with provider data through Rosetta Stone identity matching. Unlike per-use data licensing models, enriched data can typically be used across multiple platforms and use cases under an omni-use license.
+
+**Related:** [Data collaboration](#data-collaboration), [Demographic Enrichment](/cookbooks/use-cases/demographic-enrichment)
+
 ### Data plane
 
 The infrastructure where data physically resides and where queries execute. Data planes can be hosted by Narrative (Narrative-hosted) or deployed within a customer's own infrastructure (customer-hosted) for maximum control over data residency.
@@ -43,6 +55,12 @@ Curated, packaged datasets designed for sharing with partner organizations. Data
 Under GDPR, an identified or identifiable natural person whose personal data is being processed. Data subjects have various rights including access, rectification, erasure, and data portability.
 
 **Related:** [GDPR](/concepts/compliance/gdpr)
+
+### Data Subject Request (DSR)
+
+A formal request from a data subject exercising their rights under privacy laws such as GDPR or CCPA. DSRs include opt-out requests (where the data subject asks to be removed from marketing or advertising) and data erasure requests (where the data subject requests complete deletion of their personal data). In Narrative, DSRs are submitted by mapping identifiers to the Data Privacy Request Identifier attribute, which automatically excludes those identifiers from queries and propagates requests to downstream data collaborators.
+
+**Related:** [Data subject](#data-subject), [Managing Data Subject Requests](/guides/compliance/managing-dsrs), [GDPR](/concepts/compliance/gdpr), [CCPA](/concepts/compliance/ccpa)
 
 ### Dataset
 

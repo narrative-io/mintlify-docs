@@ -43,6 +43,7 @@
 						"group": "Core Primitives",
 						"pages": [
 							"concepts/primitives/datasets",
+							"concepts/primitives/dataset-retention-policies",
 							"concepts/primitives/data-planes",
 							"concepts/primitives/control-plane",
 							"concepts/primitives/access-rules"
@@ -66,6 +67,7 @@
 							"concepts/nql/join-performance",
 							"concepts/nql/materialized-views",
 							"concepts/nql/incremental-view-maintenance",
+							"concepts/nql/chunking",
 							"concepts/nql/query-templates"
 						]
 					},
@@ -121,6 +123,12 @@
 							"concepts/compliance/ccpa",
 							"concepts/compliance/sub-processors"
 						]
+					},
+					{
+						"group": "Data Activation",
+						"pages": [
+							"concepts/data-activation/overview"
+						]
 					}
 				]
 			},
@@ -163,6 +171,23 @@
 					{
 						"group": "Data Collaboration",
 						"pages": ["guides/collaboration/using-narrative-id"]
+					},
+					{
+						"group": "Data Activation",
+						"pages": ["guides/activation/audience-strategies"]
+					},
+					{
+						"group": "Connectors",
+						"pages": [
+							{
+								"group": "Meta",
+								"pages": ["guides/connectors/meta/ad-account-access"]
+							}
+						]
+					},
+					{
+						"group": "Compliance",
+						"pages": ["guides/compliance/managing-dsrs"]
 					},
 					{
 						"group": "Rosetta Stone",
@@ -215,6 +240,7 @@
 						"group": "Use Cases",
 						"pages": [
 							"cookbooks/use-cases/retail-collaboration",
+							"cookbooks/use-cases/demographic-enrichment",
 							"cookbooks/use-cases/ai-dataset-descriptions",
 							"cookbooks/use-cases/natural-language-to-cron"
 						]
@@ -250,6 +276,20 @@
 						]
 					},
 					{
+						"group": "Connectors",
+						"pages": [
+							"reference/connectors/index",
+							"reference/connectors/the-trade-desk",
+							"reference/connectors/meta",
+							"reference/connectors/google-dv360",
+							"reference/connectors/tiktok",
+							"reference/connectors/yahoo-dsp",
+							"reference/connectors/magnite",
+							"reference/connectors/amazon-s3",
+							"reference/connectors/snowflake"
+						]
+					},
+					{
 						"group": "Integrations",
 						"pages": ["reference/integrations/cookie-syncing"]
 					},
@@ -273,6 +313,12 @@
 						]
 					},
 					{
+						"group": "UI Reference",
+						"pages": [
+							"reference/ui/prompt-studio"
+						]
+					},
+					{
 						"group": "SDKs",
 						"pages": [
 							"reference/sdks/index",
@@ -290,6 +336,10 @@
 					{
 						"group": "Glossary",
 						"pages": ["reference/glossary"]
+					},
+					{
+						"group": "Billing",
+						"pages": ["reference/billing/pricing"]
 					}
 				]
 			},
