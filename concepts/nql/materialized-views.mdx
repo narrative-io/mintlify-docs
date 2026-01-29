@@ -84,6 +84,45 @@ When you create a materialized view, the result becomes a dataset in Narrative I
 
 This makes materialized views a powerful tool for data products—you define the query once, and the platform handles keeping it fresh and making it available to authorized consumers.
 
+## Attribute lineage
+
+Attribute lineage refers to how Rosetta Stone attribute mappings are automatically preserved when creating materialized views. When source datasets already have attribute mappings, manually re-mapping these attributes for every derived view is redundant. The attribute lineage feature automates this preservation, maintaining data consistency across your data pipeline.
+
+### When attribute mappings persist
+
+Attribute mappings are automatically preserved in three scenarios:
+
+**Direct selection of unaltered attributes.** When you select a Rosetta Stone attribute directly from a dataset or access rule without modifying its output through data functions, the attribute mapping persists. Aliasing the attribute (e.g., `SELECT email AS user_email`) does not count as altering the data—the mapping is still preserved.
+
+**Selection from an existing materialized view.** Selecting attributes from an already-created materialized view preserves the attribute mappings. Since the source view has already maintained the integrity of its mappings, the new view inherits them.
+
+**Comprehensive selection of unmanipulated fields.** When you select all fields or columns that constitute an attribute mapping without manipulating any of these elements, the resulting materialized view retains the original mappings.
+
+### How lineage is implemented
+
+The system uses several mechanisms to track and preserve attribute mappings:
+
+**Implicit usage-based remapping.** The system automatically remaps attributes based on their usage within dataset properties. For example, if a dataset includes a `Raw Email` attribute mapped through a `value` property, creating a materialized view that selects the `value` property implicitly remaps the `Raw Email` attribute to the new view.
+
+**Identity mappings for dataset attributes.** When attributes are queried from specific datasets using the `_rosetta_stone` namespace, the resulting materialized view inherits mappings to all properties of the selected attribute, regardless of what mappings exist in the source dataset.
+
+**Identity mappings for rosetta_stone attributes.** Similarly, querying attributes directly from a `rosetta_stone` table and creating a materialized view results in the view inheriting mappings to all properties of the queried attribute.
+
+### Derived mapping properties
+
+When mappings are inherited, certain properties are inferred or copied from the original:
+
+| Property | Behavior |
+|----------|----------|
+| **Scope** | Set to `GLOBAL` for `rosetta_stone` attributes; otherwise inherited from source |
+| **Source** | Typically set to `SYSTEM` for derived mappings |
+| **Tags** | Copied from the original mapping |
+| **Status** | Inferred based on context |
+
+### Handling multiple datasets
+
+When multiple datasets contribute to a materialized view and have overlapping attribute mappings, a prioritization logic determines which mapping is preserved. The system typically favors the first dataset encountered in the query. This ensures deterministic behavior when the same attribute appears in multiple source datasets.
+
 ---
 
 ## Related content
@@ -98,7 +137,7 @@ This makes materialized views a powerful tool for data products—you define the
   <Card title="Incremental View Maintenance" icon="arrows-rotate" href="/concepts/nql/incremental-view-maintenance">
     How NQL optimizes refreshes by updating only changed data
   </Card>
-  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
-    How queries are compiled, optimized, and executed
+  <Card title="Chunking" icon="puzzle-piece" href="/concepts/nql/chunking">
+    How large queries are split into time-based segments for stability
   </Card>
 </CardGroup>
