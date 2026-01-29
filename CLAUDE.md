@@ -97,6 +97,9 @@ When creating or editing any article:
 - NEVER use wildcards (*) in NQL queries—always specify explicit column names
 - All NQL code examples must use fully qualified column names
 
+## Checks
+- If we added or removed a concept always check /concepts/index.mdx to see if that page needs to be updated
+
 ## Git workflow
 - NEVER use --no-verify when committing
 - Ask how to handle uncommitted changes before starting

@@ -1,0 +1,200 @@
+---
+title: 'Prompt Studio Interface'
+description: 'Reference for the Prompt Studio UI for creating fine-tuning-ready datasets'
+icon: 'message-bot'
+---
+
+This reference documents the UI elements, configuration options, and actions available in the Prompt Studio interface.
+
+## Overview
+
+Prompt Studio transforms datasets into structured, fine-tuning-ready examples for AI models. Each row in the output dataset represents a valid training example formatted as a conversation with system, user, and assistant messages.
+
+**Path:** My Models → Prompt Studio
+
+---
+
+## Prompt Builder module
+
+The Prompt Builder is the main workspace for configuring how dataset rows transform into conversation-formatted training examples.
+
+### Dataset selector
+
+| Element | Description |
+|---------|-------------|
+| **Dataset dropdown** | Select the source dataset to transform |
+| **Row count** | Displays total rows available for transformation |
+
+The selected dataset provides the fields available for macro substitution in prompts.
+
+### Role configuration panels
+
+Three panels allow you to configure prompts for each conversation role:
+
+| Role | Purpose | Typical content |
+|------|---------|-----------------|
+| **System** | Sets the AI's behavior and context | Instructions, persona definition, constraints |
+| **User** | Represents the human input | Questions, requests, data to analyze |
+| **Assistant** | Represents the AI response | Expected output format, example responses |
+
+Each panel contains:
+
+| Element | Description |
+|---------|-------------|
+| **Select button** | Opens the prompt editor for that role |
+| **Prompt text area** | Displays the configured prompt with macro placeholders |
+| **Macro indicators** | Visual badges showing embedded macros |
+
+---
+
+## Prompt editor
+
+The prompt editor opens when you click **Select** on any role panel.
+
+### Text input area
+
+| Element | Description |
+|---------|-------------|
+| **Prompt text field** | Multi-line text area for writing the prompt |
+| **Macro placeholder syntax** | Use `{{macro_name}}` to insert dynamic values |
+| **Character count** | Displays current prompt length |
+
+### Macro configuration
+
+After adding macro placeholders to your prompt text, configure each macro's data source:
+
+| Macro type | Description | Use case |
+|------------|-------------|----------|
+| **Field** | Maps to a column in the source dataset | Pull values directly from dataset columns |
+| **NQL** | Uses a [Narrative Query Language](/reference/nql/syntax) expression | Compute derived values, transform data, combine fields |
+| **Literal** | Fixed text value | Static content that doesn't change per row |
+
+### Macro configuration panel
+
+| Element | Description |
+|---------|-------------|
+| **Macro name** | The identifier used in `{{macro_name}}` syntax |
+| **Type selector** | Choose between Field, NQL, or Literal |
+| **Value configuration** | Field picker, NQL editor, or text input based on type |
+| **Preview value** | Sample resolved value from the first dataset row |
+
+### Editor actions
+
+| Action | Description |
+|--------|-------------|
+| **Save** | Saves the prompt configuration and returns to Prompt Builder |
+| **Cancel** | Discards changes and returns to Prompt Builder |
+
+---
+
+## Preview screen
+
+The Preview screen validates your prompt configuration by showing resolved output for each dataset row.
+
+**Path:** Click **Preview** in the Prompt Builder
+
+### Conversation display
+
+| Element | Description |
+|---------|-------------|
+| **System message** | Resolved system prompt with all macros substituted |
+| **User message** | Resolved user prompt with all macros substituted |
+| **Assistant message** | Resolved assistant prompt with all macros substituted |
+
+Messages display in a conversational format, visually distinguishing each role.
+
+### Navigation controls
+
+| Control | Description |
+|---------|-------------|
+| **Prev** | Navigate to the previous dataset row |
+| **Next** | Navigate to the next dataset row |
+| **Row indicator** | Shows current row number and total (e.g., "Row 5 of 1,234") |
+
+### Validation indicators
+
+| Indicator | Meaning |
+|-----------|---------|
+| **Green checkmark** | All macros resolved successfully |
+| **Yellow warning** | Some macros returned empty or null values |
+| **Red error** | Macro resolution failed (e.g., invalid NQL expression) |
+
+---
+
+## Output format
+
+The transformed dataset contains rows formatted as structured conversations:
+
+```json
+{
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant..." },
+    { "role": "user", "content": "Analyze this customer data..." },
+    { "role": "assistant", "content": "Based on the data provided..." }
+  ]
+}
+```
+
+This format is compatible with fine-tuning APIs from major AI model providers.
+
+---
+
+## Actions reference
+
+### Builder actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Select dataset** | Dataset module | Choose source dataset | Dataset fields become available for macros |
+| **Configure role** | Role panel | Open prompt editor for a role | Prompt editor opens |
+| **Preview** | Prompt Builder toolbar | Validate prompt resolution | Preview screen opens |
+
+### Editor actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Add macro** | Prompt text | Type `{{name}}` syntax | Macro placeholder created |
+| **Configure macro** | Macro panel | Set type and value | Macro resolution configured |
+| **Save** | Editor toolbar | Save prompt configuration | Returns to Prompt Builder |
+
+### Preview actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Navigate rows** | Navigation controls | View different dataset rows | Conversation updates with new row data |
+| **Return to builder** | Preview toolbar | Exit preview mode | Returns to Prompt Builder |
+
+### Output actions
+
+| Action | Location | Description | Result |
+|--------|----------|-------------|--------|
+| **Generate dataset** | Prompt Builder toolbar | Create materialized dataset | Opens Data Studio with prompt configuration |
+
+---
+
+## Workflow summary
+
+1. **Select dataset** → Choose source data in the Dataset module
+2. **Configure prompts** → Define system, user, and assistant prompts with macros
+3. **Configure macros** → Map each macro to a field, NQL expression, or literal value
+4. **Preview output** → Validate resolved prompts row by row
+5. **Generate dataset** → Use Data Studio to materialize the transformed dataset
+
+---
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="NQL Syntax" icon="code" href="/reference/nql/syntax">
+    Reference for NQL expressions used in macros
+  </Card>
+  <Card title="Model Inference" icon="brain" href="/concepts/model-inference/overview">
+    Using AI models within your data plane
+  </Card>
+  <Card title="Creating Materialized Views" icon="layer-group" href="/guides/nql/creating-materialized-views">
+    Generate datasets from your prompt configurations
+  </Card>
+  <Card title="Datasets" icon="database" href="/concepts/primitives/datasets">
+    Understanding datasets in Narrative
+  </Card>
+</CardGroup>
