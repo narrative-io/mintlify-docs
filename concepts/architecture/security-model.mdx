@@ -37,7 +37,7 @@ Organizations are the top-level security boundary. Each organization has:
 When you register or share data, you define who can access it:
 
 - **Visibility rules** — Control which organizations can discover your datasets
-- **Access grants** — Explicitly grant query access to specific organizations
+- **[Access rules](/concepts/primitives/access-rules)** — Define who can query your data, what they can access, and pricing terms
 - **Field-level permissions** — Restrict access to sensitive columns within a dataset
 
 ### Query-time enforcement
@@ -122,6 +122,9 @@ Security is a shared responsibility between Narrative and customers:
 ## Related content
 
 <CardGroup cols={2}>
+  <Card title="Access Rules" icon="key" href="/concepts/primitives/access-rules">
+    Control who can access your data and at what price
+  </Card>
   <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
     Understand where your data lives and how data planes provide isolation
   </Card>
@@ -130,8 +133,5 @@ Security is a shared responsibility between Narrative and customers:
   </Card>
   <Card title="Single Sign-On (SSO)" icon="shield-keyhole" href="/concepts/security/sso">
     Configure enterprise authentication for your organization
-  </Card>
-  <Card title="API Keys" icon="key" href="/account-settings/api-keys">
-    Manage API keys for programmatic access
   </Card>
 </CardGroup>

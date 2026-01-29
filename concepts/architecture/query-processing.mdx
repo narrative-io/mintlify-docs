@@ -51,7 +51,7 @@ The control plane transforms your NQL into executable SQL through several steps:
 
 **Resolution.** Dataset references are resolved to their actual locations. [Rosetta Stone](/concepts/rosetta-stone/overview) mappings translate standardized attribute names to physical column names.
 
-**Permission verification.** Your access grants are checked for every dataset and field in the query. If you lack permission to access any referenced data, the query fails before execution.
+**Permission verification.** Your [access rules](/concepts/primitives/access-rules) are checked for every dataset and field in the query. If you lack permission to access any referenced data, the query fails before execution.
 
 **Optimization.** The query planner analyzes the query structure to determine an efficient execution strategy.
 

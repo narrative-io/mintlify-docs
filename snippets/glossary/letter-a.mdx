@@ -1,14 +1,12 @@
 ## A
 
-### Access grant
-
-An explicit permission that allows a specific organization to query a dataset they don't own. Access grants enable controlled data sharing between organizations while maintaining ownership and governance.
-
 ### Access rules
 
-Policies that define who can access specific datasets or fields within the Narrative platform. Access rules are enforced at query execution time and can be configured at both the dataset and field level.
+Business rules that define how other organizations can access data within the Narrative platform. Access rules give data owners fine-grained control over who can query their data, what records and fields are accessible, and how much access costs. Every dataset requires at least one access rule before other organizations can query it.
 
-**Related:** [Security Model](/concepts/architecture/security-model)
+Access rules are enforced at query execution time by the control plane and data planes. They support flexible pricing (including free access for non-commercial sharing), partner-specific permissions, and field-level controls.
+
+**Related:** [Access Rules](/concepts/primitives/access-rules), [Security Model](/concepts/architecture/security-model)
 
 ### Attributes
 

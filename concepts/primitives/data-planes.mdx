@@ -61,9 +61,9 @@ Customer-hosted data planes require additional setup and configuration. Contact 
 
 Several objects in Narrative are scoped to a specific data plane:
 
-- **Datasets** — The actual data you've registered lives in a data plane
+- **[Datasets](/concepts/primitives/datasets)** — The actual data you've registered lives in a data plane
 - **Queries** — Query execution happens within a data plane
-- **Access rules** — Rules that govern data access are enforced at the data plane level
+- **[Access rules](/concepts/primitives/access-rules)** — Rules that govern data access are enforced at the data plane level
 
 When working in the Narrative platform, you'll see a data plane selector that filters these objects to show only those belonging to the selected data plane.
 
@@ -86,6 +86,9 @@ The operator handles various types of jobs beyond queries, including materialize
 ## Related content
 
 <CardGroup cols={2}>
+  <Card title="Datasets" icon="table" href="/concepts/primitives/datasets">
+    Understand the datasets that live within data planes
+  </Card>
   <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
     How queries flow from submission through execution
   </Card>
@@ -94,8 +97,5 @@ The operator handles various types of jobs beyond queries, including materialize
   </Card>
   <Card title="Job Types" icon="list-check" href="/reference/architecture/job-types">
     Reference for the different types of jobs operators execute
-  </Card>
-  <Card title="Data Planes API" icon="code" href="/api-reference/openapi/data-planes/list-data-planes">
-    Manage data planes programmatically
   </Card>
 </CardGroup>

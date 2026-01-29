@@ -1,0 +1,173 @@
+---
+title: 'Access Rules'
+description: 'Control who can access your data, what they can query, and what it costs'
+icon: 'key'
+---
+
+An access rule is a set of business rules that define how other organizations can access data within the Narrative platform. Access rules are a core primitive that give data owners fine-grained governance over their datasets.
+
+## What access rules control
+
+Access rules let you define three key aspects of data access:
+
+**Who can access your data.** Specify which organizations can run queries against your datasets. You can grant access to specific companies, make data available to all platform participants, or restrict access to a closed group of partners.
+
+**What data they can access.** Control which records and fields are available through filtering conditions. You might expose only certain date ranges, geographic regions, or record types to different partners.
+
+**How much access costs.** Set pricing for data access on a per-record basis. Prices can vary by record type, buyer, or any other criteria you define. For non-commercial collaborations, set the price to zero.
+
+## Why access rules exist
+
+Without access rules, datasets in Narrative cannot be queried by other organizations. This is by design—data remains private by default, and you must explicitly create access rules to enable collaboration.
+
+This approach ensures:
+
+- **Data owners stay in control.** No one can access your data without your explicit permission
+- **Flexible monetization.** Charge different rates for different data or different buyers
+- **Governance compliance.** Audit exactly who has access to what data and under what terms
+
+## How access rules work
+
+Access rules are defined using NQL (Narrative Query Language) and are enforced at query execution time. When another organization queries data you own:
+
+1. **Rule matching** — The control plane identifies which access rules apply to the requested data
+2. **Permission verification** — The query is checked against the access rule's constraints
+3. **Price calculation** — If the rule includes pricing, costs are calculated based on matching records
+4. **Query execution** — Only records that pass the access rule's filters are included in results
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                       Query Submitted                           │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  Access Rules Evaluated                          │
+│   • Which rules match the requested datasets?                   │
+│   • Does the requester have permission?                          │
+│   • What are the pricing terms?                                  │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+                   ┌────────────┴────────────┐
+                   │                         │
+                   ▼                         ▼
+        ┌──────────────────┐      ┌──────────────────┐
+        │  Rules Match     │      │  No Match        │
+        │  Query Executes  │      │  Query Fails     │
+        └──────────────────┘      └──────────────────┘
+```
+
+## Common use cases
+
+### Make data available to a specific partner
+
+Grant a single organization access to your dataset:
+
+```sql
+-- Access rule granting Partner Corp access to customer segments
+SELECT
+    segment_id,
+    segment_name,
+    audience_size
+FROM company."customer_segments"
+```
+
+Configure the rule to be visible only to the partner's organization, and set pricing (or `$0` for a data share).
+
+### Set different prices for different data
+
+Create multiple access rules with different pricing tiers:
+
+```sql
+-- Premium access rule: recent data at higher price
+SELECT
+    user_id,
+    event_type,
+    event_timestamp
+FROM company."user_events"
+WHERE event_timestamp > CURRENT_DATE - INTERVAL '30' DAY
+```
+
+```sql
+-- Standard access rule: older data at lower price
+SELECT
+    user_id,
+    event_type,
+    event_timestamp
+FROM company."user_events"
+WHERE event_timestamp <= CURRENT_DATE - INTERVAL '30' DAY
+```
+
+### Restrict fields for certain buyers
+
+Expose different columns to different partners by creating separate access rules:
+
+```sql
+-- Full access for premium partners
+SELECT
+    user_id,
+    email,
+    purchase_history,
+    lifetime_value
+FROM company."customers"
+```
+
+```sql
+-- Limited access for standard partners (no PII)
+SELECT
+    user_id,
+    purchase_history
+FROM company."customers"
+```
+
+### Enable non-commercial data sharing
+
+Share data at no cost for research, partnerships, or data exchanges:
+
+```sql
+SELECT
+    anonymized_id,
+    survey_responses,
+    demographic_category
+FROM company."research_data"
+```
+
+Set the price to `$0 CPM` when creating the rule.
+
+## Access rules and datasets
+
+Every dataset can have multiple access rules, and a single access rule can reference multiple datasets. This flexibility supports complex governance scenarios:
+
+- **One dataset, many rules** — Different pricing tiers, different partner access levels
+- **Many datasets, one rule** — Bundle related datasets for partners who need comprehensive access
+
+<Note>
+If a dataset has no access rules, it cannot be queried by other organizations. You always retain access to your own datasets regardless of access rules.
+</Note>
+
+## Pricing with access rules
+
+Access rule pricing uses **CPM (cost per mille)**—the cost per 1,000 records. When a query matches an access rule with pricing:
+
+1. The number of matching records is counted
+2. The total cost is calculated: `(matching_records / 1000) × CPM`
+3. The buyer is charged and the data owner receives payment
+
+Pricing is enforced at the data plane level, meaning costs are calculated based on actual query results, not estimates.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Where your data lives and access rules are enforced
+  </Card>
+  <Card title="Control Plane" icon="sitemap" href="/concepts/primitives/control-plane">
+    How Narrative orchestrates permissions and query coordination
+  </Card>
+  <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
+    The broader security architecture including access controls
+  </Card>
+  <Card title="Access Rules API" icon="code" href="/api-reference/openapi/access-rules/get-all-accessible-access-rules-v-2">
+    Manage access rules programmatically
+  </Card>
+</CardGroup>

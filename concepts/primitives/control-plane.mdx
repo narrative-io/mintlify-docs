@@ -12,7 +12,7 @@ The control plane is responsible for everything *about* data, rather than the da
 
 **Metadata and catalogs.** The control plane maintains the catalog of all datasets, their schemas, and their attributes. When you browse available data or search for datasets, you're querying the control plane.
 
-**Identity and permissions.** User authentication, organization membership, and access controls all live in the control plane. When you grant another organization access to your data, that permission is recorded and enforced by the control plane.
+**Identity and permissions.** User authentication, organization membership, and [access rules](/concepts/primitives/access-rules) all live in the control plane. When you grant another organization access to your data, that permission is recorded and enforced by the control plane.
 
 **Query compilation and dispatch.** When you write an NQL query, the control plane parses it, validates your permissions, optimizes the execution plan, and [transpiles](/reference/glossary#transpilation) it to the native SQL dialect of your target [data plane](/concepts/primitives/data-planes). The compiled query is then placed in a [job queue](/reference/glossary#job-queue), where data plane operators pick it up for execution. See [Query Processing](/concepts/architecture/query-processing) for a detailed breakdown of this flow.
 
@@ -52,14 +52,14 @@ Narrative operates a single control plane that coordinates across all data plane
 ## Related content
 
 <CardGroup cols={2}>
-  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
-    How queries are compiled, transpiled, and executed
+  <Card title="Access Rules" icon="key" href="/concepts/primitives/access-rules">
+    Control who can access your data and at what price
   </Card>
   <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
     Learn about where your data lives and is processed
   </Card>
-  <Card title="NQL Design Philosophy" icon="compass-drafting" href="/concepts/nql/design-philosophy">
-    Why NQL is an interpreted, transpiled language
+  <Card title="Query Processing" icon="microchip" href="/concepts/architecture/query-processing">
+    How queries are compiled, transpiled, and executed
   </Card>
   <Card title="Security Model" icon="shield" href="/concepts/architecture/security-model">
     Understand how Narrative protects your data

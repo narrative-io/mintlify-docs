@@ -150,12 +150,12 @@ The specific data movement depends on the query. For joins across data planes, s
 When you share data with a partner organization, they query your data through the same architecture:
 
 1. Partner submits NQL query referencing your dataset
-2. Control plane verifies their access grants
+2. Control plane verifies their permissions against your [access rules](/concepts/primitives/access-rules)
 3. Compiled query is sent to your data plane
 4. Your data plane executes and returns results
 5. Partner receives results through the control plane
 
-Your raw data never leaves your data plane—only the query results authorized by your access grants.
+Your raw data never leaves your data plane—only the query results authorized by your access rules.
 
 ---
 

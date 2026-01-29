@@ -42,8 +42,10 @@
 					{
 						"group": "Core Primitives",
 						"pages": [
+							"concepts/primitives/datasets",
 							"concepts/primitives/data-planes",
-							"concepts/primitives/control-plane"
+							"concepts/primitives/control-plane",
+							"concepts/primitives/access-rules"
 						]
 					},
 					{

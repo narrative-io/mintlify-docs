@@ -1,0 +1,140 @@
+---
+title: 'Datasets'
+description: 'Understand how datasets store, organize, and protect your data in Narrative'
+icon: 'table'
+---
+
+A dataset is a structured collection of data registered in Narrative. Think of it as a table in a database—it has a defined schema, holds rows of data, and can be queried, shared, and collaborated on. Datasets are one of the core primitives in the Narrative platform.
+
+## What datasets are for
+
+Datasets serve as the primary way to bring data into Narrative and make it available for collaboration:
+
+**Storage and organization.** Datasets provide a structured container for your data. Each dataset has a defined schema that specifies what fields exist, their data types, and how they should be validated.
+
+**Querying.** Once data is in a dataset, you can query it using [NQL](/concepts/nql/design-philosophy). Datasets are the foundation of all query operations in Narrative.
+
+**Collaboration.** Through [access rules](/concepts/primitives/access-rules), you can grant other organizations permission to query your datasets—enabling data sharing, monetization, or joint analysis.
+
+## How datasets are structured
+
+### Schema
+
+Every dataset has a schema that acts as its structural blueprint. The schema defines:
+
+- **Field names** — The columns that exist in the dataset
+- **Field types** — The data type for each field (string, number, timestamp, etc.)
+- **Descriptions** — Documentation explaining what each field contains
+- **Validations** — Rules that ensure data integrity when records are added
+
+```typescript
+// Example schema definition
+{
+  properties: {
+    customer_id: { type: 'string' },
+    event_type: { type: 'string' },
+    event_timestamp: { type: 'timestamptz' },
+    event_value: { type: 'double' },
+  }
+}
+```
+
+<Note>
+Schemas are designed to be stable. While you can add new fields to a schema, changing or removing existing fields requires careful consideration to avoid breaking queries or integrations that depend on them.
+</Note>
+
+### Records and snapshots
+
+Data in a dataset is organized into records (rows) and snapshots:
+
+- **Records** are individual data entries that conform to the dataset's schema
+- **Snapshots** represent a point-in-time collection of files that were ingested together
+
+When you upload data, the ingestion process validates each record against the schema and adds it to the dataset as part of a new snapshot.
+
+## Adding data to datasets
+
+Datasets support multiple ways to add data:
+
+**Append mode.** New data is added alongside existing data. Use this for event-style data where each upload contains new records.
+
+**Overwrite mode.** New data replaces existing data. Use this when you want to refresh the entire dataset with an updated version.
+
+For procedural details on uploading data, see [Uploading Data](/guides/sdk/uploading-data).
+
+## Retention policies
+
+Datasets can have retention policies that automatically manage data lifecycle:
+
+- **Time-based retention** — Automatically remove data older than a specified number of days
+- **No retention** — Keep all data indefinitely (or until manually deleted)
+
+Retention policies help you manage storage costs and comply with data governance requirements that mandate data deletion after a certain period.
+
+```typescript
+// Example retention policy configuration
+{
+  type: 'time_based',
+  retention_days: 365
+}
+```
+
+## Ownership and access
+
+### Single-company ownership
+
+Every dataset is owned by exactly one company. The owner has full control over:
+
+- The dataset's schema and configuration
+- Who can access the data and under what terms
+- Whether to archive or delete the dataset
+
+This ownership model ensures clear accountability and prevents ambiguity about who controls sensitive data.
+
+### Access through access rules
+
+By default, a dataset is private to its owner. To share data with other organizations, you create [access rules](/concepts/primitives/access-rules) that define:
+
+- Which organizations can query the dataset
+- Which fields and records they can access
+- What pricing applies (if any)
+
+This separation between ownership and access provides flexibility—you retain full control while selectively enabling collaboration.
+
+## Where datasets live
+
+Datasets are scoped to a specific [data plane](/concepts/primitives/data-planes). The data plane determines:
+
+- Where the data physically resides (Narrative-hosted or your own infrastructure)
+- Which query engine processes queries against the dataset
+- What data residency and compliance requirements are met
+
+When you create a dataset, you specify which data plane it belongs to. The [control plane](/concepts/primitives/control-plane) maintains metadata about the dataset—its schema, access rules, and statistics—while the actual data remains in the data plane.
+
+## Datasets vs. materialized views
+
+Narrative supports two types of data containers:
+
+| Type | Source | Updates |
+|------|--------|---------|
+| **Dataset** | External data you upload | Manual uploads or automated ingestion |
+| **Materialized view** | Query results from other datasets | Automatic refresh on schedule |
+
+[Materialized views](/concepts/nql/materialized-views) are created from NQL queries and automatically refresh their contents. Regular datasets require you to explicitly add data through uploads or ingestion.
+
+## Related content
+
+<CardGroup cols={2}>
+  <Card title="Access Rules" icon="key" href="/concepts/primitives/access-rules">
+    Control who can query your datasets and at what price
+  </Card>
+  <Card title="Data Planes" icon="database" href="/concepts/primitives/data-planes">
+    Understand where your datasets physically reside
+  </Card>
+  <Card title="Managing Datasets" icon="gear" href="/guides/sdk/managing-datasets">
+    Create and manage datasets with the SDK
+  </Card>
+  <Card title="Uploading Data" icon="upload" href="/guides/sdk/uploading-data">
+    Add data to your datasets
+  </Card>
+</CardGroup>
